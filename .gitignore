@@ -1,0 +1,9 @@
+# PI
+
+.pi/agent/bin/
+.pi/agent/sessions/
+.pi/agent/extensions/node_modules/
+.pi/agent/extensions/package-lock.json
+.pi/agent/skills/youtrack/
+.pi/agent/auth.json
+.pi/agents/youtrack.md

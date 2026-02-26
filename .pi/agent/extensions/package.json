@@ -1,0 +1,11 @@
+{
+  "name": "pi-agent-extensions",
+  "version": "1.0.0",
+  "description": "Extensions for pi coding agent",
+  "dependencies": {
+    "yaml": "^2.7.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
