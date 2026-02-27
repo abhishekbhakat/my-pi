@@ -1,0 +1,3 @@
+[submodule ".pi/agent/skills/frontend-slides"]
+	path = .pi/agent/skills/frontend-slides
+	url = git@github.com:zarazhangrui/frontend-slides.git
