@@ -28,7 +28,7 @@ export function registerManageTools(pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "agent_list",
 		label: "List Agents",
-		description: "List all active agent instances. Use 'compact' format for quick checks (lightweight output).",
+		description: "REQUIRED FIRST STEP: List all active agent instances. ALWAYS run this BEFORE using agent_send or agent_send_parallel to check for existing agents that can be continued instead of spawning new ones. Use 'compact' format for quick checks (lightweight output).",
 		parameters: Type.Object({
 			format: Type.Optional(Type.String({ description: "Output format: 'compact' for quick summary, 'full' for details (default: 'compact')" })),
 		}),

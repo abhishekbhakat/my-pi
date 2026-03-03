@@ -3,7 +3,7 @@ import type { AgentInstance, SpawnCallbacks, SpawnOptions } from "./types";
 import { instances, instanceIds, getNextInstanceId } from "./runtime";
 import { getInstanceKey, makeSessionFile, spawnAgentInstance } from "./instance";
 import { updateWidgets, scheduleWidgetUpdate } from "./widget-updater";
-import { saveAgentState } from "./persistence";
+import { saveAgentState, saveAgentStateImmediate, resetSavedState } from "./persistence";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 
 // Reference to ExtensionAPI for saving state
@@ -16,6 +16,12 @@ export function setPersistenceApi(pi: ExtensionAPI): void {
 function triggerSave(): void {
 	if (piRef) {
 		saveAgentState(piRef, instances, instanceIds);
+	}
+}
+
+function triggerSaveImmediate(): void {
+	if (piRef) {
+		saveAgentStateImmediate(piRef, instances, instanceIds);
 	}
 }
 
@@ -143,7 +149,7 @@ export function removeInstance(agentName: string, id: number): AgentInstance | n
 
 	instances.delete(key);
 	updateWidgets();
-	triggerSave();
+	triggerSaveImmediate();
 	return inst;
 }
 
@@ -158,7 +164,9 @@ export function clearAll(): { count: number; killed: number } {
 
 	const count = instances.size;
 	instances.clear();
-	triggerSave();
+	// Reset saved state and save immediately to ensure clear persists before reload
+	resetSavedState();
+	triggerSaveImmediate();
 	return { count, killed };
 }
 

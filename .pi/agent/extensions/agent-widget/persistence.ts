@@ -69,3 +69,26 @@ export function resetSavedState(): void {
 		saveTimeout = null;
 	}
 }
+
+export function saveAgentStateImmediate(
+	pi: ExtensionAPI,
+	instances: Map<string, AgentInstance>,
+	instanceIds: Map<string, number>
+): void {
+	// Clear any pending debounced save
+	if (saveTimeout) {
+		clearTimeout(saveTimeout);
+		saveTimeout = null;
+	}
+
+	const state: AgentWidgetState = {
+		instances: Array.from(instances.values()).map(serializeInstance),
+		instanceIds: Array.from(instanceIds.entries()),
+	};
+
+	const stateStr = JSON.stringify(state);
+	if (stateStr !== lastSavedState) {
+		pi.appendEntry(CUSTOM_TYPE, state);
+		lastSavedState = stateStr;
+	}
+}
