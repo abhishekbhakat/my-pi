@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.55.1",
+  "lastChangelogVersion": "0.55.4",
   "theme": "cyberpunk",
   "defaultProvider": "anthropic-proxy",
   "defaultModel": "Kimi-for-Coding",
@@ -8,12 +8,13 @@
   "defaultThinkingLevel": "high",
   "enabledModels": [
     "github-copilot/claude-opus-4.6",
+    "anthropic-proxy/Kimi-K2.5",
     "anthropic-proxy/Kimi-for-Coding",
-    "anthropic-proxy/Sonnet-4.6",
-    "openai-proxy/Gpt-5.3-Codex",
-    "openai-proxy/Gpt-5.2",
-    "openai-proxy/Kimi-K2.5-BS10",
+    "anthropic-proxy/Opus-4.6",
     "anthropic-proxy/Gravity-Opus-4.6",
-    "anthropic-proxy/Kimi-K2.5"
+    "anthropic-proxy/Sonnet-4.6",
+    "openai-proxy/Kimi-K2.5-BS10",
+    "openai-proxy/Gpt-5.3-Codex",
+    "openai-proxy/Gpt-5.2"
   ]
 }
