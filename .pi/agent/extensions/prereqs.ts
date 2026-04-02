@@ -10,6 +10,7 @@ import { Type } from "@sinclair/typebox";
 import { StringEnum } from "@mariozechner/pi-ai";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 
 type PrereqType = "bash" | "skill" | "agent" | "text" | "manual";
 
@@ -104,7 +105,7 @@ export default function (pi: ExtensionAPI) {
     let filePath: string | undefined;
     let loaded = false;
 
-    const DEFAULT_PREREQS = path.resolve(path.dirname(new URL(import.meta.url).pathname), "../PREREQS.md");
+    const DEFAULT_PREREQS = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../PREREQS.md");
 
     pi.registerFlag("prereqs", { description: "Path to PREREQS.md", type: "string", default: "" });
 

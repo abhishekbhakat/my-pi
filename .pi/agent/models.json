@@ -22,9 +22,17 @@
           "input": ["text", "image"]
         },
         {
+          "id": "Opus-4.6",
+          "name": "Opus 4.6 (BYOK)",
+          "contextWindow": 200000,
+          "maxTokens": 128000,
+          "reasoning": true,
+          "input": ["text"]
+        },
+        {
           "id": "Gravity-Opus-4.6",
           "name": "Gravity Opus 4.6 (BYOK)",
-          "contextWindow": 64000,
+          "contextWindow": 200000,
           "maxTokens": 64000,
           "reasoning": true,
           "input": ["text"]
@@ -32,7 +40,15 @@
         {
           "id": "Sonnet-4.6",
           "name": "Sonnet 4.6 (BYOK)",
-          "contextWindow": 1000000,
+          "contextWindow": 200000,
+          "maxTokens": 64000,
+          "reasoning": true,
+          "input": ["text"]
+        },
+        {
+          "id": "GLM-5-Turbo",
+          "name": "GLM 5 Turbo (BYOK)",
+          "contextWindow": 200000,
           "maxTokens": 128000,
           "reasoning": true,
           "input": ["text"]
@@ -67,9 +83,31 @@
           }
         },
         {
-          "id": "Gpt-5.2",
-          "name": "GPT 5.2 (BYOK)",
-          "contextWindow": 400000,
+          "id": "Gpt-5.4-High",
+          "name": "GPT 5.4 (BYOK)",
+          "contextWindow": 200000,
+          "maxTokens": 128000,
+          "reasoning": true,
+          "input": ["text"],
+          "compat": {
+            "supportsReasoningEffort": true
+          }
+        },
+        {
+          "id": "Gpt-5.3-Codex-OR",
+          "name": "GPT 5.3 Codex OR (BYOK)",
+          "contextWindow": 200000,
+          "maxTokens": 128000,
+          "reasoning": true,
+          "input": ["text"],
+          "compat": {
+            "supportsReasoningEffort": true
+          }
+        },
+        {
+          "id": "GLM-5-Turbo-OR",
+          "name": "GLM 5 Turbo OR (BYOK)",
+          "contextWindow": 200000,
           "maxTokens": 128000,
           "reasoning": true,
           "input": ["text"],

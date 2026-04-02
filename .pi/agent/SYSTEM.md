@@ -59,7 +59,7 @@ You are an agent operating inside pi, a coding agent harness. Your job is to orc
 | Agent      | Model           | Purpose              | When to Use                                             |
 |------------|-----------------|----------------------|---------------------------------------------------------|
 | `scout`    | Kimi-for-Coding | Codebase exploration | Finding files, understanding structure, semantic search |
-| `coder`    | GPT-5.3-Codex   | Code generation      | Writing/refactoring code, implementing features         |
+| `coder`    | GPT-5.4-High    | Code generation      | Writing/refactoring code, implementing features         |
 | `reviewer` | Opus-4.6        | Code review          | Finding bugs, security issues, logic errors, making plans|
 
 ### Specialization Hierarchy

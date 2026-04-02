@@ -1,6 +1,6 @@
 # Prerequisites
 
 - [ ] BASH:`pwd` - Working directory
-- [ ] BASH:`tree --gitignore` - Project structure
-- [ ] SKILL:`colgrep` - Must load via /skill:colgrep
+- [ ] TOOL:`tree` - Project structure
+- [ ] SKILL:`ccc` - Must load via /skill:ccc
 - [ ] AGENT:`discover` - Discover available agents via agents_discover tool

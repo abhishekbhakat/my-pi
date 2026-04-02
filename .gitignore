@@ -7,3 +7,4 @@
 .pi/agent/skills/youtrack/
 .pi/agent/auth.json
 .pi/agents/youtrack.md
+.pi/agent/skills/chrome-cdp-skill/package-lock.json

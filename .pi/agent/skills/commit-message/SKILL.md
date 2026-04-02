@@ -18,8 +18,11 @@ Generate a concise, meaningful one-liner commit message by inspecting the staged
 Run these commands to collect the necessary information:
 
 ```bash
-# Get the last commit message and diff for context
-git log -1 --format="%h %s" && echo "---" && git diff HEAD~1 --stat
+# Get the last commit message and file summary for context
+git show --stat --summary --format="%h %s" -1
+
+# Get the last 10 commits for broader context
+git log --oneline --decorate -n 10
 
 # Get the staged diff (what will be committed)
 git diff --staged
@@ -28,7 +31,7 @@ git diff --staged
 ### Step 2: Analyze the Changes
 
 - Read the staged diff to understand **what** changed.
-- Read the last commit (`git log -1`) to understand if the staged changes are a continuation, fix, or follow-up to the previous commit.
+- Read the recent commit history (`git log --oneline --decorate -n 10`) to understand if the staged changes are a continuation, fix, or follow-up.
 - If staged files overlap with files in the last commit, treat the changes as related and reflect that in the message.
 
 ### Step 3: Generate the Message

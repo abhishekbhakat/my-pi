@@ -98,7 +98,6 @@ export function registerSendTool(pi: ExtensionAPI) {
 				}
 
 				const { inst, result } = await spawnSingle(def, task, _signal);
-				spawnGate.checked = false; // Reset gate after spawn
 
 				const summary = `${inst.def.name} #${inst.id}${inst.turnCount > 1 ? ` (Turn ${inst.turnCount})` : ""} finished in ${Math.round(inst.elapsed / 1000)}s.\n\nResult:\n${result}`;
 
@@ -136,7 +135,6 @@ export function registerSendTool(pi: ExtensionAPI) {
 			ctx.ui.notify(`No existing ${agentName} agent to continue. Spawning new...`, "info");
 
 			const { inst, result } = await spawnSingle(def, task, _signal);
-			spawnGate.checked = false; // Reset gate after spawn
 
 			const summary = `${inst.def.name} #${inst.id}${inst.turnCount > 1 ? ` (Turn ${inst.turnCount})` : ""} finished in ${Math.round(inst.elapsed / 1000)}s.\n\nResult:\n${result}`;
 
@@ -256,10 +254,6 @@ export function registerSendTool(pi: ExtensionAPI) {
 			);
 
 			const [continuedOutcomes, spawnedOutcomes] = await Promise.all([continuePromise, spawnPromise]);
-
-			if (spawnPlans.length > 0) {
-				spawnGate.checked = false;
-			}
 
 			const summaryByIndex = new Map<number, string>();
 

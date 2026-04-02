@@ -35,7 +35,7 @@ export function registerManageTools(pi: ExtensionAPI) {
 		execute: async (_callId, args) => {
 			const active = listActiveInstances();
 
-			// Reset spawn gate since user explicitly listed agents
+			// Mark gate as checked - user has listed agents
 			spawnGate.checked = true;
 
 			if (active.length === 0) {

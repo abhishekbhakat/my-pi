@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Extensions for pi coding agent",
   "dependencies": {
+    "shlex": "^3.0.0",
     "yaml": "^2.7.0"
   },
   "devDependencies": {

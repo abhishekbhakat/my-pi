@@ -210,6 +210,14 @@ bashToolPatterns:
   - pattern: '\bDELETE\s+FROM\s+\w+\s+WHERE\b.*\bid\s*='
     reason: SQL DELETE with specific ID
     ask: true
+  - pattern: '(?<!uv\srun\s)\bpip\b'
+    reason: Python package management must use 'uv pip' instead of pip
+  - pattern: '(?<!uv\srun\s)\bpip3\b'
+    reason: Python package management must use 'uv pip' instead of pip3
+  - pattern: '^python\b(?!\s+-m\s+pip)'
+    reason: Python execution must use 'uv run python' instead of python directly
+  - pattern: '^python3\b(?!\s+-m\s+pip)'
+    reason: Python execution must use 'uv run python' instead of python3 directly
 
 zeroAccessPaths: []
 

@@ -1,8 +1,22 @@
-import { spawn } from "node:child_process";
+import { spawn, execSync } from "node:child_process";
+import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import * as os from "os";
 import * as path from "path";
 import * as fs from "fs";
 import type { AgentInstance, SpawnCallbacks, SpawnOptions } from "./types";
+
+function killProc(proc: ChildProcessWithoutNullStreams): void {
+	if (!proc.pid) return;
+	if (process.platform === "win32") {
+		// On Windows with shell: true, SIGTERM only kills the shell wrapper.
+		// Use taskkill /T to kill the entire process tree.
+		try {
+			execSync(`taskkill /F /T /PID ${proc.pid}`, { stdio: "ignore" });
+		} catch {}
+	} else {
+		proc.kill("SIGTERM");
+	}
+}
 
 let dirCreated = false;
 
@@ -30,6 +44,7 @@ export function spawnAgentInstance(
 	const signal = opts?.signal;
 
 	return new Promise<string>((resolve) => {
+		const isWindows = process.platform === "win32";
 		const proc = spawn("pi", [
 			"--mode", "json",
 			"-p",
@@ -43,6 +58,7 @@ export function spawnAgentInstance(
 		], {
 			stdio: ["ignore", "pipe", "pipe"],
 			env: { ...process.env },
+			shell: isWindows,
 		});
 
 		inst.proc = proc;
@@ -50,11 +66,11 @@ export function spawnAgentInstance(
 		if (signal) {
 			const onAbort = () => {
 				if (inst.proc) {
-					inst.proc.kill("SIGTERM");
+					killProc(inst.proc);
 				}
 			};
 			if (signal.aborted) {
-				proc.kill("SIGTERM");
+				killProc(proc);
 			} else {
 				signal.addEventListener("abort", onAbort, { once: true });
 				proc.on("close", () => signal.removeEventListener("abort", onAbort));
