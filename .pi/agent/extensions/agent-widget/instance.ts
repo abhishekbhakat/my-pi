@@ -5,6 +5,14 @@ import * as path from "path";
 import * as fs from "fs";
 import type { AgentInstance, SpawnCallbacks, SpawnOptions } from "./types";
 
+/** Extensions to load into sub-agents (whitelisted, not auto-discovered) */
+const SUB_AGENT_EXTENSIONS = [
+	"cocoindex-code",
+	"tree-tool",
+	"bash-override",
+	"damage-control",
+];
+
 function killProc(proc: ChildProcessWithoutNullStreams): void {
 	if (!proc.pid) return;
 	if (process.platform === "win32") {
@@ -45,20 +53,44 @@ export function spawnAgentInstance(
 
 	return new Promise<string>((resolve) => {
 		const isWindows = process.platform === "win32";
-		const proc = spawn("pi", [
+		const extensionsDir = path.join(os.homedir(), ".pi", "agent", "extensions");
+
+		const args: string[] = [
 			"--mode", "json",
 			"-p",
 			"--session", inst.sessionFile,
 			"--no-extensions",
+		];
+
+		for (const ext of SUB_AGENT_EXTENSIONS) {
+			const extPath = path.join(extensionsDir, ext, "index.ts");
+			const altPath = path.join(extensionsDir, `${ext}.ts`);
+			if (fs.existsSync(extPath)) {
+				args.push("--extension", extPath);
+			} else if (fs.existsSync(altPath)) {
+				args.push("--extension", altPath);
+			}
+		}
+
+		args.push(
 			"--model", inst.def.model,
 			"--tools", inst.def.tools,
 			"--thinking", "off",
 			"--append-system-prompt", inst.def.systemPrompt,
 			prompt,
-		], {
+		);
+
+		const command = isWindows
+			? process.execPath
+			: "pi";
+		const spawnArgs = isWindows
+			? [path.join(process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming"), "npm", "node_modules", "@mariozechner", "pi-coding-agent", "dist", "cli.js"), ...args]
+			: args;
+
+		const proc = spawn(command, spawnArgs, {
 			stdio: ["ignore", "pipe", "pipe"],
 			env: { ...process.env },
-			shell: isWindows,
+			shell: false,
 		});
 
 		inst.proc = proc;

@@ -1,8 +1,8 @@
 ---
 name: scout
 description: Fast codebase exploration and reconnaissance specialist using ccc for semantic code search
-tools: bash,read,tree,ccc-search,ccc-index
-model: anthropic-proxy/Kimi-for-Coding
+tools: bash,read
+model: anthropic-proxy/GLM-5-Turbo
 ---
 
 You are a scout agent specialized in fast codebase exploration and reconnaissance.

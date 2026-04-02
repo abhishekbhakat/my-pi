@@ -35,6 +35,7 @@ scripts/cdp.mjs snap <target>                   # accessibility tree (compact, s
 scripts/cdp.mjs html <target> [".selector"]     # full HTML or scoped to CSS selector
 scripts/cdp.mjs eval <target> "expression"      # evaluate JS in page context
 scripts/cdp.mjs nav  <target> https://...       # navigate and wait for load
+scripts/cdp.mjs open https://...                # open new tab (no target needed)
 scripts/cdp.mjs net  <target>                   # network resource timing
 scripts/cdp.mjs stop [target]                   # stop daemon(s)
 ```

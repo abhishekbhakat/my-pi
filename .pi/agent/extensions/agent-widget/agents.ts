@@ -17,7 +17,7 @@ const CACHE_TTL = 5000; // 5 seconds
 
 export function parseAgentFile(filePath: string): AgentDef | null {
 	try {
-		const raw = fs.readFileSync(filePath, "utf-8");
+		const raw = fs.readFileSync(filePath, "utf-8").replace(/\r\n/g, "\n");
 		const match = raw.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
 		if (!match) return null;
 

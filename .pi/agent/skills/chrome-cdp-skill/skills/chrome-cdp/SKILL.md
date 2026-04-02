@@ -16,6 +16,14 @@ Lightweight Chrome DevTools Protocol CLI. Connects directly via WebSocket — no
 
 All commands use `scripts/cdp.mjs`. The `<target>` is a **unique** targetId prefix from `list`; copy the full prefix shown in the `list` output (for example `6BE827FA`). The CLI rejects ambiguous prefixes.
 
+### Open a new tab
+
+```bash
+scripts/cdp.mjs open <url>          # creates new tab, no existing target needed
+```
+
+Use this when no non-chrome:// pages are listed (e.g. fresh browser with only new tab page).
+
 ### List open pages
 
 ```bash

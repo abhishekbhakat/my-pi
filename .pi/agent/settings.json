@@ -1,8 +1,8 @@
 {
   "lastChangelogVersion": "0.64.0",
   "theme": "tokyo-night",
-  "defaultProvider": "anthropic-proxy",
-  "defaultModel": "Gravity-Opus-4.6",
+  "defaultProvider": "openai-proxy",
+  "defaultModel": "Gpt-5.4-High",
   "quietStartup": true,
   "hideThinkingBlock": false,
   "defaultThinkingLevel": "high",

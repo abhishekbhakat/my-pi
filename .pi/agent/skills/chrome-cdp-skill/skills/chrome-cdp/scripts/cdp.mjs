@@ -723,6 +723,7 @@ Usage: cdp <command> [args]
   evalraw <target> <method> [json]  Send a raw CDP command; returns JSON result
                                     e.g. evalraw <t> "DOM.getDocument" '{}'
   stop  [target]                    Stop daemon(s)
+  open  <url>                       Open a new tab and navigate to URL (no target needed)
 
 <target> is a unique targetId prefix from "cdp list". If a prefix is ambiguous,
 use more characters.
@@ -797,6 +798,28 @@ async function main() {
   // Stop
   if (cmd === 'stop') {
     await stopDaemons(args[0]);
+    return;
+  }
+
+  // Open — create a new tab (no existing target needed)
+  if (cmd === 'open') {
+    const url = args[0];
+    if (!url) {
+      console.error('Error: URL required. Usage: cdp open <url>');
+      process.exit(1);
+    }
+    const cdp = new CDP();
+    await cdp.connect(getWsUrl());
+    const { targetId } = await cdp.send('Target.createTarget', { url });
+    // Refresh pages cache
+    const pages = await getPages(cdp);
+    writeFileSync(PAGES_CACHE, JSON.stringify(pages));
+    cdp.close();
+    const prefixLen = getDisplayPrefixLength(pages.map(p => p.targetId));
+    const prefix = targetId.slice(0, prefixLen);
+    console.log(`Opened ${url}`);
+    console.log(`Target: ${prefix}`);
+    setTimeout(() => process.exit(0), 100);
     return;
   }
 

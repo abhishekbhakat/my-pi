@@ -8,3 +8,5 @@
 .pi/agent/auth.json
 .pi/agents/youtrack.md
 .pi/agent/skills/chrome-cdp-skill/package-lock.json
+# CocoIndex Code (ccc)
+/.cocoindex_code/
