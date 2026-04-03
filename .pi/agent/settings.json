@@ -2,7 +2,7 @@
   "lastChangelogVersion": "0.64.0",
   "theme": "tokyo-night",
   "defaultProvider": "openai-proxy",
-  "defaultModel": "Gpt-5.4-High",
+  "defaultModel": "Qwen-3.6-Plus",
   "quietStartup": true,
   "hideThinkingBlock": false,
   "defaultThinkingLevel": "high",
@@ -13,10 +13,9 @@
     "anthropic-proxy/Gravity-Opus-4.6",
     "anthropic-proxy/GLM-5-Turbo",
     "anthropic-proxy/Kimi-K2.5",
-    "openai-proxy/Kimi-K2.5-BS10",
-    "openai-proxy/Gpt-5.3-Codex",
-    "openai-proxy/GLM-5-Turbo-OR",
-    "openai-proxy/Gpt-5.4-High"
+    "openai-proxy/Gpt-5.4-High",
+    "openai-proxy/Qwen-3.6-Plus-OR",
+    "openai-proxy/Qwen-3.6-Plus"
   ],
   "packages": [
     "npm:pi-upgrade"
