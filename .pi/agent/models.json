@@ -30,14 +30,6 @@
           "input": ["text"]
         },
         {
-          "id": "Gravity-Opus-4.6",
-          "name": "Gravity Opus 4.6 (BYOK)",
-          "contextWindow": 200000,
-          "maxTokens": 64000,
-          "reasoning": true,
-          "input": ["text"]
-        },
-        {
           "id": "Sonnet-4.6",
           "name": "Sonnet 4.6 (BYOK)",
           "contextWindow": 200000,
@@ -139,6 +131,17 @@
           "name": "Qwen 3.6 Plus (BYOK)",
           "contextWindow": 1000000,
           "maxTokens": 64000,
+          "reasoning": true,
+          "input": ["text"],
+          "compat": {
+            "supportsReasoningEffort": true
+          }
+        },
+        {
+          "id": "GLM-5.1-Go",
+          "name": "GLM 5.1 Go (BYOK)",
+          "contextWindow": 200000,
+          "maxTokens": 131072,
           "reasoning": true,
           "input": ["text"],
           "compat": {
