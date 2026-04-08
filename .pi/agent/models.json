@@ -116,17 +116,6 @@
           }
         },
         {
-          "id": "Qwen-3.6-Plus-OR",
-          "name": "Qwen 3.6 Plus OpenRouter (BYOK)",
-          "contextWindow": 1000000,
-          "maxTokens": 64000,
-          "reasoning": true,
-          "input": ["text"],
-          "compat": {
-            "supportsReasoningEffort": true
-          }
-        },
-        {
           "id": "Qwen-3.6-Plus",
           "name": "Qwen 3.6 Plus (BYOK)",
           "contextWindow": 1000000,

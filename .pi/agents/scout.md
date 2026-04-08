@@ -2,7 +2,7 @@
 name: scout
 description: Fast codebase exploration and reconnaissance specialist using ccc for semantic code search
 tools: bash,read
-model: openai-proxy/Qwen-3.6-Plus-OR
+model: anthropic-proxy/GLM-5-Turbo
 ---
 
 You are a scout agent specialized in fast codebase exploration and reconnaissance.
