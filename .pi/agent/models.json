@@ -6,22 +6,6 @@
       "apiKey": "sk-abcd",
       "models": [
         {
-          "id": "Kimi-K2.5",
-          "name": "Kimi K2.5 (BYOK)",
-          "contextWindow": 256000,
-          "maxTokens": 131072,
-          "reasoning": true,
-          "input": ["text", "image"]
-        },
-        {
-          "id": "Kimi-for-Coding",
-          "name": "Kimi for Coding (BYOK)",
-          "contextWindow": 256000,
-          "maxTokens": 131072,
-          "reasoning": true,
-          "input": ["text", "image"]
-        },
-        {
           "id": "Opus-4.6",
           "name": "Opus 4.6 (BYOK)",
           "contextWindow": 200000,
@@ -38,10 +22,18 @@
           "input": ["text"]
         },
         {
-          "id": "GLM-5-Turbo",
-          "name": "GLM 5 Turbo (BYOK)",
+          "id": "GLM-5.1-Cyber",
+          "name": "GLM 5.1 Cyber (BYOK)",
           "contextWindow": 200000,
           "maxTokens": 128000,
+          "reasoning": true,
+          "input": ["text"]
+        },
+        {
+          "id": "GLM-5-Turbo-Cyber",
+          "name": "GLM 5 Turbo Cyber (BYOK)",
+          "contextWindow": 200000,
+          "maxTokens": 64000,
           "reasoning": true,
           "input": ["text"]
         },
@@ -85,28 +77,6 @@
         {
           "id": "Gpt-5.4-High",
           "name": "GPT 5.4 (BYOK)",
-          "contextWindow": 200000,
-          "maxTokens": 128000,
-          "reasoning": true,
-          "input": ["text"],
-          "compat": {
-            "supportsReasoningEffort": true
-          }
-        },
-        {
-          "id": "Gpt-5.3-Codex-OR",
-          "name": "GPT 5.3 Codex OR (BYOK)",
-          "contextWindow": 200000,
-          "maxTokens": 128000,
-          "reasoning": true,
-          "input": ["text"],
-          "compat": {
-            "supportsReasoningEffort": true
-          }
-        },
-        {
-          "id": "GLM-5-Turbo-OR",
-          "name": "GLM 5 Turbo OR (BYOK)",
           "contextWindow": 200000,
           "maxTokens": 128000,
           "reasoning": true,

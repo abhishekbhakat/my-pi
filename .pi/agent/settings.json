@@ -1,8 +1,8 @@
 {
-  "lastChangelogVersion": "0.65.2",
+  "lastChangelogVersion": "0.66.0",
   "theme": "tokyo-night",
   "defaultProvider": "anthropic-proxy",
-  "defaultModel": "GLM-5.1",
+  "defaultModel": "GLM-5.1-Cyber",
   "quietStartup": true,
   "hideThinkingBlock": false,
   "defaultThinkingLevel": "high",
@@ -15,7 +15,9 @@
     "openai-proxy/Gpt-5.4-High",
     "openai-proxy/Qwen-3.6-Plus",
     "anthropic-proxy/GLM-5.1",
-    "openai-proxy/GLM-5.1-Go"
+    "openai-proxy/GLM-5.1-Go",
+    "anthropic-proxy/GLM-5-Turbo-Cyber",
+    "anthropic-proxy/GLM-5.1-Cyber"
   ],
   "packages": [
     "npm:pi-upgrade"

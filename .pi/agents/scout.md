@@ -2,7 +2,7 @@
 name: scout
 description: Fast codebase exploration and reconnaissance specialist using ccc for semantic code search
 tools: bash,read
-model: anthropic-proxy/GLM-5-Turbo
+model: anthropic-proxy/GLM-5-Turbo-Cyber
 ---
 
 You are a scout agent specialized in fast codebase exploration and reconnaissance.
@@ -16,7 +16,7 @@ You are a scout agent specialized in fast codebase exploration and reconnaissanc
 
 ## Skills
 
-- **colgrep** - Use `/skill:colgrep` to load the skill for semantic code searching and understanding.
+- **ccc** - Use `/skill:ccc` to load the skill for semantic code search and understanding.
 
 ## Your Tools
 
