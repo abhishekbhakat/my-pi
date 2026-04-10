@@ -7,11 +7,8 @@
   "hideThinkingBlock": false,
   "defaultThinkingLevel": "high",
   "enabledModels": [
-    "anthropic-proxy/Kimi-for-Coding",
     "anthropic-proxy/Sonnet-4.6",
     "anthropic-proxy/Opus-4.6",
-    "anthropic-proxy/GLM-5-Turbo",
-    "anthropic-proxy/Kimi-K2.5",
     "openai-proxy/Gpt-5.4-High",
     "openai-proxy/Qwen-3.6-Plus",
     "anthropic-proxy/GLM-5.1",
