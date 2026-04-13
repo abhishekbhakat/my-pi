@@ -86,6 +86,28 @@
           }
         },
         {
+          "id": "Gpt-5.4-XHigh",
+          "name": "GPT 5.4 XHigh (BYOK)",
+          "contextWindow": 200000,
+          "maxTokens": 128000,
+          "reasoning": true,
+          "input": ["text"],
+          "compat": {
+            "supportsReasoningEffort": true
+          }
+        },
+        {
+          "id": "Gpt-5.4-Mini-Xhigh",
+          "name": "GPT 5.4 Mini XHigh (BYOK)",
+          "contextWindow": 200000,
+          "maxTokens": 128000,
+          "reasoning": true,
+          "input": ["text"],
+          "compat": {
+            "supportsReasoningEffort": true
+          }
+        },
+        {
           "id": "Qwen-3.6-Plus",
           "name": "Qwen 3.6 Plus (BYOK)",
           "contextWindow": 1000000,
@@ -99,6 +121,17 @@
         {
           "id": "GLM-5.1-Go",
           "name": "GLM 5.1 Go (BYOK)",
+          "contextWindow": 200000,
+          "maxTokens": 131072,
+          "reasoning": true,
+          "input": ["text"],
+          "compat": {
+            "supportsReasoningEffort": true
+          }
+        },
+        {
+          "id": "GLM-5.1-Fireworks",
+          "name": "GLM 5.1 Fireworks (BYOK)",
           "contextWindow": 200000,
           "maxTokens": 131072,
           "reasoning": true,

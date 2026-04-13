@@ -1,7 +1,7 @@
 /**
  * Prereqs Extension - Lean version
  *
- * Auto-executes BASH commands, lets agent mark SKILL/AGENT/manual as done.
+ * Auto-executes BASH commands, lets agent mark SKILL/manual as done.
  */
 
 import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
@@ -12,7 +12,8 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 
-type PrereqType = "bash" | "skill" | "agent" | "text" | "manual";
+type PrereqType = "bash" | "tool" | "skill" | "text" | "manual";
+type PrereqAction = "list" | "check" | "uncheck";
 
 interface PrereqItem {
     id: number;
@@ -35,11 +36,68 @@ function parseItem(text: string, id: number, checked: boolean): PrereqItem {
 
     switch (typeStr.toUpperCase()) {
         case "BASH": return { id, text: displayText, type: "bash", target, done: checked };
+        case "TOOL": return { id, text: displayText, type: "tool", target, done: checked };
         case "SKILL": return { id, text: displayText, type: "skill", target, done: checked };
-        case "AGENT": return { id, text: displayText, type: "agent", target, done: checked };
         case "TEXT": return { id, text: displayText, type: "text", target, done: checked };
         default: return { id, text, type: "manual", target: "", done: checked };
     }
+}
+
+function parseId(value: unknown): number | undefined {
+    if (typeof value === "number" && Number.isInteger(value) && value > 0) return value;
+    if (typeof value !== "string") return undefined;
+    const match = value.trim().match(/^\d+$/);
+    return match ? Number.parseInt(match[0], 10) : undefined;
+}
+
+function parseAction(value: unknown): PrereqAction | undefined {
+    if (typeof value !== "string") return undefined;
+    const normalized = value.trim().toLowerCase();
+    return normalized === "list" || normalized === "check" || normalized === "uncheck"
+        ? normalized
+        : undefined;
+}
+
+function parseCommandText(value: string): { action?: PrereqAction; id?: number } | null {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+
+    const withoutPrefix = trimmed.replace(/^prereqs\s+/i, "");
+    const actionMatch = withoutPrefix.match(/^(list|check|uncheck)\b/i);
+    if (!actionMatch) return null;
+
+    const action = actionMatch[1].toLowerCase() as PrereqAction;
+    const idMatch = withoutPrefix.match(/\bid\s*[:=]\s*(\d+)\b/i) ?? withoutPrefix.match(/\b(\d+)\b/);
+    const id = idMatch ? Number.parseInt(idMatch[1], 10) : undefined;
+    return { action, id };
+}
+
+function normalizePrereqsArgs(args: unknown): Record<string, unknown> {
+    if (!args || typeof args !== "object") {
+        return typeof args === "string" ? (parseCommandText(args) ?? {}) : {};
+    }
+
+    const record = args as Record<string, unknown>;
+    const normalizedAction = parseAction(record.action);
+    const normalizedId = parseId(record.id);
+    if (normalizedAction) {
+        return normalizedId !== undefined ? { action: normalizedAction, id: normalizedId } : { action: normalizedAction };
+    }
+
+    for (const key of ["command", "text", "input", "value", "query", ""]) {
+        if (typeof record[key] !== "string") continue;
+        const parsed = parseCommandText(record[key]);
+        if (parsed) return parsed;
+    }
+
+    const entries = Object.entries(record);
+    if (entries.length === 1) {
+        const [key, value] = entries[0];
+        const parsed = parseCommandText(typeof value === "string" && value.trim() ? `${key} ${value}` : key);
+        if (parsed) return parsed;
+    }
+
+    return record;
 }
 
 function parseMarkdown(content: string): PrereqItem[] {
@@ -53,6 +111,10 @@ function parseMarkdown(content: string): PrereqItem[] {
 }
 
 let allDoneNotified = false;
+
+function markDoneInstruction(id: number): string {
+    return `Then call the \`prereqs\` tool with \`action: "check"\` and \`id: ${id}\``;
+}
 
 function buildContext(items: PrereqItem[]): string {
     const pending = items.filter(i => !i.done);
@@ -75,15 +137,15 @@ function buildContext(items: PrereqItem[]): string {
         for (const i of pending) {
             if (i.type === "skill") {
                 lines.push(`- **SKILL**: Load with \`/skill:${i.target}\``);
-                lines.push(`  Then mark done: \`prereqs check id:${i.id}\``);
-            } else if (i.type === "agent") {
-                lines.push(`- **AGENT**: Run \`agents_discover\` tool`);
-                lines.push(`  Then mark done: \`prereqs check id:${i.id}\``);
+                lines.push(`  ${markDoneInstruction(i.id)}`);
+            } else if (i.type === "tool") {
+                lines.push(`- **TOOL**: Call \`${i.target}\``);
+                lines.push(`  ${markDoneInstruction(i.id)}`);
             } else if (i.type === "bash") {
                 lines.push(`- **BASH**: \`${i.target}\``);
             } else {
                 lines.push(`- ${i.text}`);
-                lines.push(`  Mark done: \`prereqs check id:${i.id}\``);
+                lines.push(`  ${markDoneInstruction(i.id)}`);
             }
             lines.push("");
         }
@@ -146,11 +208,6 @@ export default function (pi: ExtensionAPI) {
         );
     };
 
-    const checkAgent = (ctx: ExtensionContext) => {
-        const entries = ctx.sessionManager.getBranch();
-        return entries.some(e => e.type === "message" && e.message.role === "toolResult" && e.message.toolName === "agents_discover");
-    };
-
     const runAll = async (ctx: ExtensionContext) => {
         for (const item of items.filter(i => !i.done)) {
             if (item.type === "bash") await execBash(item, ctx);
@@ -187,9 +244,6 @@ export default function (pi: ExtensionAPI) {
         for (const item of items.filter(i => !i.done && i.type === "skill")) {
             if (checkSkill(item, ctx)) { item.done = true; item.result = `Skill loaded`; }
         }
-        for (const item of items.filter(i => !i.done && i.type === "agent")) {
-            if (checkAgent(ctx)) { item.done = true; item.result = `Agents discovered`; }
-        }
     });
 
     pi.registerCommand("prereqs", {
@@ -214,11 +268,24 @@ export default function (pi: ExtensionAPI) {
     pi.registerTool({
         name: "prereqs",
         label: "Prereqs",
-        description: "list | check id:1 | uncheck id:2 - Example: prereqs check id:1",
+        description: "Inspect or update the prerequisite checklist for the current session.",
+        promptSnippet: "Inspect or update prerequisite checklist state",
+        promptGuidelines: [
+            "Use this when you need to inspect prerequisite items or mark one as complete",
+            "Call this tool with structured arguments like action=check and id=4",
+            "Do not pass shell-style text like `prereqs check id:4` as a single string",
+        ],
         parameters: Type.Object({
-            action: StringEnum(["list", "check", "uncheck"] as const),
-            id: Type.Optional(Type.Number()),
+            action: StringEnum(["list", "check", "uncheck"] as const, {
+                description: "What to do: list items, mark one done, or mark one pending again",
+            }),
+            id: Type.Optional(Type.Number({
+                description: "Checklist item id. Required for check and uncheck.",
+            })),
         }),
+        prepareArguments(args) {
+            return normalizePrereqsArgs(args);
+        },
 
         async execute(_id, params, _s, _u, ctx) {
             if (!loaded) return { content: [{ type: "text", text: "No prereqs file" }] };

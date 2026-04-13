@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# install.sh - Sync .pi config from repo to ~/.pi
-# Mirrors repo structure onto target, but does NOT delete extra files
-# in target (e.g. node_modules, sessions, auth.json, bin, etc.)
+# install.sh - Copy .pi config from repo to ~/.pi
+# Replaces each target subtree before copying, so stale files do not linger.
 # Works on macOS and Linux.
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -15,7 +14,7 @@ if [ ! -d "$SOURCE" ]; then
     exit 1
 fi
 
-echo "Syncing .pi/agent -> $TARGET"
+echo "Copying .pi/agent -> $TARGET"
 echo ""
 
 # Files to never overwrite (user-specific config that may differ from repo)
@@ -38,10 +37,10 @@ COPIED=0
 SKIPPED=0
 
 # -------------------------------------------------------
-# sync_dir - rsync a subtree, preserving extras in target
+# copy_dir - replace a subtree, then copy source contents into it
 # Args: $1=source $2=target $3=label
 # -------------------------------------------------------
-sync_dir() {
+copy_dir() {
     local src="$1"
     local dst="$2"
     local label="$3"
@@ -52,34 +51,19 @@ sync_dir() {
 
     echo "[$label]"
 
-    if ! command -v rsync &>/dev/null; then
-        echo "  WARNING: rsync not found, falling back to cp"
-        mkdir -p "$dst"
-        cp -R "$src"/. "$dst"/
-        echo "  Files synced."
-        ((COPIED++))
-        return
-    fi
-
-    local output
-    output=$(rsync -a --exclude "package-lock.json" "$src/" "$dst/" --out-format="%n" --itemize-changes 2>&1) || true
-
-    if [ -z "$output" ]; then
-        echo "  Already up to date."
-        ((SKIPPED++))
-    else
-        local count
-        count=$(echo "$output" | grep -c "^" || true)
-        echo "  Files synced (${count} items)."
-        ((COPIED++))
-    fi
+    rm -rf "$dst"
+    mkdir -p "$dst"
+    cp -R "$src"/. "$dst"/
+    find "$dst" -name "package-lock.json" -type f -exec rm -f {} +
+    echo "  Files copied."
+    ((COPIED++))
     echo ""
 }
 
 # -------------------------------------------------------
-# sync_root_files - copy individual root-level config files
+# copy_root_files - copy individual root-level config files
 # -------------------------------------------------------
-sync_root_files() {
+copy_root_files() {
     echo "[root files]"
     for file in "${PROTECTED_FILES[@]}"; do
         if [ -f "${SOURCE}/${file}" ]; then
@@ -104,23 +88,22 @@ sync_root_files() {
     echo ""
 }
 
-# --- Sync extensions, skills, themes, and root-level files ---
+# --- Copy extensions, skills, themes, and root-level files ---
 
-sync_dir "${SOURCE}/extensions" "${TARGET}/extensions" "extensions"
-sync_dir "${SOURCE}/skills" "${TARGET}/skills" "skills"
-sync_dir "${SOURCE}/themes" "${TARGET}/themes" "themes"
-sync_root_files
+copy_dir "${SOURCE}/extensions" "${TARGET}/extensions" "extensions"
+copy_dir "${SOURCE}/skills" "${TARGET}/skills" "skills"
+copy_dir "${SOURCE}/themes" "${TARGET}/themes" "themes"
+copy_root_files
 
-# --- Sync agents directory (sibling of agent/) ---
+# --- Copy agents directory (sibling of agent/) ---
 AGENTS_SRC="${SCRIPT_DIR}/.pi/agents"
 AGENTS_DST="${HOME}/.pi/agents"
 if [ -d "$AGENTS_SRC" ]; then
     echo "[agents]"
+    rm -rf "$AGENTS_DST"
     mkdir -p "$AGENTS_DST"
-    if command -v rsync &>/dev/null; then
-        rsync -a --include="*.md" --exclude="*" "$AGENTS_SRC/" "$AGENTS_DST/"
-    else
-        cp "${AGENTS_SRC}"/*.md "$AGENTS_DST/" 2>/dev/null || true
+    if compgen -G "$AGENTS_SRC/*.md" > /dev/null; then
+        cp "$AGENTS_SRC"/*.md "$AGENTS_DST/"
     fi
     echo "  Done."
     echo ""
@@ -128,7 +111,7 @@ fi
 
 echo ""
 echo "============================="
-echo " Sync complete."
+echo " Copy complete."
 echo " Copied: ${COPIED}"
 echo " Skipped: ${SKIPPED}"
 echo "============================="
