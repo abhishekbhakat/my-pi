@@ -62,6 +62,7 @@ When working on Pi topics, read the relevant docs and examples before implementi
 ## Python Execution Rules
 
 Never use `python3`, `python`, `pip`, `poetry`, or `conda` directly. Always use `uv`.
+This means system Python is blocked for all purposes, including one-liners and module invocations like `python3 -m json.tool`.
 
 | Instead of              | Use                       |
 |-------------------------|---------------------------|

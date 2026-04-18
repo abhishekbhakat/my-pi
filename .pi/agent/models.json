@@ -6,6 +6,14 @@
       "apiKey": "sk-abcd",
       "models": [
         {
+          "id": "Kimi-for-Coding",
+          "name": "Kimi for Coding (BYOK)",
+          "contextWindow": 256000,
+          "maxTokens": 32000,
+          "reasoning": true,
+          "input": ["text"]
+        },
+        {
           "id": "Opus-4.6",
           "name": "Opus 4.6 (BYOK)",
           "contextWindow": 200000,
@@ -56,7 +64,7 @@
           "id": "Kimi-K2.5-BS10",
           "name": "Kimi Baseten (BYOK)",
           "contextWindow": 256000,
-          "maxTokens": 131072,
+          "maxTokens": 32000,
           "reasoning": true,
           "input": ["text", "image"],
           "compat": {
