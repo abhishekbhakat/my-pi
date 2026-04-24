@@ -3,7 +3,7 @@ name: reasoning-coach
 tool: reasoning_coach
 label: Reasoning Coach
 description: Ask a stronger reasoning model for next steps, missing questions, and key risks.
-model: openai-proxy/Gpt-5.4-XHigh
+model: openai-proxy/Gpt-5.5-XHigh
 promptSnippet: Get a concise plan, validation questions, and main risks from a stronger reasoning model
 promptGuidelines: Use this before hard multi-step work or when you are stuck|Prefer this when you need strategic advice instead of more execution
 includeConversation: true

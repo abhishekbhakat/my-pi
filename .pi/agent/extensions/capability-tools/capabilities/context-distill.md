@@ -3,7 +3,7 @@ name: context-distill
 tool: context_distill
 label: Context Distill
 description: Compress the active thread into a short working brief with decisions, files, and open loops.
-model: openai-proxy/Qwen-3.6-Plus
+model: openai-proxy/Gpt-5.5-High
 promptSnippet: Distill a long thread into a compact working brief for the primary agent
 promptGuidelines: Use this when the session is long or messy|Prefer durable working context over narrative recap
 includeConversation: true
