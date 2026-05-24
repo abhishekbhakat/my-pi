@@ -16,7 +16,7 @@ export function getPiPackageRoot(): string {
 
 	// Strategy 1: require.resolve inside pi's process context
 	try {
-		const pkgJsonPath = require.resolve("@mariozechner/pi-coding-agent/package.json");
+		const pkgJsonPath = require.resolve("@earendil-works/pi-coding-agent/package.json");
 		const root = dirname(pkgJsonPath);
 		cachedRoot = root;
 		return root;
@@ -35,7 +35,7 @@ export function getPiPackageRoot(): string {
 		if (existsSync(pkg)) {
 			try {
 				const content = JSON.parse(readFileSync(pkg, "utf8"));
-				if (content.name === "@mariozechner/pi-coding-agent") {
+				if (content.name === "@earendil-works/pi-coding-agent") {
 					cachedRoot = dir;
 					return dir;
 				}
@@ -51,7 +51,7 @@ export function getPiPackageRoot(): string {
 		const { execSync } = require("node:child_process");
 		const which = execSync("which pi", { encoding: "utf8" }).trim();
 		const realBin = realpathSync(which);
-		// pi -> ../lib/node_modules/@mariozechner/pi-coding-agent/dist/cli.js
+		// pi -> ../lib/node_modules/@earendil-works/pi-coding-agent/dist/cli.js
 		// package root = dirname(dirname(realpath))
 		const root = dirname(dirname(realBin));
 		cachedRoot = root;
@@ -60,7 +60,7 @@ export function getPiPackageRoot(): string {
 		// Last resort: known homebrew path
 	}
 
-	const fallback = "/opt/homebrew/lib/node_modules/@mariozechner/pi-coding-agent";
+	const fallback = "/opt/homebrew/lib/node_modules/@earendil-works/pi-coding-agent";
 	cachedRoot = fallback;
 	return fallback;
 }

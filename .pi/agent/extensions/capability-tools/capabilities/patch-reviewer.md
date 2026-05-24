@@ -11,6 +11,7 @@ includeTree: false
 includeGitStatus: true
 includeGitDiff: true
 includeChangedFiles: true
+includeTimeline: false
 maxGitDiffChars: 12000
 maxFiles: 6
 maxFileChars: 3500

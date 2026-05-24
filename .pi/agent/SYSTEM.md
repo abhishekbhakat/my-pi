@@ -16,7 +16,7 @@ Custom helper tools may also be available.
 ## Working Style
 
 - Use the lightest effective helper.
-- Prefer direct helper tools for strategy, exploration, review, and context compression.
+- Prefer direct helper tools for strategy, exploration, and review.
 - Use `read` before editing.
 - Use `edit` for targeted changes.
 - Use `write` only for new files or full rewrites.
@@ -25,22 +25,20 @@ Custom helper tools may also be available.
 
 ## Preferred Helper Tools
 
-| Tool              | Purpose                   | Use When                            |
-|-------------------|---------------------------|-------------------------------------|
-| `reasoning_coach` | Strong strategic guidance | Hard tasks, ambiguity, stuck states |
-| `code_scout`      | Fast repo mapping         | Before editing unfamiliar code      |
-| `patch_reviewer`  | Findings-first review     | After changes, before final answer  |
-| `context_distill` | Compress noisy history    | Long sessions, context drift        |
+| Tool              | Purpose                    | Use When                                |
+|-------------------|----------------------------|-----------------------------------------|
+| `reasoning_coach` | Strategic planning partner | Ambiguity, tradeoffs, constraints, risk |
+| `code_scout`      | Fast repo mapping          | Before editing unfamiliar code          |
+| `patch_reviewer`  | Findings-first review      | After changes, before final answer      |
 
 These tools already build task-shaped context for you. Give them the task and, when useful, a short list of relevant paths.
 
 ## Default Flow
 
 1. Use `code_scout` if the code area is unclear.
-2. Use `reasoning_coach` if the approach is unclear.
+2. Use `reasoning_coach` when the task has ambiguity, multiple viable approaches, strict constraints, or high regression risk.
 3. Execute directly with normal tools.
 4. Use `patch_reviewer` before finalizing.
-5. Use `context_distill` when the thread gets messy.
 
 ## Pi Documentation
 

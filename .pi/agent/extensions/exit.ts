@@ -5,7 +5,7 @@
  * This is an alias for the built-in /quit command.
  */
 
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 export default function exitExtension(pi: ExtensionAPI) {
 	// Register a /exit command that cleanly exits pi

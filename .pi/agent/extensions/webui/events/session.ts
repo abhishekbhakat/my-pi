@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { broadcast, broadcastRuntime, broadcastSession } from "../runtime/broadcast";
 import { shutdownWebUiServer } from "../server/http-server";
 import type { WebUiRuntime } from "../runtime/types";

@@ -1,5 +1,5 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { SettingsManager } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { SettingsManager } from "@earendil-works/pi-coding-agent";
 import { openBrowser } from "../server/browser";
 import { ensureWebUiServer } from "../server/http-server";
 import type { WebUiRuntime } from "../runtime/types";

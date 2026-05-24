@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 export async function openBrowser(pi: ExtensionAPI, url: string): Promise<void> {
 	if (process.platform === "darwin") {

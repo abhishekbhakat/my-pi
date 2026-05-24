@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { registerWebUiCommand } from "./commands/webui";
 import { registerSessionEvents } from "./events/session";
 import { createWebUiRuntime } from "./runtime/state";

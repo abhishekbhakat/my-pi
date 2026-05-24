@@ -13,9 +13,12 @@ export interface CapabilityDef {
 	includeGitStatus: boolean;
 	includeGitDiff: boolean;
 	includeChangedFiles: boolean;
+	includeTimeline: boolean;
+	timelineModel: string;
 	maxConversationChars: number;
 	maxTreeChars: number;
 	maxGitDiffChars: number;
+	maxTimelineChars: number;
 	maxFiles: number;
 	maxFileChars: number;
 	reasoningEffort?: string;
@@ -27,6 +30,7 @@ export interface CapabilityToolInput {
 	includeConversation?: boolean;
 	includeTree?: boolean;
 	includeDiff?: boolean;
+	includeTimeline?: boolean;
 }
 
 export interface CapabilityContextSection {
