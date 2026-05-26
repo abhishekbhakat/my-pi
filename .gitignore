@@ -11,3 +11,7 @@
 # CocoIndex Code (ccc)
 .pi/.cocoindex_code/
 .cocoindex_code/
+
+# OS
+.DS_Store
+Thumbs.db
