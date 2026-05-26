@@ -1,6 +1,6 @@
-import { complete } from "@mariozechner/pi-ai";
-import type { AgentToolUpdateCallback } from "@mariozechner/pi-coding-agent";
-import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
+import { complete } from "@earendil-works/pi-ai";
+import type { AgentToolUpdateCallback } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { buildCapabilityContext, buildCapabilityPrompt } from "./context";
 import type { CapabilityDef, CapabilityToolInput } from "./types";
 

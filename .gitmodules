@@ -1,3 +1,6 @@
 [submodule ".pi/agent/skills/frontend-slides"]
 	path = .pi/agent/skills/frontend-slides
 	url = git@github.com:zarazhangrui/frontend-slides.git
+[submodule ".pi/agent/skills/stop-slop"]
+	path = .pi/agent/skills/stop-slop
+	url = https://github.com/hardikpandya/stop-slop.git

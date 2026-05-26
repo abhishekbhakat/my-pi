@@ -5,7 +5,7 @@
  * by creating a new session (similar to /new).
  */
 
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 export default function clearExtension(pi: ExtensionAPI) {
 	// Register a /clear command that clears conversation history

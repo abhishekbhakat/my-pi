@@ -1,6 +1,7 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import { convertToLlm, serializeConversation, type ExtensionAPI, type ExtensionContext } from "@mariozechner/pi-coding-agent";
+import { convertToLlm, serializeConversation, type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { collectActionTimeline } from "./timeline";
 import type { CapabilityContextBundle, CapabilityDef, CapabilityToolInput } from "./types";
 
 function truncateHead(text: string, maxChars: number): string {
@@ -44,7 +45,7 @@ async function runCommand(
 	return [result.stdout.trim(), result.stderr.trim()].filter(Boolean).join("\n").trim();
 }
 
-async function collectConversation(ctx: ExtensionContext, maxChars: number): Promise<string> {
+async function collectSerializedConversation(ctx: ExtensionContext, maxChars: number): Promise<string> {
 	const messages = ctx.sessionManager.getBranch()
 		.flatMap((entry) => entry.type === "message" ? [entry.message] : []);
 
@@ -209,8 +210,18 @@ export async function buildCapabilityContext(
 		},
 	];
 
-	if ((input.includeConversation ?? def.includeConversation) === true) {
-		const conversation = await collectConversation(ctx, def.maxConversationChars);
+	const wantsTimeline = (input.includeTimeline ?? def.includeTimeline) === true;
+	const wantsConversation = (input.includeConversation ?? def.includeConversation) === true;
+	const conversation = wantsTimeline || wantsConversation
+		? await collectSerializedConversation(ctx, def.maxConversationChars)
+		: "";
+
+	if (wantsTimeline) {
+		const timeline = await collectActionTimeline(ctx, def, input.task, conversation, signal);
+		if (timeline) sections.push({ title: "Action Timeline", content: timeline });
+	}
+
+	if (wantsConversation) {
 		if (conversation) sections.push({ title: "Recent Conversation", content: conversation });
 	}
 

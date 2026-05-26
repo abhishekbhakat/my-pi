@@ -1,4 +1,4 @@
-import type { ExtensionCommandContext, ExtensionContext } from "@mariozechner/pi-coding-agent";
+import type { ExtensionCommandContext, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import type { ServerResponse } from "node:http";
 import type { Server as HttpServer } from "node:http";
 

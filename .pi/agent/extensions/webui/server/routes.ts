@@ -1,4 +1,4 @@
-import type { ExtensionAPI, ExtensionCommandContext, ExtensionContext } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI, ExtensionCommandContext, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { buildSessionData } from "../core/session-data";
 import { renderWebUiPage } from "../core/page";

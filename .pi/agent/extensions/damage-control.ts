@@ -1,5 +1,5 @@
-import type { ExtensionAPI, ToolCallEvent } from "@mariozechner/pi-coding-agent";
-import { isToolCallEventType } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI, ToolCallEvent } from "@earendil-works/pi-coding-agent";
+import { isToolCallEventType } from "@earendil-works/pi-coding-agent";
 import { parse as yamlParse } from "yaml";
 import * as shlex from "shlex";
 import * as fs from "fs";

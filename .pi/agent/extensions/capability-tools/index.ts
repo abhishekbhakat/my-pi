@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { loadCapabilityDefs } from "./definitions";
 import { executeCapability } from "./runner";
@@ -10,6 +10,7 @@ const CAPABILITY_INPUT_SCHEMA = Type.Object({
 	includeConversation: Type.Optional(Type.Boolean({ description: "Override the capability default for recent conversation context" })),
 	includeTree: Type.Optional(Type.Boolean({ description: "Override the capability default for workspace tree context" })),
 	includeDiff: Type.Optional(Type.Boolean({ description: "Override the capability default for git diff context" })),
+	includeTimeline: Type.Optional(Type.Boolean({ description: "Override the capability default for action timeline context" })),
 });
 
 function registerCapabilityTool(pi: ExtensionAPI, def: CapabilityDef): void {

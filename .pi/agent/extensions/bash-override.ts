@@ -1,6 +1,6 @@
-import type { ExtensionAPI, BashToolDetails } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI, BashToolDetails } from "@earendil-works/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
-import { createBashTool } from "@mariozechner/pi-coding-agent";
+import { createBashTool } from "@earendil-works/pi-coding-agent";
 
 export default function (pi: ExtensionAPI) {
   const cwd = process.cwd();
