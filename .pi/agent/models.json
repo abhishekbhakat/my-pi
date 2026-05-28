@@ -14,8 +14,8 @@
           "input": ["text"]
         },
         {
-          "id": "Opus-4.6",
-          "name": "Opus 4.6 (BYOK)",
+          "id": "Opus-4.7",
+          "name": "Opus 4.7 (BYOK)",
           "contextWindow": 200000,
           "maxTokens": 128000,
           "reasoning": true,
