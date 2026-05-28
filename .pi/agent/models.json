@@ -60,22 +60,22 @@
           "maxTokens": 64000,
           "reasoning": true,
           "input": ["text"]
+        },
+        {
+          "id": "Qwen-3.7-Max",
+          "name": "Qwen 3.7 Max (BYOK)",
+          "contextWindow": 1000000,
+          "maxTokens": 64000,
+          "reasoning": true,
+          "input": ["text"]
         }
       ]
     },
     "openai-proxy": {
       "baseUrl": "http://localhost:8383/v1",
-      "api": "openai-completions",
+      "api": "openai-responses",
       "apiKey": "sk-abcd",
       "models": [
-        {
-          "id": "Kimi-K2.5-BS10",
-          "name": "Kimi Baseten (BYOK)",
-          "contextWindow": 256000,
-          "maxTokens": 32000,
-          "reasoning": true,
-          "input": ["text", "image"]
-        },
         {
           "id": "PGpt-5.5-High",
           "name": "PGpt 5.5 High (BYOK)",
@@ -123,14 +123,21 @@
           "maxTokens": 128000,
           "reasoning": true,
           "input": ["text"]
-        },
+        }
+      ]
+    },
+    "chat-completion-proxy": {
+      "baseUrl": "http://localhost:8383/v1",
+      "api": "openai-completions",
+      "apiKey": "sk-abcd",
+      "models": [
         {
-          "id": "Qwen-3.7-Max",
-          "name": "Qwen 3.7 Max (BYOK)",
-          "contextWindow": 1000000,
-          "maxTokens": 64000,
+          "id": "Kimi-K2.5-BS10",
+          "name": "Kimi Baseten (BYOK)",
+          "contextWindow": 256000,
+          "maxTokens": 32000,
           "reasoning": true,
-          "input": ["text"]
+          "input": ["text", "image"]
         },
         {
           "id": "GLM-5.1-Go",

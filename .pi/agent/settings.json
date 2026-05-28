@@ -15,6 +15,7 @@
     "openai-proxy/PGpt-5.4-Mini-Xhigh",
     "anthropic-proxy/Qwen-3.7-Max-Go",
     "anthropic-proxy/GLM-5.1",
-    "anthropic-proxy/Kimi-for-Coding"
+    "anthropic-proxy/Kimi-for-Coding",
+    "anthropic-proxy/Qwen-3.7-Max"
   ]
 }
