@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.76.0",
+  "lastChangelogVersion": "0.77.0",
   "theme": "tokyo-night",
   "defaultProvider": "anthropic-proxy",
   "defaultModel": "Kimi-for-Coding",
@@ -8,7 +8,7 @@
   "defaultThinkingLevel": "high",
   "enabledModels": [
     "anthropic-proxy/Sonnet-4.6",
-    "anthropic-proxy/Opus-4.7",
+    "anthropic-proxy/Opus-4.8",
     "openai-proxy/PGpt-5.5-High",
     "openai-proxy/PGpt-5.5-XHigh",
     "openai-proxy/Gpt-5.5-XHigh",
@@ -16,6 +16,7 @@
     "anthropic-proxy/Qwen-3.7-Max-Go",
     "anthropic-proxy/GLM-5.1",
     "anthropic-proxy/Kimi-for-Coding",
-    "anthropic-proxy/Qwen-3.7-Max"
+    "anthropic-proxy/Qwen-3.7-Max",
+    "chat-completion-proxy/Qwen-3.7-Max-CC"
   ]
 }
