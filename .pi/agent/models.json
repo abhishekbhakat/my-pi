@@ -11,7 +11,9 @@
           "contextWindow": 256000,
           "maxTokens": 32000,
           "reasoning": true,
-          "input": ["text"]
+          "input": [
+            "text"
+          ]
         },
         {
           "id": "Opus-4.8",
@@ -19,7 +21,9 @@
           "contextWindow": 200000,
           "maxTokens": 128000,
           "reasoning": true,
-          "input": ["text"]
+          "input": [
+            "text"
+          ]
         },
         {
           "id": "Sonnet-4.6",
@@ -27,7 +31,9 @@
           "contextWindow": 200000,
           "maxTokens": 64000,
           "reasoning": true,
-          "input": ["text"]
+          "input": [
+            "text"
+          ]
         },
         {
           "id": "GLM-5.1-Cyber",
@@ -35,7 +41,9 @@
           "contextWindow": 200000,
           "maxTokens": 128000,
           "reasoning": true,
-          "input": ["text"]
+          "input": [
+            "text"
+          ]
         },
         {
           "id": "GLM-5-Turbo-Cyber",
@@ -43,7 +51,9 @@
           "contextWindow": 200000,
           "maxTokens": 64000,
           "reasoning": true,
-          "input": ["text"]
+          "input": [
+            "text"
+          ]
         },
         {
           "id": "GLM-5.1",
@@ -51,7 +61,9 @@
           "contextWindow": 200000,
           "maxTokens": 131072,
           "reasoning": true,
-          "input": ["text"]
+          "input": [
+            "text"
+          ]
         },
         {
           "id": "Qwen-3.7-Max-Go",
@@ -59,7 +71,9 @@
           "contextWindow": 1000000,
           "maxTokens": 64000,
           "reasoning": true,
-          "input": ["text"]
+          "input": [
+            "text"
+          ]
         },
         {
           "id": "Qwen-3.7-Max",
@@ -67,7 +81,37 @@
           "contextWindow": 1000000,
           "maxTokens": 64000,
           "reasoning": true,
-          "input": ["text"]
+          "input": [
+            "text"
+          ]
+        },
+        {
+          "id": "Claude-Fable-5",
+          "name": "Claude Fable 5 (BYOK)",
+          "contextWindow": 1000000,
+          "maxTokens": 128000,
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "compat": {
+            "forceAdaptiveThinking": true
+          }
+        },
+        {
+          "id": "Fable-5-CY",
+          "name": "Fable 5 CY (BYOK)",
+          "contextWindow": 1000000,
+          "maxTokens": 128000,
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "compat": {
+            "forceAdaptiveThinking": true
+          }
         }
       ]
     },
@@ -82,7 +126,9 @@
           "contextWindow": 258000,
           "maxTokens": 128000,
           "reasoning": true,
-          "input": ["text"]
+          "input": [
+            "text"
+          ]
         },
         {
           "id": "Gpt-5.5-High",
@@ -90,7 +136,9 @@
           "contextWindow": 258000,
           "maxTokens": 128000,
           "reasoning": true,
-          "input": ["text"]
+          "input": [
+            "text"
+          ]
         },
         {
           "id": "PGpt-5.5-XHigh",
@@ -98,7 +146,9 @@
           "contextWindow": 258000,
           "maxTokens": 128000,
           "reasoning": true,
-          "input": ["text"]
+          "input": [
+            "text"
+          ]
         },
         {
           "id": "Gpt-5.5-XHigh",
@@ -106,7 +156,9 @@
           "contextWindow": 258000,
           "maxTokens": 128000,
           "reasoning": true,
-          "input": ["text"]
+          "input": [
+            "text"
+          ]
         },
         {
           "id": "PGpt-5.4-Mini-Xhigh",
@@ -114,7 +166,9 @@
           "contextWindow": 200000,
           "maxTokens": 128000,
           "reasoning": true,
-          "input": ["text"]
+          "input": [
+            "text"
+          ]
         },
         {
           "id": "Gpt-5.4-Mini-Xhigh",
@@ -122,7 +176,9 @@
           "contextWindow": 200000,
           "maxTokens": 128000,
           "reasoning": true,
-          "input": ["text"]
+          "input": [
+            "text"
+          ]
         }
       ]
     },
@@ -137,7 +193,10 @@
           "contextWindow": 256000,
           "maxTokens": 32000,
           "reasoning": true,
-          "input": ["text", "image"]
+          "input": [
+            "text",
+            "image"
+          ]
         },
         {
           "id": "GLM-5.1-Go",
@@ -145,7 +204,9 @@
           "contextWindow": 200000,
           "maxTokens": 131072,
           "reasoning": true,
-          "input": ["text"]
+          "input": [
+            "text"
+          ]
         },
         {
           "id": "GLM-5.1-Fireworks",
@@ -153,7 +214,9 @@
           "contextWindow": 200000,
           "maxTokens": 131072,
           "reasoning": true,
-          "input": ["text"]
+          "input": [
+            "text"
+          ]
         },
         {
           "id": "Qwen-3.7-Max-CC",
@@ -161,7 +224,9 @@
           "contextWindow": 1000000,
           "maxTokens": 64000,
           "reasoning": true,
-          "input": ["text"]
+          "input": [
+            "text"
+          ]
         }
       ]
     }

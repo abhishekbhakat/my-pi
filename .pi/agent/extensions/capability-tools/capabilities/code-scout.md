@@ -3,7 +3,7 @@ name: code-scout
 tool: code_scout
 label: Code Scout
 description: Use a fast explorer model to map the relevant code, call flow, and likely edit points.
-model: anthropic-proxy/Kimi-for-Coding
+model: chat-completion-proxy/Qwen-3.7-Max-CC
 promptSnippet: Explore the codebase and return the relevant files, symbols, call flow, and edit points
 promptGuidelines: Use this before editing unfamiliar areas|Prefer this when you only need a repo map
 includeConversation: true
@@ -12,7 +12,7 @@ includeGitStatus: true
 includeGitDiff: false
 includeChangedFiles: true
 includeTimeline: true
-timelineModel: anthropic-proxy/Kimi-for-Coding
+timelineModel: chat-completion-proxy/Qwen-3.7-Max-CC
 maxConversationChars: 9000
 maxTreeChars: 7000
 maxTimelineChars: 2200
@@ -40,7 +40,9 @@ Return a compact scout report in this structure:
 - anything the primary agent still needs to verify
 
 Rules:
+- You have no tool access. Respond with text only.
+- Do not attempt to call tools, read files, or use XML tool syntax.
 - Do not write code.
 - Explain relationships, not just filenames.
 - Prefer concrete symbols, functions, and modules over vague summaries.
-- If context is weak, say what file should be read next.
+- If context is weak, say what file should be read next (but do not try to read it yourself).

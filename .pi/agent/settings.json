@@ -1,8 +1,8 @@
 {
-  "lastChangelogVersion": "0.77.0",
+  "lastChangelogVersion": "0.79.1",
   "theme": "tokyo-night",
   "defaultProvider": "anthropic-proxy",
-  "defaultModel": "Kimi-for-Coding",
+  "defaultModel": "Qwen-3.7-Max",
   "quietStartup": true,
   "hideThinkingBlock": false,
   "defaultThinkingLevel": "high",
@@ -17,6 +17,7 @@
     "anthropic-proxy/GLM-5.1",
     "anthropic-proxy/Kimi-for-Coding",
     "anthropic-proxy/Qwen-3.7-Max",
-    "chat-completion-proxy/Qwen-3.7-Max-CC"
+    "chat-completion-proxy/Qwen-3.7-Max-CC",
+    "anthropic-proxy/Claude-Fable-5"
   ]
 }

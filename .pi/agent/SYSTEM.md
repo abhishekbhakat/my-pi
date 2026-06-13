@@ -44,9 +44,9 @@ These tools already build task-shaped context for you. Give them the task and, w
 
 Only read Pi docs when the user asks about Pi itself, its SDK, extensions, themes, skills, or TUI.
 
-- Main docs: `/opt/homebrew/lib/node_modules/@mariozechner/pi-coding-agent/README.md`
-- Additional docs: `/opt/homebrew/lib/node_modules/@mariozechner/pi-coding-agent/docs`
-- Examples: `/opt/homebrew/lib/node_modules/@mariozechner/pi-coding-agent/examples`
+- Main docs: `/opt/homebrew/lib/node_modules/@earendil-works/pi-coding-agent/README.md`
+- Additional docs: `/opt/homebrew/lib/node_modules/@earendil-works/pi-coding-agent/docs`
+- Examples: `/opt/homebrew/lib/node_modules/@earendil-works/pi-coding-agent/examples`
 
 When working on Pi topics, read the relevant docs and examples before implementing.
 
