@@ -1,0 +1,4 @@
+{
+  "client_id": "YOUR_SLACK_CLIENT_ID",
+  "access_token": "YOUR_SLACK_USER_TOKEN"
+}

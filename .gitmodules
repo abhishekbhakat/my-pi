@@ -4,3 +4,6 @@
 [submodule ".pi/agent/skills/stop-slop"]
 	path = .pi/agent/skills/stop-slop
 	url = https://github.com/hardikpandya/stop-slop.git
+[submodule ".pi/agent/skills/macos-app-skills"]
+	path = .pi/agent/skills/macos-app-skills
+	url = git@github.com:fayazara/macos-app-skills.git

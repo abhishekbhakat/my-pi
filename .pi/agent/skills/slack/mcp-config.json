@@ -1,0 +1,34 @@
+{
+  "url": "https://mcp.slack.com/mcp",
+  "transport": "http",
+  "oauth": {
+    "redirect_uri": "http://localhost:3118/oauth/callback",
+    "callback_port": 3118,
+    "scopes": [
+      "canvases:read",
+      "canvases:write",
+      "channels:history",
+      "channels:read",
+      "channels:write",
+      "chat:write",
+      "emoji:read",
+      "files:read",
+      "groups:history",
+      "groups:read",
+      "groups:write",
+      "im:history",
+      "im:read",
+      "im:write",
+      "mpim:history",
+      "mpim:read",
+      "mpim:write",
+      "reactions:read",
+      "reactions:write",
+      "search:read",
+      "search:read.private",
+      "search:read.public",
+      "users:read",
+      "users:read.email"
+    ]
+  }
+}

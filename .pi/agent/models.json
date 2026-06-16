@@ -84,35 +84,8 @@
           "input": [
             "text"
           ]
-        },
-        {
-          "id": "Claude-Fable-5",
-          "name": "Claude Fable 5 (BYOK)",
-          "contextWindow": 1000000,
-          "maxTokens": 128000,
-          "reasoning": true,
-          "input": [
-            "text",
-            "image"
-          ],
-          "compat": {
-            "forceAdaptiveThinking": true
-          }
-        },
-        {
-          "id": "Fable-5-CY",
-          "name": "Fable 5 CY (BYOK)",
-          "contextWindow": 1000000,
-          "maxTokens": 128000,
-          "reasoning": true,
-          "input": [
-            "text",
-            "image"
-          ],
-          "compat": {
-            "forceAdaptiveThinking": true
-          }
         }
+
       ]
     },
     "openai-proxy": {
