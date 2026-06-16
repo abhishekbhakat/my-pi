@@ -200,6 +200,16 @@
           "input": [
             "text"
           ]
+        },
+        {
+          "id": "GLM-5.2-CC",
+          "name": "GLM 5.2 CC (zai-org/GLM-5.2) (BYOK)",
+          "contextWindow": 1000000,
+          "maxTokens": 131072,
+          "reasoning": true,
+          "input": [
+            "text"
+          ]
         }
       ]
     }
