@@ -13,7 +13,15 @@
                     "reasoning": true,
                     "input": [
                         "text"
-                    ]
+                    ],
+                    "thinkingLevelMap": {
+                        "off": "none",
+                        "minimal": "minimal",
+                        "low": "low",
+                        "medium": "medium",
+                        "high": "high",
+                        "xhigh": "max"
+                    }
                 },
                 {
                     "id": "Opus-4.8",
@@ -23,7 +31,15 @@
                     "reasoning": true,
                     "input": [
                         "text"
-                    ]
+                    ],
+                    "thinkingLevelMap": {
+                        "off": "none",
+                        "minimal": "minimal",
+                        "low": "low",
+                        "medium": "medium",
+                        "high": "high",
+                        "xhigh": "max"
+                    }
                 },
                 {
                     "id": "Sonnet-4.6",
@@ -33,7 +49,15 @@
                     "reasoning": true,
                     "input": [
                         "text"
-                    ]
+                    ],
+                    "thinkingLevelMap": {
+                        "off": "none",
+                        "minimal": "minimal",
+                        "low": "low",
+                        "medium": "medium",
+                        "high": "high",
+                        "xhigh": "max"
+                    }
                 },
                 {
                     "id": "GLM-5.2",
@@ -43,7 +67,15 @@
                     "reasoning": true,
                     "input": [
                         "text"
-                    ]
+                    ],
+                    "thinkingLevelMap": {
+                        "off": "none",
+                        "minimal": "minimal",
+                        "low": "low",
+                        "medium": "medium",
+                        "high": "high",
+                        "xhigh": "max"
+                    }
                 },
                 {
                     "id": "Qwen-3.7-Max-Go",
@@ -53,7 +85,15 @@
                     "reasoning": true,
                     "input": [
                         "text"
-                    ]
+                    ],
+                    "thinkingLevelMap": {
+                        "off": "none",
+                        "minimal": "minimal",
+                        "low": "low",
+                        "medium": "medium",
+                        "high": "high",
+                        "xhigh": "max"
+                    }
                 },
                 {
                     "id": "Qwen-3.7-Max",
@@ -63,7 +103,15 @@
                     "reasoning": true,
                     "input": [
                         "text"
-                    ]
+                    ],
+                    "thinkingLevelMap": {
+                        "off": "none",
+                        "minimal": "minimal",
+                        "low": "low",
+                        "medium": "medium",
+                        "high": "high",
+                        "xhigh": "max"
+                    }
                 }
             ]
         },
@@ -80,7 +128,15 @@
                     "reasoning": true,
                     "input": [
                         "text"
-                    ]
+                    ],
+                    "thinkingLevelMap": {
+                        "off": "none",
+                        "minimal": "minimal",
+                        "low": "low",
+                        "medium": "medium",
+                        "high": "high",
+                        "xhigh": "xhigh"
+                    }
                 },
                 {
                     "id": "Gpt-5.5-High",
@@ -90,7 +146,15 @@
                     "reasoning": true,
                     "input": [
                         "text"
-                    ]
+                    ],
+                    "thinkingLevelMap": {
+                        "off": "none",
+                        "minimal": "minimal",
+                        "low": "low",
+                        "medium": "medium",
+                        "high": "high",
+                        "xhigh": "xhigh"
+                    }
                 },
                 {
                     "id": "PGpt-5.5-XHigh",
@@ -100,7 +164,15 @@
                     "reasoning": true,
                     "input": [
                         "text"
-                    ]
+                    ],
+                    "thinkingLevelMap": {
+                        "off": "none",
+                        "minimal": "minimal",
+                        "low": "low",
+                        "medium": "medium",
+                        "high": "high",
+                        "xhigh": "xhigh"
+                    }
                 },
                 {
                     "id": "Gpt-5.5-XHigh",
@@ -110,7 +182,15 @@
                     "reasoning": true,
                     "input": [
                         "text"
-                    ]
+                    ],
+                    "thinkingLevelMap": {
+                        "off": "none",
+                        "minimal": "minimal",
+                        "low": "low",
+                        "medium": "medium",
+                        "high": "high",
+                        "xhigh": "xhigh"
+                    }
                 },
                 {
                     "id": "PGpt-5.4-Mini-Xhigh",
@@ -120,7 +200,15 @@
                     "reasoning": true,
                     "input": [
                         "text"
-                    ]
+                    ],
+                    "thinkingLevelMap": {
+                        "off": "none",
+                        "minimal": "minimal",
+                        "low": "low",
+                        "medium": "medium",
+                        "high": "high",
+                        "xhigh": "xhigh"
+                    }
                 },
                 {
                     "id": "Gpt-5.4-Mini-Xhigh",
@@ -130,7 +218,15 @@
                     "reasoning": true,
                     "input": [
                         "text"
-                    ]
+                    ],
+                    "thinkingLevelMap": {
+                        "off": "none",
+                        "minimal": "minimal",
+                        "low": "low",
+                        "medium": "medium",
+                        "high": "high",
+                        "xhigh": "xhigh"
+                    }
                 }
             ]
         },

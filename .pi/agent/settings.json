@@ -5,7 +5,7 @@
   "defaultModel": "Qwen-3.7-Max",
   "quietStartup": true,
   "hideThinkingBlock": false,
-  "defaultThinkingLevel": "high",
+  "defaultThinkingLevel": "xhigh",
   "enabledModels": [
     "anthropic-proxy/Sonnet-4.6",
     "anthropic-proxy/Opus-4.8",
