@@ -1,11 +1,11 @@
 {
-  "lastChangelogVersion": "0.79.6",
+  "lastChangelogVersion": "0.80.2",
   "theme": "tokyo-night",
-  "defaultProvider": "anthropic-proxy",
-  "defaultModel": "Qwen-3.7-Max",
+  "defaultProvider": "chat-completion-proxy",
+  "defaultModel": "GLM-5.2-CC",
   "quietStartup": true,
   "hideThinkingBlock": false,
-  "defaultThinkingLevel": "xhigh",
+  "defaultThinkingLevel": "high",
   "enabledModels": [
     "anthropic-proxy/Sonnet-4.6",
     "anthropic-proxy/Opus-4.8",
@@ -19,5 +19,9 @@
     "anthropic-proxy/Qwen-3.7-Max",
     "chat-completion-proxy/Qwen-3.7-Max-CC",
     "chat-completion-proxy/GLM-5.2-CC"
-  ]
+  ],
+  "steeringMode": "all",
+  "followUpMode": "all",
+  "enableInstallTelemetry": false,
+  "defaultProjectTrust": "always"
 }

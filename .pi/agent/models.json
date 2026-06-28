@@ -264,7 +264,15 @@
                     "reasoning": true,
                     "input": [
                         "text"
-                    ]
+                    ],
+                    "thinkingLevelMap": {
+                        "off": "off",
+                        "minimal": "minimal",
+                        "low": "low",
+                        "medium": "medium",
+                        "high": "high",
+                        "xhigh": "xhigh"
+                    }
                 }
             ]
         }

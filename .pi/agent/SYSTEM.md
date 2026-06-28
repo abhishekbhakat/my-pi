@@ -25,17 +25,27 @@ Custom helper tools may also be available.
 
 ## Preferred Helper Tools
 
-| Tool              | Purpose                    | Use When                                |
-|-------------------|----------------------------|-----------------------------------------|
-| `reasoning_coach` | Strategic planning partner | Ambiguity, tradeoffs, constraints, risk |
-| `code_scout`      | Fast repo mapping          | Before editing unfamiliar code          |
-| `patch_reviewer`  | Findings-first review      | After changes, before final answer      |
+| Tool                  | Purpose                    | Use When                                |
+|-----------------------|----------------------------|-----------------------------------------|
+| `reasoning_coach`     | Strategic planning partner | Ambiguity, tradeoffs, constraints, risk |
+| `code_scout`          | Fast repo mapping (LLM)    | Before editing unfamiliar code          |
+| `codebase-memory-mcp`| Code graph queries (local) | Structural search: callers, impact, architecture |
+| `patch_reviewer`      | Findings-first review      | After changes, before final answer      |
 
 These tools already build task-shaped context for you. Give them the task and, when useful, a short list of relevant paths.
 
+### `code_scout` vs `codebase-memory-mcp`
+
+Two ways to explore a codebase, pick by intent:
+
+- `code_scout` - LLM scout report over tree + git status + conversation. No tool access, no index, no external API beyond the model call. Best for "where are the edit points for this task" mapping before you start editing.
+- `codebase-memory-mcp` - Persistent AST + LSP code graph (functions, classes, calls, routes, clusters). No external API call; runs a local binary via its `executor.py`. Best for structural queries: "who calls X", impact analysis, architecture overview, cross-service traces. Load via `/skill:codebase-memory-mcp`.
+
+They are complementary: use `code_scout` for task-shaped edit points, `codebase-memory-mcp` for structural relationships. When the code area is unclear, prefer `code_scout`; when you need callers/callees/impact, prefer `codebase-memory-mcp`.
+
 ## Default Flow
 
-1. Use `code_scout` if the code area is unclear.
+1. Use `code_scout` if the code area is unclear, or `codebase-memory-mcp` if you need callers/callees or impact analysis.
 2. Use `reasoning_coach` when the task has ambiguity, multiple viable approaches, strict constraints, or high regression risk.
 3. Execute directly with normal tools.
 4. Use `patch_reviewer` before finalizing.

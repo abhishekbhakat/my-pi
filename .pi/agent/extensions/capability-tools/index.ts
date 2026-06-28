@@ -75,7 +75,11 @@ export default function (pi: ExtensionAPI) {
 			const subcommands = ["list", "toggle", "on", "off"];
 			return subcommands
 				.filter((cmd) => cmd.startsWith(prefix.toLowerCase()))
-				.map((cmd) => ({ label: cmd, description: cmd === "list" ? "List capability tools" : cmd === "toggle" ? "Toggle on/off" : cmd === "on" ? "Enable" : "Disable" }));
+				.map((cmd) => ({
+					value: cmd,
+					label: cmd,
+					description: cmd === "list" ? "List capability tools" : cmd === "toggle" ? "Toggle on/off" : cmd === "on" ? "Enable" : "Disable",
+				}));
 		},
 		handler: async (args, ctx) => {
 			if (capabilities.length === 0) {
