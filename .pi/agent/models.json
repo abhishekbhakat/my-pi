@@ -8,109 +8,152 @@
                 {
                     "id": "Kimi-for-Coding",
                     "name": "Kimi for Coding (BYOK)",
+                    "reasoning": true,
+                    "input": [
+                        "text",
+                        "image"
+                    ],
                     "contextWindow": 256000,
                     "maxTokens": 32000,
-                    "reasoning": true,
-                    "input": [
-                        "text"
-                    ],
                     "thinkingLevelMap": {
-                        "off": "none",
-                        "minimal": "minimal",
-                        "low": "low",
-                        "medium": "medium",
-                        "high": "high",
+                        "off": null,
+                        "minimal": null,
+                        "low": null,
+                        "medium": null,
+                        "high": null,
                         "xhigh": "max"
                     }
                 },
                 {
-                    "id": "Opus-4.8",
-                    "name": "Opus 4.8 (BYOK)",
+                    "id": "Opus-4.8-CY",
+                    "name": "Opus 4.8 CY (BYOK)",
+                    "reasoning": true,
+                    "input": [
+                        "text"
+                    ],
                     "contextWindow": 200000,
                     "maxTokens": 128000,
-                    "reasoning": true,
-                    "input": [
-                        "text"
-                    ],
                     "thinkingLevelMap": {
-                        "off": "none",
-                        "minimal": "minimal",
-                        "low": "low",
-                        "medium": "medium",
-                        "high": "high",
+                        "off": null,
+                        "minimal": null,
+                        "low": null,
+                        "medium": null,
+                        "high": null,
                         "xhigh": "max"
+                    },
+                    "compat": {
+                        "forceAdaptiveThinking": true
                     }
                 },
                 {
-                    "id": "Sonnet-4.6",
-                    "name": "Sonnet 4.6 (BYOK)",
-                    "contextWindow": 200000,
-                    "maxTokens": 64000,
+                    "id": "Fable-5-CY",
+                    "name": "Fable 5 CY (BYOK)",
                     "reasoning": true,
                     "input": [
-                        "text"
+                        "text",
+                        "image"
                     ],
+                    "contextWindow": 200000,
+                    "maxTokens": 128000,
                     "thinkingLevelMap": {
-                        "off": "none",
-                        "minimal": "minimal",
-                        "low": "low",
-                        "medium": "medium",
-                        "high": "high",
+                        "off": null,
+                        "minimal": null,
+                        "low": null,
+                        "medium": null,
+                        "high": null,
                         "xhigh": "max"
+                    },
+                    "compat": {
+                        "forceAdaptiveThinking": true
+                    }
+                },
+                {
+                    "id": "Fable-5-OC",
+                    "name": "Fable 5 OC (BYOK)",
+                    "reasoning": true,
+                    "input": [
+                        "text",
+                        "image"
+                    ],
+                    "contextWindow": 200000,
+                    "maxTokens": 128000,
+                    "thinkingLevelMap": {
+                        "off": null,
+                        "minimal": null,
+                        "low": null,
+                        "medium": null,
+                        "high": null,
+                        "xhigh": "max"
+                    },
+                    "compat": {
+                        "forceAdaptiveThinking": true
                     }
                 },
                 {
                     "id": "GLM-5.2",
                     "name": "GLM 5.2 (BYOK)",
-                    "contextWindow": 1000000,
-                    "maxTokens": 131072,
                     "reasoning": true,
                     "input": [
-                        "text"
+                        "text",
+                        "image"
                     ],
+                    "contextWindow": 1000000,
+                    "maxTokens": 131072,
                     "thinkingLevelMap": {
-                        "off": "none",
-                        "minimal": "minimal",
-                        "low": "low",
-                        "medium": "medium",
-                        "high": "high",
+                        "off": null,
+                        "minimal": null,
+                        "low": null,
+                        "medium": null,
+                        "high": null,
                         "xhigh": "max"
+                    },
+                    "compat": {
+                        "forceAdaptiveThinking": true,
+                        "allowEmptySignature": true
                     }
                 },
                 {
-                    "id": "Qwen-3.7-Max-Go",
-                    "name": "Qwen 3.7 Max Go (BYOK)",
-                    "contextWindow": 1000000,
-                    "maxTokens": 64000,
+                    "id": "Qwen-3.7-Max-OC",
+                    "name": "Qwen 3.7 Max OC (BYOK)",
                     "reasoning": true,
                     "input": [
-                        "text"
+                        "text",
+                        "image"
                     ],
+                    "contextWindow": 1000000,
+                    "maxTokens": 65536,
                     "thinkingLevelMap": {
-                        "off": "none",
-                        "minimal": "minimal",
-                        "low": "low",
-                        "medium": "medium",
-                        "high": "high",
+                        "off": null,
+                        "minimal": null,
+                        "low": null,
+                        "medium": null,
+                        "high": null,
                         "xhigh": "max"
+                    },
+                    "compat": {
+                        "allowEmptySignature": true
                     }
                 },
                 {
                     "id": "Qwen-3.7-Max",
-                    "name": "Qwen 3.7 Max (BYOK)",
-                    "contextWindow": 1000000,
-                    "maxTokens": 64000,
+                    "name": "Qwen 3.7 Max (Alibaba)",
                     "reasoning": true,
                     "input": [
-                        "text"
+                        "text",
+                        "image"
                     ],
+                    "contextWindow": 1000000,
+                    "maxTokens": 65536,
                     "thinkingLevelMap": {
-                        "off": "none",
-                        "minimal": "minimal",
-                        "low": "low",
-                        "medium": "medium",
-                        "high": "high",
+                        "off": null,
+                        "minimal": null,
+                        "low": null,
+                        "medium": null,
+                        "high": null,
                         "xhigh": "max"
+                    },
+                    "compat": {
+                        "allowEmptySignature": true
                     }
                 }
             ]
@@ -121,110 +164,38 @@
             "apiKey": "sk-abcd",
             "models": [
                 {
-                    "id": "PGpt-5.5-High",
-                    "name": "PGpt 5.5 High (BYOK)",
+                    "id": "Gpt-5.5",
+                    "name": "GPT 5.5",
+                    "reasoning": true,
+                    "input": [
+                        "text"
+                    ],
                     "contextWindow": 258000,
                     "maxTokens": 128000,
-                    "reasoning": true,
-                    "input": [
-                        "text"
-                    ],
                     "thinkingLevelMap": {
-                        "off": "none",
-                        "minimal": "minimal",
-                        "low": "low",
-                        "medium": "medium",
-                        "high": "high",
-                        "xhigh": "xhigh"
-                    }
-                },
-                {
-                    "id": "Gpt-5.5-High",
-                    "name": "GPT 5.5 High (BYOK)",
-                    "contextWindow": 258000,
-                    "maxTokens": 128000,
-                    "reasoning": true,
-                    "input": [
-                        "text"
-                    ],
-                    "thinkingLevelMap": {
-                        "off": "none",
-                        "minimal": "minimal",
-                        "low": "low",
-                        "medium": "medium",
-                        "high": "high",
-                        "xhigh": "xhigh"
-                    }
-                },
-                {
-                    "id": "PGpt-5.5-XHigh",
-                    "name": "PGpt 5.5 XHigh (BYOK)",
-                    "contextWindow": 258000,
-                    "maxTokens": 128000,
-                    "reasoning": true,
-                    "input": [
-                        "text"
-                    ],
-                    "thinkingLevelMap": {
-                        "off": "none",
-                        "minimal": "minimal",
-                        "low": "low",
-                        "medium": "medium",
-                        "high": "high",
-                        "xhigh": "xhigh"
-                    }
-                },
-                {
-                    "id": "Gpt-5.5-XHigh",
-                    "name": "GPT 5.5 XHigh (BYOK)",
-                    "contextWindow": 258000,
-                    "maxTokens": 128000,
-                    "reasoning": true,
-                    "input": [
-                        "text"
-                    ],
-                    "thinkingLevelMap": {
-                        "off": "none",
-                        "minimal": "minimal",
-                        "low": "low",
-                        "medium": "medium",
-                        "high": "high",
-                        "xhigh": "xhigh"
-                    }
-                },
-                {
-                    "id": "PGpt-5.4-Mini-Xhigh",
-                    "name": "PGpt 5.4 Mini XHigh (BYOK)",
-                    "contextWindow": 200000,
-                    "maxTokens": 128000,
-                    "reasoning": true,
-                    "input": [
-                        "text"
-                    ],
-                    "thinkingLevelMap": {
-                        "off": "none",
-                        "minimal": "minimal",
-                        "low": "low",
-                        "medium": "medium",
+                        "off": null,
+                        "minimal": null,
+                        "low": null,
+                        "medium": null,
                         "high": "high",
                         "xhigh": "xhigh"
                     }
                 },
                 {
                     "id": "Gpt-5.4-Mini-Xhigh",
-                    "name": "GPT 5.4 Mini XHigh (BYOK)",
-                    "contextWindow": 200000,
-                    "maxTokens": 128000,
+                    "name": "GPT 5.4 Mini XHigh",
                     "reasoning": true,
                     "input": [
                         "text"
                     ],
+                    "contextWindow": 200000,
+                    "maxTokens": 128000,
                     "thinkingLevelMap": {
-                        "off": "none",
-                        "minimal": "minimal",
-                        "low": "low",
-                        "medium": "medium",
-                        "high": "high",
+                        "off": null,
+                        "minimal": null,
+                        "low": null,
+                        "medium": null,
+                        "high": null,
                         "xhigh": "xhigh"
                     }
                 }
@@ -236,41 +207,40 @@
             "apiKey": "sk-abcd",
             "models": [
                 {
-                    "id": "Kimi-K2.5-BS10",
-                    "name": "Kimi Baseten (BYOK)",
-                    "contextWindow": 256000,
-                    "maxTokens": 32000,
+                    "id": "Qwen-3.7-Max-CC",
+                    "name": "Qwen 3.7 Max CommandCode (BYOK)",
                     "reasoning": true,
                     "input": [
                         "text",
                         "image"
-                    ]
-                },
-                {
-                    "id": "Qwen-3.7-Max-CC",
-                    "name": "Qwen 3.7 Max CC (BYOK)",
+                    ],
                     "contextWindow": 1000000,
-                    "maxTokens": 64000,
-                    "reasoning": true,
-                    "input": [
-                        "text"
-                    ]
+                    "maxTokens": 65536,
+                    "thinkingLevelMap": {
+                        "off": null,
+                        "minimal": null,
+                        "low": null,
+                        "medium": null,
+                        "high": null,
+                        "xhigh": "xhigh"
+                    }
                 },
                 {
                     "id": "GLM-5.2-CC",
-                    "name": "GLM 5.2 CC (zai-org/GLM-5.2) (BYOK)",
-                    "contextWindow": 1000000,
-                    "maxTokens": 131072,
+                    "name": "GLM 5.2 CommandCode (zai-org/GLM-5.2) (BYOK)",
                     "reasoning": true,
                     "input": [
-                        "text"
+                        "text",
+                        "image"
                     ],
+                    "contextWindow": 1000000,
+                    "maxTokens": 131072,
                     "thinkingLevelMap": {
-                        "off": "off",
-                        "minimal": "minimal",
-                        "low": "low",
-                        "medium": "medium",
-                        "high": "high",
+                        "off": null,
+                        "minimal": null,
+                        "low": null,
+                        "medium": null,
+                        "high": null,
                         "xhigh": "xhigh"
                     }
                 }

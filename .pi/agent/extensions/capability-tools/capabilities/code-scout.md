@@ -3,7 +3,7 @@ name: code-scout
 tool: code_scout
 label: Code Scout
 description: Use a fast explorer model to map the relevant code, call flow, and likely edit points.
-model: chat-completion-proxy/Qwen-3.7-Max-CC
+model: anthropic-proxy/Kimi-for-Coding
 promptSnippet: Explore the codebase and return the relevant files, symbols, call flow, and edit points
 promptGuidelines: Use this before editing unfamiliar areas|Prefer this when you only need a repo map
 includeConversation: true
@@ -18,7 +18,7 @@ maxTreeChars: 7000
 maxTimelineChars: 2200
 maxFiles: 6
 maxFileChars: 3000
-reasoningEffort: medium
+reasoningEffort: xhigh
 ---
 You are a code exploration specialist.
 
