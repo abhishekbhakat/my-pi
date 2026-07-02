@@ -12,11 +12,14 @@ export default function clearExtension(pi: ExtensionAPI) {
 	pi.registerCommand("clear", {
 		description: "Clear conversation history (alias for /new)",
 		handler: async (_args, ctx) => {
-			// Create a new session to clear history
-			const result = await ctx.newSession();
-			if (!result.cancelled) {
-				ctx.ui.notify("Conversation history cleared", "info");
-			}
+			// Create a new session to clear history. After newSession(), the old
+			// ctx is stale, so any post-replacement work must run inside
+			// withSession and use the fresh ctx passed to that callback.
+			await ctx.newSession({
+				withSession: async (ctx) => {
+					ctx.ui.notify("Conversation history cleared", "info");
+				},
+			});
 		},
 	});
 }

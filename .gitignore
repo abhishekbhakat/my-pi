@@ -4,7 +4,9 @@
 .pi/agent/sessions/
 .pi/agent/extensions/node_modules/
 .pi/agent/extensions/package-lock.json
-.pi/agent/skills/youtrack/
+.pi/agent/skills/youtrack/youtrack-auth.json
+.pi/agent/skills/slack/slack-auth.json
+.pi/agent/skills/slack/slack-token.json
 .pi/agent/auth.json
 .pi/agents/youtrack.md
 .pi/agent/skills/chrome-cdp-skill/package-lock.json

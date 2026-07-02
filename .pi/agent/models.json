@@ -1,146 +1,250 @@
 {
-  "providers": {
-    "anthropic-proxy": {
-      "baseUrl": "http://localhost:8383",
-      "api": "anthropic-messages",
-      "apiKey": "sk-abcd",
-      "models": [
-        {
-          "id": "Kimi-for-Coding",
-          "name": "Kimi for Coding (BYOK)",
-          "contextWindow": 256000,
-          "maxTokens": 32000,
-          "reasoning": true,
-          "input": ["text"]
+    "providers": {
+        "anthropic-proxy": {
+            "baseUrl": "http://localhost:8383",
+            "api": "anthropic-messages",
+            "apiKey": "sk-abcd",
+            "models": [
+                {
+                    "id": "Kimi-for-Coding",
+                    "name": "Kimi for Coding (BYOK)",
+                    "reasoning": true,
+                    "input": [
+                        "text",
+                        "image"
+                    ],
+                    "contextWindow": 256000,
+                    "maxTokens": 32000,
+                    "thinkingLevelMap": {
+                        "off": null,
+                        "minimal": null,
+                        "low": null,
+                        "medium": null,
+                        "high": null,
+                        "xhigh": "max"
+                    }
+                },
+                {
+                    "id": "Opus-4.8-CY",
+                    "name": "Opus 4.8 CY (BYOK)",
+                    "reasoning": true,
+                    "input": [
+                        "text"
+                    ],
+                    "contextWindow": 200000,
+                    "maxTokens": 128000,
+                    "thinkingLevelMap": {
+                        "off": null,
+                        "minimal": null,
+                        "low": null,
+                        "medium": null,
+                        "high": null,
+                        "xhigh": "max"
+                    },
+                    "compat": {
+                        "forceAdaptiveThinking": true
+                    }
+                },
+                {
+                    "id": "Fable-5-CY",
+                    "name": "Fable 5 CY (BYOK)",
+                    "reasoning": true,
+                    "input": [
+                        "text",
+                        "image"
+                    ],
+                    "contextWindow": 200000,
+                    "maxTokens": 128000,
+                    "thinkingLevelMap": {
+                        "off": null,
+                        "minimal": null,
+                        "low": null,
+                        "medium": null,
+                        "high": null,
+                        "xhigh": "max"
+                    },
+                    "compat": {
+                        "forceAdaptiveThinking": true
+                    }
+                },
+                {
+                    "id": "Fable-5-OC",
+                    "name": "Fable 5 OC (BYOK)",
+                    "reasoning": true,
+                    "input": [
+                        "text",
+                        "image"
+                    ],
+                    "contextWindow": 200000,
+                    "maxTokens": 128000,
+                    "thinkingLevelMap": {
+                        "off": null,
+                        "minimal": null,
+                        "low": null,
+                        "medium": null,
+                        "high": null,
+                        "xhigh": "max"
+                    },
+                    "compat": {
+                        "forceAdaptiveThinking": true
+                    }
+                },
+                {
+                    "id": "GLM-5.2",
+                    "name": "GLM 5.2 (BYOK)",
+                    "reasoning": true,
+                    "input": [
+                        "text",
+                        "image"
+                    ],
+                    "contextWindow": 1000000,
+                    "maxTokens": 131072,
+                    "thinkingLevelMap": {
+                        "off": null,
+                        "minimal": null,
+                        "low": null,
+                        "medium": null,
+                        "high": null,
+                        "xhigh": "max"
+                    },
+                    "compat": {
+                        "forceAdaptiveThinking": true,
+                        "allowEmptySignature": true
+                    }
+                },
+                {
+                    "id": "Qwen-3.7-Max-OC",
+                    "name": "Qwen 3.7 Max OC (BYOK)",
+                    "reasoning": true,
+                    "input": [
+                        "text",
+                        "image"
+                    ],
+                    "contextWindow": 1000000,
+                    "maxTokens": 65536,
+                    "thinkingLevelMap": {
+                        "off": null,
+                        "minimal": null,
+                        "low": null,
+                        "medium": null,
+                        "high": null,
+                        "xhigh": "max"
+                    },
+                    "compat": {
+                        "allowEmptySignature": true
+                    }
+                },
+                {
+                    "id": "Qwen-3.7-Max",
+                    "name": "Qwen 3.7 Max (Alibaba)",
+                    "reasoning": true,
+                    "input": [
+                        "text",
+                        "image"
+                    ],
+                    "contextWindow": 1000000,
+                    "maxTokens": 65536,
+                    "thinkingLevelMap": {
+                        "off": null,
+                        "minimal": null,
+                        "low": null,
+                        "medium": null,
+                        "high": null,
+                        "xhigh": "max"
+                    },
+                    "compat": {
+                        "allowEmptySignature": true
+                    }
+                }
+            ]
         },
-        {
-          "id": "Opus-4.6",
-          "name": "Opus 4.6 (BYOK)",
-          "contextWindow": 200000,
-          "maxTokens": 128000,
-          "reasoning": true,
-          "input": ["text"]
+        "openai-proxy": {
+            "baseUrl": "http://localhost:8383/v1",
+            "api": "openai-responses",
+            "apiKey": "sk-abcd",
+            "models": [
+                {
+                    "id": "Gpt-5.5",
+                    "name": "GPT 5.5",
+                    "reasoning": true,
+                    "input": [
+                        "text"
+                    ],
+                    "contextWindow": 258000,
+                    "maxTokens": 128000,
+                    "thinkingLevelMap": {
+                        "off": null,
+                        "minimal": null,
+                        "low": null,
+                        "medium": null,
+                        "high": "high",
+                        "xhigh": "xhigh"
+                    }
+                },
+                {
+                    "id": "Gpt-5.4-Mini-Xhigh",
+                    "name": "GPT 5.4 Mini XHigh",
+                    "reasoning": true,
+                    "input": [
+                        "text"
+                    ],
+                    "contextWindow": 200000,
+                    "maxTokens": 128000,
+                    "thinkingLevelMap": {
+                        "off": null,
+                        "minimal": null,
+                        "low": null,
+                        "medium": null,
+                        "high": null,
+                        "xhigh": "xhigh"
+                    }
+                }
+            ]
         },
-        {
-          "id": "Sonnet-4.6",
-          "name": "Sonnet 4.6 (BYOK)",
-          "contextWindow": 200000,
-          "maxTokens": 64000,
-          "reasoning": true,
-          "input": ["text"]
-        },
-        {
-          "id": "GLM-5.1-Cyber",
-          "name": "GLM 5.1 Cyber (BYOK)",
-          "contextWindow": 200000,
-          "maxTokens": 128000,
-          "reasoning": true,
-          "input": ["text"]
-        },
-        {
-          "id": "GLM-5-Turbo-Cyber",
-          "name": "GLM 5 Turbo Cyber (BYOK)",
-          "contextWindow": 200000,
-          "maxTokens": 64000,
-          "reasoning": true,
-          "input": ["text"]
-        },
-        {
-          "id": "GLM-5.1",
-          "name": "GLM 5.1 (BYOK)",
-          "contextWindow": 200000,
-          "maxTokens": 131072,
-          "reasoning": true,
-          "input": ["text"]
+        "chat-completion-proxy": {
+            "baseUrl": "http://localhost:8383/v1",
+            "api": "openai-completions",
+            "apiKey": "sk-abcd",
+            "models": [
+                {
+                    "id": "Qwen-3.7-Max-CC",
+                    "name": "Qwen 3.7 Max CommandCode (BYOK)",
+                    "reasoning": true,
+                    "input": [
+                        "text",
+                        "image"
+                    ],
+                    "contextWindow": 1000000,
+                    "maxTokens": 65536,
+                    "thinkingLevelMap": {
+                        "off": null,
+                        "minimal": null,
+                        "low": null,
+                        "medium": null,
+                        "high": null,
+                        "xhigh": "xhigh"
+                    }
+                },
+                {
+                    "id": "GLM-5.2-CC",
+                    "name": "GLM 5.2 CommandCode (zai-org/GLM-5.2) (BYOK)",
+                    "reasoning": true,
+                    "input": [
+                        "text",
+                        "image"
+                    ],
+                    "contextWindow": 1000000,
+                    "maxTokens": 131072,
+                    "thinkingLevelMap": {
+                        "off": null,
+                        "minimal": null,
+                        "low": null,
+                        "medium": null,
+                        "high": null,
+                        "xhigh": "xhigh"
+                    }
+                }
+            ]
         }
-      ]
-    },
-    "openai-proxy": {
-      "baseUrl": "http://localhost:8383/v1",
-      "api": "openai-completions",
-      "apiKey": "sk-abcd",
-      "models": [
-        {
-          "id": "Kimi-K2.5-BS10",
-          "name": "Kimi Baseten (BYOK)",
-          "contextWindow": 256000,
-          "maxTokens": 32000,
-          "reasoning": true,
-          "input": ["text", "image"]
-        },
-        {
-          "id": "PGpt-5.5-High",
-          "name": "PGpt 5.5 High (BYOK)",
-          "contextWindow": 258000,
-          "maxTokens": 128000,
-          "reasoning": true,
-          "input": ["text"]
-        },
-        {
-          "id": "Gpt-5.5-High",
-          "name": "GPT 5.5 High (BYOK)",
-          "contextWindow": 258000,
-          "maxTokens": 128000,
-          "reasoning": true,
-          "input": ["text"]
-        },
-        {
-          "id": "PGpt-5.5-XHigh",
-          "name": "PGpt 5.5 XHigh (BYOK)",
-          "contextWindow": 258000,
-          "maxTokens": 128000,
-          "reasoning": true,
-          "input": ["text"]
-        },
-        {
-          "id": "Gpt-5.5-XHigh",
-          "name": "GPT 5.5 XHigh (BYOK)",
-          "contextWindow": 258000,
-          "maxTokens": 128000,
-          "reasoning": true,
-          "input": ["text"]
-        },
-        {
-          "id": "PGpt-5.4-Mini-Xhigh",
-          "name": "PGpt 5.4 Mini XHigh (BYOK)",
-          "contextWindow": 200000,
-          "maxTokens": 128000,
-          "reasoning": true,
-          "input": ["text"]
-        },
-        {
-          "id": "Gpt-5.4-Mini-Xhigh",
-          "name": "GPT 5.4 Mini XHigh (BYOK)",
-          "contextWindow": 200000,
-          "maxTokens": 128000,
-          "reasoning": true,
-          "input": ["text"]
-        },
-        {
-          "id": "Qwen-3.7-Max",
-          "name": "Qwen 3.7 Max (BYOK)",
-          "contextWindow": 1000000,
-          "maxTokens": 64000,
-          "reasoning": true,
-          "input": ["text"]
-        },
-        {
-          "id": "GLM-5.1-Go",
-          "name": "GLM 5.1 Go (BYOK)",
-          "contextWindow": 200000,
-          "maxTokens": 131072,
-          "reasoning": true,
-          "input": ["text"]
-        },
-        {
-          "id": "GLM-5.1-Fireworks",
-          "name": "GLM 5.1 Fireworks (BYOK)",
-          "contextWindow": 200000,
-          "maxTokens": 131072,
-          "reasoning": true,
-          "input": ["text"]
-        }
-      ]
     }
-  }
 }

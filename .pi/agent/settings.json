@@ -1,23 +1,26 @@
 {
-  "lastChangelogVersion": "0.75.5",
+  "lastChangelogVersion": "0.80.3",
   "theme": "tokyo-night",
-  "defaultProvider": "anthropic-proxy",
-  "defaultModel": "Kimi-for-Coding",
+  "defaultProvider": "chat-completion-proxy",
+  "defaultModel": "GLM-5.2-CC",
   "quietStartup": true,
   "hideThinkingBlock": false,
   "defaultThinkingLevel": "high",
   "enabledModels": [
-    "anthropic-proxy/Sonnet-4.6",
-    "anthropic-proxy/Opus-4.6",
-    "openai-proxy/Gpt-5.5-High",
-    "openai-proxy/Gpt-5.5-XHigh",
-    "openai-proxy/Gpt-5.4-Mini-Xhigh",
-    "openai-proxy/Qwen-3.7-Max",
-    "anthropic-proxy/GLM-5.1",
-    "openai-proxy/GLM-5.1-Go",
-    "openai-proxy/GLM-5.1-Fireworks",
     "anthropic-proxy/Kimi-for-Coding",
-    "anthropic-proxy/GLM-5-Turbo-Cyber",
-    "anthropic-proxy/GLM-5.1-Cyber"
-  ]
+    "anthropic-proxy/Opus-4.8-CY",
+    "anthropic-proxy/Fable-5-CY",
+    "anthropic-proxy/Fable-5-OC",
+    "anthropic-proxy/GLM-5.2",
+    "anthropic-proxy/Qwen-3.7-Max-OC",
+    "anthropic-proxy/Qwen-3.7-Max",
+    "openai-proxy/Gpt-5.5",
+    "openai-proxy/Gpt-5.4-Mini-Xhigh",
+    "chat-completion-proxy/Qwen-3.7-Max-CC",
+    "chat-completion-proxy/GLM-5.2-CC"
+  ],
+  "steeringMode": "all",
+  "followUpMode": "all",
+  "enableInstallTelemetry": false,
+  "defaultProjectTrust": "always"
 }

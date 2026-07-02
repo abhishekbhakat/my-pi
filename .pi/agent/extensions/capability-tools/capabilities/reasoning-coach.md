@@ -3,7 +3,7 @@ name: reasoning-coach
 tool: reasoning_coach
 label: Reasoning Coach
 description: Use a strong reasoning model as a lightweight planning partner for ambiguity, tradeoffs, constraints, next steps, and risk checks.
-model: openai-proxy/Gpt-5.5-XHigh
+model: anthropic-proxy/Fable-5-OC
 promptSnippet: Get a concise strategic read on the plan, tradeoffs, missing assumptions, and risks
 promptGuidelines: Use this early when requirements, constraints, or tradeoffs are not obvious|Use this for multi-step work before committing to an approach|Prefer this when better judgment matters more than more code reading
 includeConversation: true
@@ -12,7 +12,7 @@ includeGitStatus: true
 includeGitDiff: false
 includeChangedFiles: true
 includeTimeline: true
-timelineModel: anthropic-proxy/Kimi-for-Coding
+timelineModel: chat-completion-proxy/Qwen-3.7-Max-CC
 maxConversationChars: 14000
 maxTimelineChars: 2600
 maxFiles: 4
