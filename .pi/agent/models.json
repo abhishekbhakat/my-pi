@@ -31,7 +31,7 @@
                     "input": [
                         "text"
                     ],
-                    "contextWindow": 200000,
+                    "contextWindow": 1000000,
                     "maxTokens": 128000,
                     "thinkingLevelMap": {
                         "off": null,
@@ -46,59 +46,15 @@
                     }
                 },
                 {
-                    "id": "Fable-5-CY",
-                    "name": "Fable 5 CY (BYOK)",
-                    "reasoning": true,
-                    "input": [
-                        "text",
-                        "image"
-                    ],
-                    "contextWindow": 200000,
-                    "maxTokens": 128000,
-                    "thinkingLevelMap": {
-                        "off": null,
-                        "minimal": null,
-                        "low": null,
-                        "medium": null,
-                        "high": null,
-                        "xhigh": "max"
-                    },
-                    "compat": {
-                        "forceAdaptiveThinking": true
-                    }
-                },
-                {
-                    "id": "Fable-5-OC",
-                    "name": "Fable 5 OC (BYOK)",
-                    "reasoning": true,
-                    "input": [
-                        "text",
-                        "image"
-                    ],
-                    "contextWindow": 200000,
-                    "maxTokens": 128000,
-                    "thinkingLevelMap": {
-                        "off": null,
-                        "minimal": null,
-                        "low": null,
-                        "medium": null,
-                        "high": null,
-                        "xhigh": "max"
-                    },
-                    "compat": {
-                        "forceAdaptiveThinking": true
-                    }
-                },
-                {
-                    "id": "GLM-5.2",
-                    "name": "GLM 5.2 (BYOK)",
+                    "id": "Sonnet-5-CY",
+                    "name": "Sonnet 5 CY (BYOK)",
                     "reasoning": true,
                     "input": [
                         "text",
                         "image"
                     ],
                     "contextWindow": 1000000,
-                    "maxTokens": 131072,
+                    "maxTokens": 128000,
                     "thinkingLevelMap": {
                         "off": null,
                         "minimal": null,
@@ -108,35 +64,34 @@
                         "xhigh": "max"
                     },
                     "compat": {
-                        "forceAdaptiveThinking": true,
-                        "allowEmptySignature": true
+                        "forceAdaptiveThinking": true
+                    }
+                },
+                {
+                    "id": "Fable-5-YC",
+                    "name": "Fable 5 YC (BYOK)",
+                    "reasoning": true,
+                    "input": [
+                        "text",
+                        "image"
+                    ],
+                    "contextWindow": 1000000,
+                    "maxTokens": 128000,
+                    "thinkingLevelMap": {
+                        "off": null,
+                        "minimal": null,
+                        "low": "low",
+                        "medium": null,
+                        "high": null,
+                        "xhigh": "max"
+                    },
+                    "compat": {
+                        "forceAdaptiveThinking": true
                     }
                 },
                 {
                     "id": "Qwen-3.7-Max-OC",
                     "name": "Qwen 3.7 Max OC (BYOK)",
-                    "reasoning": true,
-                    "input": [
-                        "text",
-                        "image"
-                    ],
-                    "contextWindow": 1000000,
-                    "maxTokens": 65536,
-                    "thinkingLevelMap": {
-                        "off": null,
-                        "minimal": null,
-                        "low": null,
-                        "medium": null,
-                        "high": null,
-                        "xhigh": "max"
-                    },
-                    "compat": {
-                        "allowEmptySignature": true
-                    }
-                },
-                {
-                    "id": "Qwen-3.7-Max",
-                    "name": "Qwen 3.7 Max (Alibaba)",
                     "reasoning": true,
                     "input": [
                         "text",
@@ -182,13 +137,14 @@
                     }
                 },
                 {
-                    "id": "Gpt-5.4-Mini-Xhigh",
-                    "name": "GPT 5.4 Mini XHigh",
+                    "id": "Gpt-5.6-Sol-Pro-OR",
+                    "name": "Gpt 5.6 Sol Pro OR (BYOK)",
                     "reasoning": true,
                     "input": [
-                        "text"
+                        "text",
+                        "image"
                     ],
-                    "contextWindow": 200000,
+                    "contextWindow": 1050000,
                     "maxTokens": 128000,
                     "thinkingLevelMap": {
                         "off": null,
@@ -196,52 +152,26 @@
                         "low": null,
                         "medium": null,
                         "high": null,
-                        "xhigh": "xhigh"
-                    }
-                }
-            ]
-        },
-        "chat-completion-proxy": {
-            "baseUrl": "http://localhost:8383/v1",
-            "api": "openai-completions",
-            "apiKey": "sk-abcd",
-            "models": [
-                {
-                    "id": "Qwen-3.7-Max-CC",
-                    "name": "Qwen 3.7 Max CommandCode (BYOK)",
-                    "reasoning": true,
-                    "input": [
-                        "text",
-                        "image"
-                    ],
-                    "contextWindow": 1000000,
-                    "maxTokens": 65536,
-                    "thinkingLevelMap": {
-                        "off": null,
-                        "minimal": null,
-                        "low": null,
-                        "medium": null,
-                        "high": null,
-                        "xhigh": "xhigh"
+                        "xhigh": "max"
                     }
                 },
                 {
-                    "id": "GLM-5.2-CC",
-                    "name": "GLM 5.2 CommandCode (zai-org/GLM-5.2) (BYOK)",
+                    "id": "grok-4.5-CLI",
+                    "name": "Grok 4.5 CLI (OAuth)",
                     "reasoning": true,
                     "input": [
                         "text",
                         "image"
                     ],
-                    "contextWindow": 1000000,
-                    "maxTokens": 131072,
+                    "contextWindow": 500000,
+                    "maxTokens": 500000,
                     "thinkingLevelMap": {
                         "off": null,
                         "minimal": null,
-                        "low": null,
-                        "medium": null,
-                        "high": null,
-                        "xhigh": "xhigh"
+                        "low": "low",
+                        "medium": "medium",
+                        "high": "high",
+                        "xhigh": null
                     }
                 }
             ]

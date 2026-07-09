@@ -12,7 +12,7 @@ includeGitStatus: true
 includeGitDiff: false
 includeChangedFiles: true
 includeTimeline: true
-timelineModel: chat-completion-proxy/Qwen-3.7-Max-CC
+timelineModel: anthropic-proxy/Kimi-for-Coding
 maxConversationChars: 9000
 maxTreeChars: 7000
 maxTimelineChars: 2200

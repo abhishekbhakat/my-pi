@@ -1,26 +1,23 @@
 {
-  "lastChangelogVersion": "0.80.3",
-  "theme": "tokyo-night",
-  "defaultProvider": "chat-completion-proxy",
-  "defaultModel": "GLM-5.2-CC",
-  "quietStartup": true,
-  "hideThinkingBlock": false,
-  "defaultThinkingLevel": "high",
-  "enabledModels": [
-    "anthropic-proxy/Kimi-for-Coding",
-    "anthropic-proxy/Opus-4.8-CY",
-    "anthropic-proxy/Fable-5-CY",
-    "anthropic-proxy/Fable-5-OC",
-    "anthropic-proxy/GLM-5.2",
-    "anthropic-proxy/Qwen-3.7-Max-OC",
-    "anthropic-proxy/Qwen-3.7-Max",
-    "openai-proxy/Gpt-5.5",
-    "openai-proxy/Gpt-5.4-Mini-Xhigh",
-    "chat-completion-proxy/Qwen-3.7-Max-CC",
-    "chat-completion-proxy/GLM-5.2-CC"
-  ],
-  "steeringMode": "all",
-  "followUpMode": "all",
-  "enableInstallTelemetry": false,
-  "defaultProjectTrust": "always"
+    "lastChangelogVersion": "0.80.3",
+    "theme": "tokyo-night",
+    "defaultProvider": "openai-proxy",
+    "defaultModel": "grok-4.5-CLI",
+    "quietStartup": true,
+    "hideThinkingBlock": false,
+    "defaultThinkingLevel": "low",
+    "enabledModels": [
+        "anthropic-proxy/Kimi-for-Coding",
+        "anthropic-proxy/Opus-4.8-CY",
+        "anthropic-proxy/Sonnet-5-CY",
+        "anthropic-proxy/Fable-5-YC",
+        "anthropic-proxy/Qwen-3.7-Max-OC",
+        "openai-proxy/Gpt-5.5",
+        "openai-proxy/Gpt-5.6-Sol-Pro-OR",
+        "openai-proxy/grok-4.5-CLI"
+    ],
+    "steeringMode": "all",
+    "followUpMode": "all",
+    "enableInstallTelemetry": false,
+    "defaultProjectTrust": "always"
 }
