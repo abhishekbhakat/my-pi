@@ -464,7 +464,6 @@ export default function (pi: ExtensionAPI) {
 						rule: violationReason,
 						action: "blocked_by_user",
 					});
-					ctx.abort();
 					return {
 						block: true,
 						reason: `🛑 BLOCKED by Damage-Control: ${violationReason} (User denied)\n\nDO NOT attempt to work around this restriction. DO NOT retry with alternative commands, paths, or approaches that achieve the same result. Report this block to the user exactly as stated and ask how they would like to proceed.`,
@@ -491,7 +490,6 @@ export default function (pi: ExtensionAPI) {
 					rule: violationReason,
 					action: "blocked",
 				});
-				ctx.abort();
 				return {
 					block: true,
 					reason: `🛑 BLOCKED by Damage-Control: ${violationReason}\n\nDO NOT attempt to work around this restriction. DO NOT retry with alternative commands, paths, or approaches that achieve the same result. Report this block to the user exactly as stated and ask how they would like to proceed.`,
