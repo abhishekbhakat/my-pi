@@ -15,12 +15,14 @@ export interface CapabilityDef {
 	includeChangedFiles: boolean;
 	includeTimeline: boolean;
 	timelineModel: string;
+	maxContextChars: number;
 	maxConversationChars: number;
 	maxTreeChars: number;
-	maxGitDiffChars: number;
 	maxTimelineChars: number;
 	maxFiles: number;
-	maxFileChars: number;
+	maxCodeFileChars: number;
+	maxStructuredFileChars: number;
+	ignorePaths: string[];
 	reasoningEffort?: string;
 }
 

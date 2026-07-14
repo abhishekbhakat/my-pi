@@ -3,6 +3,22 @@ import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { CapabilityDef } from "./types";
 
+export const DEFAULT_IGNORE_PATHS = [
+	"**/*.lock",
+	"**/package-lock.json",
+	"**/yarn.lock",
+	"**/pnpm-lock.yaml",
+	"**/Cargo.lock",
+	"**/poetry.lock",
+	"**/composer.lock",
+	"**/*.min.js",
+	"**/*.map",
+	"**/dist/**",
+	"**/build/**",
+	"**/node_modules/**",
+	"**/vendor/**",
+];
+
 const DEFAULTS = {
 	includeConversation: true,
 	includeTree: false,
@@ -11,12 +27,14 @@ const DEFAULTS = {
 	includeChangedFiles: true,
 	includeTimeline: false,
 	timelineModel: "anthropic-proxy/Kimi-for-Coding",
-	maxConversationChars: 12000,
-	maxTreeChars: 5000,
-	maxGitDiffChars: 9000,
-	maxTimelineChars: 2400,
-	maxFiles: 4,
-	maxFileChars: 4000,
+	maxContextChars: 360000,
+	maxConversationChars: 40000,
+	maxTreeChars: 12000,
+	maxTimelineChars: 8000,
+	maxFiles: 24,
+	maxCodeFileChars: 120000,
+	maxStructuredFileChars: 20000,
+	ignorePaths: DEFAULT_IGNORE_PATHS,
 	reasoningEffort: "high",
 };
 
@@ -53,6 +71,10 @@ function asList(value: string | boolean | number | undefined): string[] {
 		: [];
 }
 
+function dedupe(values: string[]): string[] {
+	return [...new Set(values)];
+}
+
 export function parseCapabilityFile(filePath: string): CapabilityDef | null {
 	try {
 		const raw = fs.readFileSync(filePath, "utf-8").replace(/\r\n/g, "\n");
@@ -75,6 +97,13 @@ export function parseCapabilityFile(filePath: string): CapabilityDef | null {
 
 		const toolName = normalizeToolName(asString(frontmatter.tool, name));
 		const label = asString(frontmatter.label, name);
+		const extraIgnore = asList(frontmatter.ignorePaths);
+
+		// Legacy maxFileChars maps to code budget if maxCodeFileChars is absent.
+		const maxCodeFileChars = asNumber(
+			frontmatter.maxCodeFileChars,
+			asNumber(frontmatter.maxFileChars, DEFAULTS.maxCodeFileChars),
+		);
 
 		return {
 			name,
@@ -93,12 +122,14 @@ export function parseCapabilityFile(filePath: string): CapabilityDef | null {
 			includeChangedFiles: asBool(frontmatter.includeChangedFiles, DEFAULTS.includeChangedFiles),
 			includeTimeline: asBool(frontmatter.includeTimeline, DEFAULTS.includeTimeline),
 			timelineModel: asString(frontmatter.timelineModel, DEFAULTS.timelineModel),
+			maxContextChars: asNumber(frontmatter.maxContextChars, DEFAULTS.maxContextChars),
 			maxConversationChars: asNumber(frontmatter.maxConversationChars, DEFAULTS.maxConversationChars),
 			maxTreeChars: asNumber(frontmatter.maxTreeChars, DEFAULTS.maxTreeChars),
-			maxGitDiffChars: asNumber(frontmatter.maxGitDiffChars, DEFAULTS.maxGitDiffChars),
 			maxTimelineChars: asNumber(frontmatter.maxTimelineChars, DEFAULTS.maxTimelineChars),
 			maxFiles: asNumber(frontmatter.maxFiles, DEFAULTS.maxFiles),
-			maxFileChars: asNumber(frontmatter.maxFileChars, DEFAULTS.maxFileChars),
+			maxCodeFileChars,
+			maxStructuredFileChars: asNumber(frontmatter.maxStructuredFileChars, DEFAULTS.maxStructuredFileChars),
+			ignorePaths: dedupe([...DEFAULTS.ignorePaths, ...extraIgnore]),
 			reasoningEffort: asString(frontmatter.reasoningEffort, DEFAULTS.reasoningEffort),
 		};
 	} catch {

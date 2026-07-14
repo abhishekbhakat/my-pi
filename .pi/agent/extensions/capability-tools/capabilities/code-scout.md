@@ -13,11 +13,7 @@ includeGitDiff: false
 includeChangedFiles: true
 includeTimeline: true
 timelineModel: anthropic-proxy/Kimi-for-Coding
-maxConversationChars: 9000
-maxTreeChars: 7000
-maxTimelineChars: 2200
-maxFiles: 6
-maxFileChars: 3000
+maxContextChars: 360000
 reasoningEffort: xhigh
 ---
 You are a code exploration specialist.

@@ -12,9 +12,7 @@ includeGitStatus: true
 includeGitDiff: true
 includeChangedFiles: true
 includeTimeline: false
-maxGitDiffChars: 12000
-maxFiles: 6
-maxFileChars: 3500
+maxContextChars: 360000
 reasoningEffort: max
 ---
 You are a strict code review helper.

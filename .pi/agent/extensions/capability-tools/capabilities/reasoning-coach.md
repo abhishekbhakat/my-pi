@@ -13,10 +13,7 @@ includeGitDiff: false
 includeChangedFiles: true
 includeTimeline: true
 timelineModel: anthropic-proxy/Kimi-for-Coding
-maxConversationChars: 14000
-maxTimelineChars: 2600
-maxFiles: 4
-maxFileChars: 3500
+maxContextChars: 360000
 reasoningEffort: xhigh
 ---
 You are a strategy advisor for a coding agent.
