@@ -3,7 +3,7 @@ name: patch-reviewer
 tool: patch_reviewer
 label: Patch Reviewer
 description: Review the current changes for correctness risks, regressions, and missing tests.
-model: openai-proxy/Gpt-5.6-Sol-Pro-OR
+model: openai-proxy/pgpt-5.6-sol
 promptSnippet: Review the current patch or scoped files and report bugs, regressions, and missing tests
 promptGuidelines: Use this after changes or before finalizing an answer|Prefer findings over praise or rewrite suggestions
 includeConversation: false
@@ -15,7 +15,7 @@ includeTimeline: false
 maxGitDiffChars: 12000
 maxFiles: 6
 maxFileChars: 3500
-reasoningEffort: xhigh
+reasoningEffort: max
 ---
 You are a strict code review helper.
 

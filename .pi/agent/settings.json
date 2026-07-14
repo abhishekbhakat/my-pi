@@ -13,7 +13,6 @@
         "anthropic-proxy/Fable-5-YC",
         "anthropic-proxy/Qwen-3.7-Max-OC",
         "openai-proxy/Gpt-5.5",
-        "openai-proxy/Gpt-5.6-Sol-Pro-OR",
         "openai-proxy/pgpt-5.6-sol",
         "openai-proxy/pgpt-5.6-terra",
         "openai-proxy/pgpt-5.6-luna",
