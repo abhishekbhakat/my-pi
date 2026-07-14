@@ -7,14 +7,15 @@
 - The only way to install or update the live agent config is:
 
 ```bash
-./install.sh
+./install.sh -y
 ```
 
 Optional flags:
 
 ```bash
-./install.sh -y           # overwrite protected config without prompting
+./install.sh -y           # overwrite protected config without prompting (default)
 ./install.sh -h <host>    # set models.json proxy host
+./install.sh              # interactive mode (prompt before overwriting protected files)
 ```
 
 ## Edit only the repo source
@@ -32,7 +33,7 @@ Examples:
 - themes: `.pi/agent/themes/`
 - settings/models: `.pi/agent/settings.json`, `.pi/agent/models.json`, etc.
 
-After changing source files, run `./install.sh` (ask before using `-y` unless the user requested non-interactive install).
+After changing source files, run `./install.sh -y`.
 
 ## After install
 
