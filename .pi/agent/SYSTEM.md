@@ -39,7 +39,7 @@ These tools already build task-shaped context for you. Give them the task and, w
 Two ways to explore a codebase, pick by intent:
 
 - `code_scout` - LLM scout report over tree + git status + conversation. No tool access, no index, no external API beyond the model call. Best for "where are the edit points for this task" mapping before you start editing.
-- `codebase-memory-mcp` - Persistent AST + LSP code graph (functions, classes, calls, routes, clusters). No external API call; runs a local binary via its `executor.py`. Best for structural queries: "who calls X", impact analysis, architecture overview, cross-service traces. Load via `/skill:codebase-memory-mcp`.
+- `codebase-memory-mcp` - Persistent AST + LSP code graph (functions, classes, calls, routes, clusters). No external API call; invoke via the local binary's native CLI (`codebase-memory-mcp cli <tool> [json]`). Best for structural queries: "who calls X", impact analysis, architecture overview, cross-service traces. Load via `/skill:codebase-memory-mcp`.
 
 They are complementary: use `code_scout` for task-shaped edit points, `codebase-memory-mcp` for structural relationships. When the code area is unclear, prefer `code_scout`; when you need callers/callees/impact, prefer `codebase-memory-mcp`.
 
