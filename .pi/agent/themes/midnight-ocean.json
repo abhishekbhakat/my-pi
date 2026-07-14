@@ -65,7 +65,8 @@
     "thinkingLow": "teal",
     "thinkingMedium": "cyan",
     "thinkingHigh": "warningAmber",
-    "thinkingXhigh": "errorRed",
+    "thinkingXhigh": "warningAmber",
+    "thinkingMax": "errorRed",
     "bashMode": "warningAmber"
   },
   "export": {

@@ -77,7 +77,8 @@
     "thinkingLow": "foam",
     "thinkingMedium": "spray",
     "thinkingHigh": "biolum",
-    "thinkingXhigh": "pink",
+    "thinkingXhigh": "amber",
+    "thinkingMax": "coral",
     "bashMode": "amber"
   }
 }

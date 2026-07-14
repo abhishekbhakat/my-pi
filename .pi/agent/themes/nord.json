@@ -78,7 +78,8 @@
     "thinkingLow": "frost4",
     "thinkingMedium": "frost3",
     "thinkingHigh": "frost2",
-    "thinkingXhigh": "frost1",
+    "thinkingXhigh": "orange",
+    "thinkingMax": "red",
     "bashMode": "yellow"
   }
 }

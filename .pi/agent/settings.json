@@ -1,5 +1,5 @@
 {
-    "lastChangelogVersion": "0.80.3",
+    "lastChangelogVersion": "0.80.6",
     "theme": "tokyo-night",
     "defaultProvider": "openai-proxy",
     "defaultModel": "grok-4.5-CLI",
@@ -14,6 +14,9 @@
         "anthropic-proxy/Qwen-3.7-Max-OC",
         "openai-proxy/Gpt-5.5",
         "openai-proxy/Gpt-5.6-Sol-Pro-OR",
+        "openai-proxy/pgpt-5.6-sol",
+        "openai-proxy/pgpt-5.6-terra",
+        "openai-proxy/pgpt-5.6-luna",
         "openai-proxy/grok-4.5-CLI"
     ],
     "steeringMode": "all",

@@ -80,7 +80,8 @@
     "thinkingLow": "blue",
     "thinkingMedium": "sky",
     "thinkingHigh": "mauve",
-    "thinkingXhigh": "red",
+    "thinkingXhigh": "peach",
+    "thinkingMax": "red",
     "bashMode": "yellow"
   }
 }
