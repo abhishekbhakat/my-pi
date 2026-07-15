@@ -7,3 +7,6 @@
 [submodule ".pi/agent/skills/macos-app-skills"]
 	path = .pi/agent/skills/macos-app-skills
 	url = git@github.com:fayazara/macos-app-skills.git
+[submodule ".pi/agent/skills/sarvamai-skills"]
+	path = .pi/agent/skills/sarvamai-skills
+	url = git@github.com:sarvamai/skills.git
