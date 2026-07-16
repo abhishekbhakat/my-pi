@@ -26,6 +26,26 @@
                     }
                 },
                 {
+                    "id": "Kimi-K3",
+                    "name": "Kimi K3 (BYOK)",
+                    "reasoning": true,
+                    "input": [
+                        "text",
+                        "image"
+                    ],
+                    "contextWindow": 1000000,
+                    "maxTokens": 64000,
+                    "thinkingLevelMap": {
+                        "off": null,
+                        "minimal": null,
+                        "low": null,
+                        "medium": null,
+                        "high": null,
+                        "xhigh": null,
+                        "max": "max"
+                    }
+                },
+                {
                     "id": "Opus-4.8-CY",
                     "name": "Opus 4.8 CY (BYOK)",
                     "reasoning": true,

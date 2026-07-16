@@ -1,5 +1,5 @@
 {
-    "lastChangelogVersion": "0.80.7",
+    "lastChangelogVersion": "0.80.8",
     "theme": "tokyo-night",
     "defaultProvider": "openai-proxy",
     "defaultModel": "grok-4.5-CLI",
@@ -8,6 +8,7 @@
     "defaultThinkingLevel": "low",
     "enabledModels": [
         "anthropic-proxy/Kimi-for-Coding",
+        "anthropic-proxy/Kimi-K3",
         "anthropic-proxy/Opus-4.8-CY",
         "anthropic-proxy/Sonnet-5-CY",
         "anthropic-proxy/Fable-5-YC",
