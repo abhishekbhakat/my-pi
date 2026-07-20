@@ -10,6 +10,14 @@
 ./install.sh -y
 ```
 
+On Windows, use the native PowerShell equivalent instead of `install.bat`:
+
+```powershell
+.\install.ps1 -y
+# or, if execution policy blocks it:
+powershell -ExecutionPolicy Bypass -File .\install.ps1 -y
+```
+
 Optional flags:
 
 ```bash

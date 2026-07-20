@@ -44,11 +44,14 @@ set "TEST_HOST=%TEST_HOST:<=%"
 set "TEST_HOST=%TEST_HOST:>=%"
 set "TEST_HOST=%TEST_HOST:^=%"
 set "TEST_HOST=%TEST_HOST:"=%"
-set "TEST_HOST=%TEST_HOST:%%=%"
-if not "%TEST_HOST%"=="%PROXY_HOST%" (
+setlocal enabledelayedexpansion
+set "TEST_HOST=!TEST_HOST:%%=!"
+if not "!TEST_HOST!"=="%PROXY_HOST%" (
+    endlocal
     echo ERROR: Proxy host contains invalid characters ^(spaces, quotes, ampersands, pipes, etc.^).
     exit /b 1
 )
+endlocal
 
 set "PROXY_ORIGIN=%PROXY_HOST%"
 :TrimOriginSlash
