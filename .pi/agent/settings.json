@@ -1,11 +1,19 @@
 {
-    "lastChangelogVersion": "0.81.1",
-    "theme": "tokyo-night",
-    "quietStartup": true,
-    "hideThinkingBlock": false,
-    "defaultThinkingLevel": "low",
-    "steeringMode": "all",
-    "followUpMode": "all",
-    "enableInstallTelemetry": false,
-    "defaultProjectTrust": "always"
+  "lastChangelogVersion": "0.81.1",
+  "theme": "tokyo-night",
+  "quietStartup": true,
+  "hideThinkingBlock": false,
+  "defaultThinkingLevel": "high",
+  "steeringMode": "all",
+  "followUpMode": "all",
+  "enableInstallTelemetry": false,
+  "defaultProjectTrust": "always",
+  "defaultProvider": "xai",
+  "defaultModel": "grok-4.5",
+  "enabledModels": [
+    "kimi-coding/k3",
+    "kimi-coding/kimi-for-coding-highspeed",
+    "openai-codex/gpt-5.6-sol",
+    "xai/grok-4.5"
+  ]
 }

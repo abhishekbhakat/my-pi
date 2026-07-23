@@ -3,7 +3,7 @@ name: patch-reviewer
 tool: patch_reviewer
 label: Patch Reviewer
 description: Review the current changes for correctness risks, regressions, and missing tests.
-model: openai-proxy/pgpt-5.6-sol
+model: openai-codex/gpt-5.6-sol
 promptSnippet: Review the current patch or scoped files and report bugs, regressions, and missing tests
 promptGuidelines: Use this after changes or before finalizing an answer|Prefer findings over praise or rewrite suggestions
 includeConversation: false

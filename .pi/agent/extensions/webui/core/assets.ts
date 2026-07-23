@@ -11,13 +11,18 @@ export interface ExportHtmlAssets {
 }
 
 export function loadCoreExportHtmlAssets(): ExportHtmlAssets {
-	return {
-		templateHtml: readFileSync(getCoreExportAssetPath("template.html"), "utf8"),
-		templateCss: readFileSync(getCoreExportAssetPath("template.css"), "utf8"),
-		templateJs: readFileSync(getCoreExportAssetPath("template.js"), "utf8"),
-		markedJs: readFileSync(getCoreExportAssetPath("vendor", "marked.min.js"), "utf8"),
-		highlightJs: readFileSync(getCoreExportAssetPath("vendor", "highlight.min.js"), "utf8"),
-	};
+	try {
+		return {
+			templateHtml: readFileSync(getCoreExportAssetPath("template.html"), "utf8"),
+			templateCss: readFileSync(getCoreExportAssetPath("template.css"), "utf8"),
+			templateJs: readFileSync(getCoreExportAssetPath("template.js"), "utf8"),
+			markedJs: readFileSync(getCoreExportAssetPath("vendor", "marked.min.js"), "utf8"),
+			highlightJs: readFileSync(getCoreExportAssetPath("vendor", "highlight.min.js"), "utf8"),
+		};
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error);
+		throw new Error(`Failed to load pi export-html assets: ${message}`);
+	}
 }
 
 export function renderCoreCss(templateCss: string, themeName?: string): string {

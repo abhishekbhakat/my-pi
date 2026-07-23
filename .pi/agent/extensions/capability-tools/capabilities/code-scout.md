@@ -3,7 +3,7 @@ name: code-scout
 tool: code_scout
 label: Code Scout
 description: Use a fast explorer model to map the relevant code, call flow, and likely edit points.
-model: anthropic-proxy/Kimi-for-Coding
+model: kimi-coding/kimi-for-coding-highspeed
 promptSnippet: Explore the codebase and return the relevant files, symbols, call flow, and edit points
 promptGuidelines: Use this before editing unfamiliar areas|Prefer this when you only need a repo map
 includeConversation: true
@@ -12,7 +12,7 @@ includeGitStatus: true
 includeGitDiff: false
 includeChangedFiles: true
 includeTimeline: true
-timelineModel: anthropic-proxy/Kimi-for-Coding
+timelineModel: kimi-coding/kimi-for-coding-highspeed
 maxContextChars: 360000
 reasoningEffort: xhigh
 ---

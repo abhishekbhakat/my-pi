@@ -26,7 +26,7 @@ const DEFAULTS = {
 	includeGitDiff: false,
 	includeChangedFiles: true,
 	includeTimeline: false,
-	timelineModel: "anthropic-proxy/Kimi-for-Coding",
+	timelineModel: "kimi-coding/kimi-for-coding-highspeed",
 	maxContextChars: 360000,
 	maxConversationChars: 40000,
 	maxTreeChars: 12000,
