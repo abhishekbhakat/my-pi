@@ -7,6 +7,7 @@
 .pi/agent/skills/youtrack/youtrack-auth.json
 .pi/agent/skills/slack/slack-auth.json
 .pi/agent/skills/slack/slack-token.json
+.pi/agent/skills/notion/notion-auth.json
 .pi/agent/auth.json
 .pi/agents/youtrack.md
 .pi/agent/skills/chrome-cdp-skill/package-lock.json

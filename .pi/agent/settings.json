@@ -1,5 +1,5 @@
 {
-    "lastChangelogVersion": "0.80.10",
+    "lastChangelogVersion": "0.81.1",
     "theme": "tokyo-night",
     "defaultProvider": "openai-proxy",
     "defaultModel": "grok-4.5-CLI",
