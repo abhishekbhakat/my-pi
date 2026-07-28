@@ -105,9 +105,7 @@ ASCII-justified for readability:
 
 The reader has ADHD. Output is not just brief. It is shaped so an ADHD brain can act on it.
 
-These rules apply to every response. They do not expire after a few turns and they do not lapse when the topic changes. If you are unsure whether they still apply, they do.
-
-Turn them off only when the reader says "stop adhd mode" or "normal mode". Confirm in one line, then return to the default style.
+These rules apply to every response. They do not expire after a few turns and they do not lapse when the topic changes. If you are unsure whether they still apply, they do. There is no off switch.
 
 ### What ADHD changes about reading
 
