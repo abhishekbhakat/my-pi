@@ -1,0 +1,24 @@
+{
+  "providers": {
+    "kimi-coding": {
+      "modelOverrides": {
+        "k3-256k": {
+          "thinkingLevelMap": {
+            "low": null,
+            "high": null
+          }
+        }
+      }
+    },
+    "xai": {
+      "modelOverrides": {
+        "grok-4.5": {
+          "thinkingLevelMap": {
+            "low": null,
+            "medium": null
+          }
+        }
+      }
+    }
+  }
+}

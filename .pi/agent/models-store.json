@@ -22,6 +22,9 @@
         "thinkingLevelMap": {
           "xhigh": "xhigh",
           "minimal": "low"
+        },
+        "compat": {
+          "supportsOpenAIGrammarTools": true
         }
       },
       {
@@ -57,6 +60,7 @@
           "minimal": "low"
         },
         "compat": {
+          "supportsOpenAIGrammarTools": true,
           "supportsToolSearch": true
         }
       },
@@ -84,6 +88,7 @@
           "minimal": "low"
         },
         "compat": {
+          "supportsOpenAIGrammarTools": true,
           "supportsToolSearch": true
         }
       },
@@ -120,6 +125,7 @@
           "minimal": "low"
         },
         "compat": {
+          "supportsOpenAIGrammarTools": true,
           "supportsToolSearch": true
         }
       },
@@ -157,6 +163,7 @@
           "minimal": "low"
         },
         "compat": {
+          "supportsOpenAIGrammarTools": true,
           "supportsToolSearch": true
         }
       },
@@ -194,6 +201,7 @@
           "minimal": "low"
         },
         "compat": {
+          "supportsOpenAIGrammarTools": true,
           "supportsToolSearch": true
         }
       },
@@ -231,12 +239,14 @@
           "minimal": "low"
         },
         "compat": {
+          "supportsOpenAIGrammarTools": true,
           "supportsToolSearch": true
         }
       }
     ],
-    "checkedAt": 1784784980789,
-    "lastModified": 1784724573000
+    "checkedAt": 1785126903604,
+    "lastModified": 1784920533000,
+    "etag": "W/\"8c50b40966720784303e46378a0807dc\""
   },
   "xai": {
     "models": [
@@ -323,8 +333,9 @@
         }
       }
     ],
-    "checkedAt": 1784785032380,
-    "lastModified": 1784724583000
+    "checkedAt": 1785126903713,
+    "lastModified": 1784920544000,
+    "etag": "W/\"6f0c33027c980d7c03f8fb9b81dbcb45\""
   },
   "kimi-coding": {
     "models": [
@@ -353,6 +364,41 @@
           "cacheWrite": 0
         },
         "contextWindow": 1048576,
+        "maxTokens": 131072,
+        "thinkingLevelMap": {
+          "off": null,
+          "minimal": null,
+          "low": "low",
+          "medium": null,
+          "high": "high",
+          "xhigh": null,
+          "max": "max"
+        }
+      },
+      {
+        "id": "k3-256k",
+        "name": "Kimi K3-256K",
+        "api": "anthropic-messages",
+        "provider": "kimi-coding",
+        "baseUrl": "https://api.kimi.com/coding",
+        "headers": {
+          "User-Agent": "KimiCLI/1.5"
+        },
+        "compat": {
+          "forceAdaptiveThinking": true
+        },
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        },
+        "contextWindow": 262144,
         "maxTokens": 131072,
         "thinkingLevelMap": {
           "off": null,
@@ -418,7 +464,8 @@
         "maxTokens": 32768
       }
     ],
-    "checkedAt": 1784785098674,
-    "lastModified": 1784724562000
+    "checkedAt": 1785126903604,
+    "lastModified": 1784920522000,
+    "etag": "W/\"a5e501e93019dfc26a0076a002bd616a\""
   }
 }

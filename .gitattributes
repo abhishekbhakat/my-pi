@@ -1,0 +1,26 @@
+# Normalize text to LF in the repo; ignore platform CRLF churn on sync/install.
+* text=auto eol=lf
+
+# Windows wrapper scripts still use LF in git; cmd.exe accepts LF.
+*.bat text eol=lf
+*.cmd text eol=lf
+*.ps1 text eol=lf
+
+# Binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.zip binary
+*.gz binary
+*.tgz binary
+*.7z binary
+*.exe binary
+*.dll binary
+*.node binary

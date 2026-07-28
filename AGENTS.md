@@ -43,6 +43,31 @@ Examples:
 
 After changing source files, run `./install.sh -y`.
 
+## Sync live config back into the repo
+
+To pull current live `~/.pi` state into this repository (reverse of install):
+
+```bash
+./sync.sh -y
+```
+
+On Windows:
+
+```powershell
+.\sync.ps1 -y
+# or, if execution policy blocks it:
+powershell -ExecutionPolicy Bypass -File .\sync.ps1 -y
+```
+
+Optional flags:
+
+```bash
+./sync.sh -y           # overwrite protected config in the repo without prompting
+./sync.sh              # interactive mode (prompt before overwriting protected files)
+```
+
+Sync copies extensions, skills, themes, and root config files. It skips runtime/secrets (`auth.json`, `bin/`, `sessions/`, `node_modules`, `package-lock.json`).
+
 ## After install
 
 Tell the user to run `/reload` or `/restart` inside pi so the running session picks up changes. Do not attempt to mutate the live `~/.pi` tree yourself.
