@@ -2,13 +2,19 @@
 # Usage:
 #   .\sync.ps1              # interactive (prompts before overwriting protected files)
 #   .\sync.ps1 -y           # overwrite protected config without prompting
+#   .\sync.ps1 -Prune       # also delete repo files missing from live (mirror mode)
 #
 # Reverse of install.ps1. Content-aware: only writes when LF-normalized bytes differ,
 # so identical files keep their mtimes and Git stays clean. Skips runtime/secrets and
 # git submodules. Text files are normalized to LF (CRLF ignored).
+#
+# Default is additive: update/add from live, never delete repo-only files.
+# The repo is the edit source of truth; live can lag or be partially wiped.
+# Pass -Prune only when you intentionally want a live mirror.
 [CmdletBinding()]
 param(
-    [switch]$y
+    [switch]$y,
+    [switch]$Prune
 )
 
 Set-StrictMode -Version Latest
@@ -236,8 +242,9 @@ function Sync-Dir {
         Sync-File -SrcPath $srcPath -DstPath $dstPath
     }
 
-    # Remove dest files that are no longer in source (not submodules)
-    if (Test-Path $Dst) {
+    # Optional mirror: remove dest files that are no longer in source (not submodules).
+    # Off by default so repo-only work is never wiped when live lags.
+    if ($Prune -and (Test-Path $Dst)) {
         Get-ChildItem -LiteralPath $Dst -Recurse -Force -File -ErrorAction SilentlyContinue | ForEach-Object {
             $full = $_.FullName
             if (Test-IsUnderSubmodule $full) { return }
@@ -324,10 +331,15 @@ Write-Host ' Sync complete.'
 Write-Host " Dirs synced: $script:Copied"
 Write-Host " Files updated: $script:Updated"
 Write-Host " Files unchanged: $script:Unchanged"
-Write-Host " Files removed: $script:Removed"
+if ($Prune) {
+    Write-Host " Files removed: $script:Removed"
+} else {
+    Write-Host ' Files removed: 0 (pass -Prune to delete repo files missing from live)'
+}
 Write-Host " Protected skipped: $script:Skipped"
 Write-Host '============================='
 Write-Host ''
 Write-Host 'Skipped: auth.json, bin/, sessions/, node_modules, package-lock.json, git submodules'
 Write-Host 'Text files normalized to LF (CRLF ignored).'
+Write-Host 'Default is additive (no deletes). Use -Prune only to mirror-delete.'
 Write-Host 'Review git status, then commit if the repo should keep these changes.'

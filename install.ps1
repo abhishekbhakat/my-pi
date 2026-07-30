@@ -107,6 +107,56 @@ if (Test-Path $extPkg) {
 }
 Write-Host ''
 
+# --- Sparse-checkout skill submodules (sibling *.sparse-checkout files) ---
+function Apply-SkillSparseCheckouts {
+    $skillsDir = Join-Path $Source 'skills'
+    if (-not (Test-Path $skillsDir)) { return }
+    if (-not (Get-Command git -ErrorAction SilentlyContinue)) { return }
+
+    $configs = Get-ChildItem -Path $skillsDir -Filter '*.sparse-checkout' -File -ErrorAction SilentlyContinue
+    foreach ($cfg in $configs) {
+        $base = [IO.Path]::GetFileNameWithoutExtension($cfg.Name)  # strips only last ext; name is *.sparse-checkout
+        # GetFileNameWithoutExtension('x.sparse-checkout') => 'x.sparse' — fix:
+        $base = $cfg.Name -replace '\.sparse-checkout$', ''
+        $submod = Join-Path $skillsDir $base
+        if (-not (Test-Path $submod)) {
+            Write-Host "[sparse-checkout] Skipping ${base}: directory missing"
+            continue
+        }
+        if (-not (Test-Path (Join-Path $submod '.git'))) {
+            Write-Host "[sparse-checkout] Skipping ${base}: not a git checkout"
+            continue
+        }
+
+        $paths = @()
+        foreach ($raw in Get-Content -LiteralPath $cfg.FullName) {
+            $line = $raw
+            $hash = $line.IndexOf('#')
+            if ($hash -ge 0) { $line = $line.Substring(0, $hash) }
+            $line = $line.Trim()
+            if ($line.Length -gt 0) { $paths += $line }
+        }
+        if ($paths.Count -eq 0) {
+            Write-Host "[sparse-checkout] Skipping ${base}: no paths in $($cfg.Name)"
+            continue
+        }
+
+        Write-Host "[sparse-checkout] ${base}: $($paths -join ' ')"
+        Push-Location $submod
+        try {
+            git sparse-checkout init --cone | Out-Null
+            & git sparse-checkout set @paths
+            if ($LASTEXITCODE -eq 0) { Write-Host '  Applied.' }
+            else { Write-Host "  WARNING: sparse-checkout failed for ${base}." }
+        } finally {
+            Pop-Location
+        }
+    }
+    Write-Host ''
+}
+
+Apply-SkillSparseCheckouts
+
 # --- Skills ---
 Write-Host '[skills]'
 Copy-Dir (Join-Path $Source 'skills') (Join-Path $Target 'skills')

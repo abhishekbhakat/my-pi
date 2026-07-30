@@ -63,10 +63,17 @@ Optional flags:
 
 ```bash
 ./sync.sh -y           # overwrite protected config in the repo without prompting
+./sync.sh -p           # also delete repo files missing from live (mirror/prune)
 ./sync.sh              # interactive mode (prompt before overwriting protected files)
 ```
 
-Sync copies extensions, skills, themes, and root config files. It skips runtime/secrets (`auth.json`, `bin/`, `sessions/`, `node_modules`, `package-lock.json`).
+On Windows, prune is `-Prune`:
+
+```powershell
+.\sync.ps1 -y -Prune
+```
+
+Sync copies extensions, skills, themes, and root config files. **Default is additive** (update/add only) so repo-only work is never wiped when live lags. Pass `-p` / `-Prune` only when you intentionally want a live mirror. It skips runtime/secrets (`auth.json`, `bin/`, `sessions/`, `node_modules`, `package-lock.json`).
 
 ## After install
 

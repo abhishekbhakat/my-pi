@@ -1,0 +1,6 @@
+# Cone-mode paths kept from the anthropic-skills submodule.
+# Applied by install.sh / install.ps1 / install.bat before copying skills.
+skills/pdf
+skills/docx
+skills/pptx
+skills/xlsx

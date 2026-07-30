@@ -6,6 +6,10 @@ set -euo pipefail
 # so identical files keep their mtimes and Git stays clean. Skips runtime/secrets and
 # git submodules. Text files are normalized to LF (CRLF ignored).
 # Works on macOS and Linux.
+#
+# Default is additive: update/add from live, never delete repo-only files.
+# The repo is the edit source of truth; live can lag or be partially wiped.
+# Pass -p/--prune only when you intentionally want a live mirror.
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SOURCE="${HOME}/.pi/agent"
@@ -13,24 +17,28 @@ TARGET="${SCRIPT_DIR}/.pi/agent"
 REPO_ROOT="$SCRIPT_DIR"
 
 ASSUME_YES=false
+PRUNE=false
 
 usage() {
     cat <<EOF
-Usage: $(basename "$0") [-y]
+Usage: $(basename "$0") [-y] [-p]
 
 Options:
   -y        Sync without prompting; overwrite protected config files in the repo.
+  -p        Prune: delete repo files missing from live (mirror mode). Off by default.
 
 Copies ~/.pi/agent -> .pi/agent (extensions, skills, themes, root config).
 Also copies ~/.pi/agents/*.md when present.
 Skips auth.json, bin/, sessions/, node_modules, package-lock.json, git submodules.
 Only rewrites a file when LF-normalized content actually changed.
+Default is additive (no deletes). Use -p only to mirror-delete.
 EOF
 }
 
-while getopts ":yh" opt; do
+while getopts ":yph" opt; do
     case "$opt" in
         y) ASSUME_YES=true ;;
+        p) PRUNE=true ;;
         h) usage; exit 0 ;;
         :)
             echo "ERROR: Option -$OPTARG requires an argument." >&2
@@ -241,33 +249,36 @@ sync_dir() {
         fi
     done < <(find "$src" -type f -print0 2>/dev/null)
 
-    # Remove dest files not in source
-    local -A src_set=()
-    for rel in "${src_rels[@]+"${src_rels[@]}"}"; do
-        src_set["$rel"]=1
-    done
+    # Optional mirror: remove dest files not in source.
+    # Off by default so repo-only work is never wiped when live lags.
+    if $PRUNE; then
+        local -A src_set=()
+        for rel in "${src_rels[@]+"${src_rels[@]}"}"; do
+            src_set["$rel"]=1
+        done
 
-    while IFS= read -r -d '' f; do
-        rel="${f#"$dst"/}"
-        if should_skip_rel "$rel"; then
-            continue
-        fi
-        if is_under_submodule "$f"; then
-            continue
-        fi
-        if [ -z "${src_set[$rel]+x}" ]; then
-            rm -f "$f"
-            REMOVED=$((REMOVED + 1))
-        fi
-    done < <(find "$dst" -type f -print0 2>/dev/null)
+        while IFS= read -r -d '' f; do
+            rel="${f#"$dst"/}"
+            if should_skip_rel "$rel"; then
+                continue
+            fi
+            if is_under_submodule "$f"; then
+                continue
+            fi
+            if [ -z "${src_set[$rel]+x}" ]; then
+                rm -f "$f"
+                REMOVED=$((REMOVED + 1))
+            fi
+        done < <(find "$dst" -type f -print0 2>/dev/null)
 
-    # Prune empty directories (never submodule roots)
-    find "$dst" -depth -type d -empty 2>/dev/null | while IFS= read -r d; do
-        if is_under_submodule "$d"; then
-            continue
-        fi
-        rmdir "$d" 2>/dev/null || true
-    done
+        # Prune empty directories (never submodule roots)
+        find "$dst" -depth -type d -empty 2>/dev/null | while IFS= read -r d; do
+            if is_under_submodule "$d"; then
+                continue
+            fi
+            rmdir "$d" 2>/dev/null || true
+        done
+    fi
 
     echo "  Done."
     COPIED=$((COPIED + 1))
@@ -330,10 +341,15 @@ echo " Sync complete."
 echo " Dirs synced: ${COPIED}"
 echo " Files updated: ${UPDATED}"
 echo " Files unchanged: ${UNCHANGED}"
-echo " Files removed: ${REMOVED}"
+if $PRUNE; then
+    echo " Files removed: ${REMOVED}"
+else
+    echo " Files removed: 0 (pass -p to delete repo files missing from live)"
+fi
 echo " Protected skipped: ${SKIPPED}"
 echo "============================="
 echo ""
 echo "Skipped: auth.json, bin/, sessions/, node_modules, package-lock.json, git submodules"
 echo "Text files normalized to LF (CRLF ignored)."
+echo "Default is additive (no deletes). Use -p only to mirror-delete."
 echo "Review git status, then commit if the repo should keep these changes."
