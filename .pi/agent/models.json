@@ -46,6 +46,21 @@
         }
       }
     },
+    "openai-codex": {
+      "modelOverrides": {
+        "gpt-5.6-luna": {
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": null,
+            "medium": null,
+            "high": null,
+            "xhigh": null,
+            "max": "max"
+          }
+        }
+      }
+    },
     "xai": {
       "modelOverrides": {
         "grok-4.5": {
