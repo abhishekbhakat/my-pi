@@ -1,5 +1,41 @@
 {
   "providers": {
+    "modal-kimi": {
+      "baseUrl": "https://abhishek-avi-bak--ep-kimi-k3-server.us-west.modal.direct/v1",
+      "api": "openai-completions",
+      "apiKey": "unused",
+      "headers": {
+        "Modal-Key": "$MODAL_PROXY_TOKEN_ID",
+        "Modal-Secret": "$MODAL_PROXY_TOKEN_SECRET"
+      },
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false,
+        "maxTokensField": "max_tokens"
+      },
+      "models": [
+        {
+          "id": "moonshotai/Kimi-K3",
+          "name": "Kimi K3 (Modal)",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 1048576,
+          "maxTokens": 1048576,
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": null,
+            "medium": null,
+            "high": null,
+            "xhigh": null,
+            "max": "max"
+          },
+          "compat": {
+            "thinkingFormat": "together"
+          }
+        }
+      ]
+    },
     "kimi-coding": {
       "modelOverrides": {
         "k3-256k": {

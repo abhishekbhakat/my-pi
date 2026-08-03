@@ -141,9 +141,9 @@ export async function executeCapability(
 		};
 	}
 
-	if (!auth.apiKey) {
+	if (!auth.apiKey && !auth.headers) {
 		return {
-			content: [{ type: "text", text: `No API key available for ${def.model}` }],
+			content: [{ type: "text", text: `No API key or headers available for ${def.model}` }],
 			details: { status: "error", capability: def.toolName },
 		};
 	}
