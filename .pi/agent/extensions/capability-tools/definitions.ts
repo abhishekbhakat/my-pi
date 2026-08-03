@@ -26,7 +26,7 @@ const DEFAULTS = {
 	includeGitDiff: false,
 	includeChangedFiles: true,
 	includeTimeline: false,
-	timelineModel: "kimi-coding/kimi-for-coding-highspeed",
+	timelineModel: "deepseek/deepseek-v4-flash",
 	maxContextChars: 360000,
 	maxConversationChars: 40000,
 	maxTreeChars: 12000,
