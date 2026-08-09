@@ -77,52 +77,6 @@
         }
       },
       {
-        "id": "claude-opus-4-1",
-        "name": "Claude Opus 4.1 (latest)",
-        "api": "anthropic-messages",
-        "provider": "anthropic",
-        "baseUrl": "https://api.anthropic.com",
-        "reasoning": true,
-        "input": [
-          "text",
-          "image"
-        ],
-        "cost": {
-          "input": 15,
-          "output": 75,
-          "cacheRead": 1.5,
-          "cacheWrite": 18.75
-        },
-        "contextWindow": 200000,
-        "maxTokens": 32000,
-        "compat": {
-          "supportsStrictTools": true
-        }
-      },
-      {
-        "id": "claude-opus-4-1-20250805",
-        "name": "Claude Opus 4.1",
-        "api": "anthropic-messages",
-        "provider": "anthropic",
-        "baseUrl": "https://api.anthropic.com",
-        "reasoning": true,
-        "input": [
-          "text",
-          "image"
-        ],
-        "cost": {
-          "input": 15,
-          "output": 75,
-          "cacheRead": 1.5,
-          "cacheWrite": 18.75
-        },
-        "contextWindow": 200000,
-        "maxTokens": 32000,
-        "compat": {
-          "supportsStrictTools": true
-        }
-      },
-      {
         "id": "claude-opus-4-5",
         "name": "Claude Opus 4.5 (latest)",
         "api": "anthropic-messages",
@@ -384,9 +338,9 @@
         }
       }
     ],
-    "checkedAt": 1785557963605,
-    "lastModified": 1785146159000,
-    "etag": "W/\"2955a0a2593d701973abef2d80e4a8e0\""
+    "checkedAt": 1786254317230,
+    "lastModified": 1786021090000,
+    "etag": "W/\"2174ed7392c0d5376beba2c4ee0b170f\""
   },
   "kimi-coding": {
     "models": [
@@ -515,7 +469,7 @@
         "maxTokens": 32768
       }
     ],
-    "checkedAt": 1785557885959,
+    "checkedAt": 1786254317495,
     "lastModified": 1785146173000,
     "etag": "W/\"a5e501e93019dfc26a0076a002bd616a\""
   },
@@ -764,7 +718,7 @@
         }
       }
     ],
-    "checkedAt": 1785557885474,
+    "checkedAt": 1786254317252,
     "lastModified": 1785502727000,
     "etag": "W/\"400cac2d73673d9fff4c7d0ed22691b0\""
   },
@@ -853,7 +807,7 @@
         }
       }
     ],
-    "checkedAt": 1785557885475,
+    "checkedAt": 1786254317666,
     "lastModified": 1785146191000,
     "etag": "W/\"6f0c33027c980d7c03f8fb9b81dbcb45\""
   },
@@ -8125,7 +8079,7 @@
         }
       }
     ],
-    "checkedAt": 1785558033678,
+    "checkedAt": 1786254317249,
     "lastModified": 1785502707000,
     "etag": "W/\"15596aeadbdb5757401fcd2de812dcda\""
   }
