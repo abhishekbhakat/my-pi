@@ -100,7 +100,7 @@ export async function collectActionTimeline(
 				apiKey: auth.apiKey,
 				headers: auth.headers,
 				signal,
-				reasoningEffort: model.reasoning ? "medium" : undefined,
+				reasoningEffort: model.reasoning ? (def.timelineReasoningEffort ?? "medium") : undefined,
 			},
 		);
 

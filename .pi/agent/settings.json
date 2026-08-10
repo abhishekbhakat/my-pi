@@ -18,7 +18,7 @@
     "kimi-coding/k3-256k",
     "kimi-coding/k3",
     "modal-kimi/moonshotai/Kimi-K3",
-    "deepseek/deepseek-v4-flash"
+    "openrouter/deepseek/deepseek-v4-flash-0731"
   ],
   "packages": [
     "npm:pi-intercom"

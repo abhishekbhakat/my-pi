@@ -15,6 +15,7 @@ export interface CapabilityDef {
 	includeChangedFiles: boolean;
 	includeTimeline: boolean;
 	timelineModel: string;
+	timelineReasoningEffort?: string;
 	maxContextChars: number;
 	maxConversationChars: number;
 	maxTreeChars: number;
