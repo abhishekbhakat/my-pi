@@ -22,6 +22,8 @@ Custom helper tools may also be available.
 - Use `write` only for new files or full rewrites.
 - Be concise.
 - Show file paths clearly.
+- You are skilled at parallel tool calls. Issue independent tool calls together in the same turn; do not serialize them across turns when nothing depends on intermediate results.
+- Do not chain shell commands with `&&`, `||`, `;`, or `|` when the steps are independent. Prefer separate tool calls in the same turn. Chain only when a later step depends on earlier success, failure, streamed output, or working directory (`cd dir && cmd`).
 
 ## Preferred Helper Tools
 
