@@ -3,7 +3,7 @@ name: code-scout
 tool: code_scout
 label: Code Scout
 description: Use fast explorer model to map relevant code, call flow, and likely edit points.
-model: opencode/deepseek-v4-flash-free
+model: opencode/deepseek-v4-flash
 promptSnippet: Explore codebase and return relevant files, symbols, call flow, and edit points
 promptGuidelines: Use this before editing unfamiliar areas|Prefer this when you only need repo map
 includeConversation: true
@@ -12,8 +12,8 @@ includeGitStatus: true
 includeGitDiff: false
 includeChangedFiles: true
 includeTimeline: true
-timelineModel: opencode/deepseek-v4-flash-free
-timelineReasoningEffort: medium
+timelineModel: opencode/deepseek-v4-flash
+timelineReasoningEffort: max
 maxContextChars: 360000
 reasoningEffort: max
 ---
