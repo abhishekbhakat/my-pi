@@ -1,9 +1,9 @@
 ---
 name: dynamo-setup
-description: "Install and configure Project Dynamo / Terminal-Bench 2 (TB2) tooling: Docker, uv, Harbor CLI, GitHub CLI, and fork/clone of the assigned task repo. Use before starting a first task, when Harbor commands fail, or when setting up a new machine for benchmark task authoring."
+description: "Install and configure Project Dynamo / Terminal-Bench 2 (TB2) tooling: Docker, uv, Harbor CLI, GitHub CLI, and fork/clone of assigned task repo. Use before start first task, when Harbor commands fail, or when set up new machine for benchmark task authoring."
 ---
 
-Set up a machine for Project Dynamo task authoring. Full page text: `reference/03-setup.md`.
+Set up machine for Project Dynamo task authoring. Full page text: `reference/03-setup.md`.
 
 ## 1. Install prerequisites
 
@@ -19,10 +19,10 @@ uv tool install harbor
 harbor --version
 ```
 
-## 3. Fork your assigned task repo
+## 3. Fork assigned task repo
 
-Your assigned repo lives under `handshake-project-dynamo`. You have no write access
-to the base repo, so you propose changes by pull request.
+Assigned repo live under `handshake-project-dynamo`. You have no write access
+to base repo, so propose changes by pull request.
 
 ```bash
 gh repo fork handshake-project-dynamo/<your-task-repo> --clone
@@ -30,8 +30,8 @@ cd <your-task-repo>/task
 git checkout -b submission
 ```
 
-The scaffold sits in `task/` with `task.toml`, `instruction.md`, `solution/solve.sh`,
-`environment/Dockerfile`, and `tests/{test.sh,test_outputs.py}`. The folders
+Scaffold sit in `task/` with `task.toml`, `instruction.md`, `solution/solve.sh`,
+`environment/Dockerfile`, and `tests/{test.sh,test_outputs.py}`. Folders
 `.dynamo/`, `.github/`, and `.harbor/` are provided; do not edit them. Optional input
 files go in `environment/data/`.
 
@@ -42,8 +42,8 @@ harbor run -p . --agent oracle   # run your solution against the verifier → ex
 harbor run -p . --agent nop      # no-op agent must score reward < 1.0
 ```
 
-No model API key is needed to scaffold, run the oracle, or calibrate locally. Run
-these only AFTER authoring solve.sh, the tests, and the Dockerfile (dynamo-create-task
+No model API key is needed to scaffold, run oracle, or calibrate local. Run
+these only AFTER author solve.sh, tests, and Dockerfile (dynamo-create-task
 skill, steps 4-6).
 
 Source: https://project-dynamo.learn.joinhandshake.com/setup (captured 2026-07-08).

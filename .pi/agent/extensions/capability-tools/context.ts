@@ -53,6 +53,16 @@ const SECTION_PRIORITY: Record<string, string[]> = {
 		"Workspace Tree",
 		"Git Diff",
 	],
+	commit_message: [
+		"Workspace",
+		"Git Diff",
+		"Recent Commits",
+		"Git Status",
+		"Path Context",
+		"Recent Conversation",
+		"Action Timeline",
+		"Workspace Tree",
+	],
 	default: [
 		"Workspace",
 		"Git Diff",
@@ -281,7 +291,7 @@ function enforceContextBudget(
 		if (!section) break;
 
 		// Keep a useful prefix for high-signal sections instead of deleting them.
-		if (title === "Git Diff" || title === "Path Context" || title === "Recent Conversation") {
+		if (title === "Git Diff" || title === "Recent Commits" || title === "Path Context" || title === "Recent Conversation") {
 			const overflow = sectionsSize(next) - maxContextChars;
 			const target = Math.max(256, section.content.length - overflow - 64);
 			if (target < section.content.length) {
@@ -383,6 +393,63 @@ async function collectTree(
 	} catch {
 		return "";
 	}
+}
+
+async function collectStagedDiff(
+	pi: ExtensionAPI,
+	cwd: string,
+	maxChars: number,
+	signal?: AbortSignal,
+): Promise<string> {
+	try {
+		const names = await pi.exec("git", ["diff", "--cached", "--name-only"], { cwd, signal, timeout: 15000 });
+		const diff = await pi.exec("git", ["diff", "--cached", "--no-ext-diff"], { cwd, signal, timeout: 15000 });
+		if (diff.code !== 0) {
+			const err = diff.stderr.trim() || diff.stdout.trim() || `git diff --cached exited ${diff.code}`;
+			return `[git error]\n${err}`;
+		}
+		const stagedNames = names.code === 0 ? names.stdout.trim() : "";
+		const patch = diff.stdout.trim();
+		if (!stagedNames && !patch) return "";
+		const header = stagedNames ? `### Staged Files\n${stagedNames}\n\n` : "";
+		const body = patch ? `### Cached Diff\n${patch}` : "[no staged patch]";
+		return truncateHead(`${header}${body}`, maxChars);
+	} catch {
+		return "[git error]\nfailed to read staged diff";
+	}
+}
+
+async function collectRecentCommits(
+	pi: ExtensionAPI,
+	cwd: string,
+	maxChars: number,
+	signal?: AbortSignal,
+): Promise<string> {
+	const sections: string[] = [];
+
+	try {
+		const last = await pi.exec(
+			"git",
+			["show", "--stat", "--summary", "--format=%h %s", "-1"],
+			{ cwd, signal, timeout: 15000 },
+		);
+		if (last.code === 0 && last.stdout.trim()) {
+			sections.push(`### Last Commit\n${last.stdout.trim()}`);
+		}
+	} catch {}
+
+	try {
+		const log = await pi.exec("git", ["log", "--oneline", "--decorate", "-n", "10"], {
+			cwd,
+			signal,
+			timeout: 15000,
+		});
+		if (log.code === 0 && log.stdout.trim()) {
+			sections.push(`### Recent Log\n${log.stdout.trim()}`);
+		}
+	} catch {}
+
+	return truncateHead(sections.join("\n\n"), maxChars);
 }
 
 async function collectGitDiff(
@@ -652,6 +719,18 @@ export async function buildCapabilityContext(
 		// Conversation already included; code is optional backup.
 		await fillPaths(remaining);
 		await fillDiff(remaining);
+	} else if (def.toolName === "commit_message") {
+		// Staged index only. Never load working-tree files.
+		const historyBudget = Math.min(4000, Math.max(0, remaining - 256));
+		const stagedBudget = Math.max(256, remaining - historyBudget);
+		const staged = await collectStagedDiff(pi, ctx.cwd, stagedBudget, signal);
+		sections.push({
+			title: "Git Diff",
+			content: staged || "[no staged changes]",
+		});
+		remaining = Math.max(0, promptBudget - sectionsSize(sections));
+		const history = await collectRecentCommits(pi, ctx.cwd, Math.min(historyBudget, remaining), signal);
+		if (history) sections.push({ title: "Recent Commits", content: history });
 	} else {
 		// code_scout and default: files first, then optional diff.
 		await fillPaths(remaining);

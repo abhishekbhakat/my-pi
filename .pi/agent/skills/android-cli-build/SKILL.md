@@ -1,17 +1,17 @@
 ---
 name: android-cli-build
 description: >
-  Build, install, and debug Android apps from the command line without Android Studio.
-  Use when the user wants to create a new Android Gradle project, assemble a debug APK,
-  install via adb, set up the Android SDK/cmdline-tools on macOS with Homebrew, fix
-  Gradle/JDK/SDK path issues, or says "build the apk", "install on phone", "adb install",
-  "no Android Studio", or "CLI Android build". Also use when scaffolding a Kotlin/Compose
+  Build, install, and debug Android apps from command line without Android Studio.
+  Use when user want to create new Android Gradle project, assemble debug APK,
+  install via adb, set up Android SDK/cmdline-tools on macOS with Homebrew, fix
+  Gradle/JDK/SDK path issues, or say "build the apk", "install on phone", "adb install",
+  "no Android Studio", or "CLI Android build". Also use when scaffold Kotlin/Compose
   app that must compile with ./gradlew.
 ---
 
 # Android CLI Build
 
-Build Android apps with Homebrew, Android command-line tools, Gradle Wrapper, and adb. Android Studio is optional.
+Build Android apps with Homebrew, Android command-line tools, Gradle Wrapper, and adb. Android Studio optional.
 
 ## Triggers
 
@@ -125,7 +125,7 @@ gradle wrapper --gradle-version 8.11.1
 chmod +x gradlew
 ```
 
-Pin the version in `gradle/wrapper/gradle-wrapper.properties`.
+Pin version in `gradle/wrapper/gradle-wrapper.properties`.
 
 ### Plugins (example)
 
@@ -141,7 +141,7 @@ plugins {
 
 App module:
 
-- `compileSdk = 35`; set `minSdk` for the feature set (28+ for Health Connect)
+- `compileSdk = 35`; set `minSdk` for feature set (28+ for Health Connect)
 - `jvmTarget = "17"`
 - Compose: `buildFeatures { compose = true }` + Kotlin Compose plugin
 - Optional: `buildConfig = true` for `BuildConfig.VERSION_NAME`
@@ -172,7 +172,7 @@ bash $SKILL_DIR/scripts/build-debug.sh /path/to/android/project
 |------|-----|
 | `./gradlew :app:assembleDebug` | Debug APK |
 | `./gradlew :app:assembleRelease` | Release (needs signing) |
-| `./gradlew :app:installDebug` | Build and install if a device is up |
+| `./gradlew :app:installDebug` | Build and install if device up |
 | `./gradlew :app:testDebugUnitTest` | JVM unit tests |
 | `./gradlew :app:compileDebugKotlin` | Compile only |
 
@@ -185,15 +185,15 @@ adb shell am start -n com.example.app/.MainActivity
 adb logcat --pid="$(adb shell pidof -s com.example.app)"
 ```
 
-USB debugging on. Device authorized. `am start` must use the real applicationId and activity.
+USB debugging on. Device authorized. `am start` must use real applicationId and activity.
 
 ## Scaffold checklist
 
 1. Create Gradle + `app` module (Kotlin DSL).
 2. Write `local.properties` with `sdk.dir`.
 3. Add `gradlew` (wrapper) if missing.
-4. Run `assembleDebug`; fix the first compile errors.
-5. `adb install -r` when a phone is connected.
+4. Run `assembleDebug`; fix first compile errors.
+5. `adb install -r` when phone connected.
 6. Keep files short (~300 lines); split `ui/`, `data/`, etc.
 
 ## Compose traps
@@ -258,26 +258,26 @@ Details: [references/troubleshooting.md](references/troubleshooting.md).
 
 | Symptom | Fix |
 |---------|-----|
-| `SDK location not found` | `local.properties` → `sdk.dir=…` |
+| `SDK location not found` | set `sdk.dir=…` in `local.properties` |
 | AGP fails on JDK 26 | `JAVA_HOME=…/openjdk@17` |
 | `sdkmanager: command not found` | `brew install --cask android-commandlinetools` |
 | Licenses | `yes \| sdkmanager --licenses` |
 | Device unauthorized | Unlock, accept RSA, `adb kill-server && adb devices` |
-| `Permission Denial` on start | Activity is not exported; open from the launcher |
+| `Permission Denial` on start | Activity not exported; open from launcher |
 | `Unresolved reference 'Modifier'` | `import androidx.compose.ui.Modifier` |
 
 ## Agent steps
 
-1. `check-deps.sh` → `install-dep.sh` for each `INSTALL_REQUIRED:*` (or `all`).
+1. Run `check-deps.sh`, then `install-dep.sh` for each `INSTALL_REQUIRED:*` (or `all`).
 2. Set `JAVA_HOME` (17) and `ANDROID_HOME`.
 3. Create `local.properties` if missing.
 4. `./gradlew :app:assembleDebug` (or compile-only while editing).
-5. On failure, read the first Kotlin `e:` lines, fix, rebuild.
-6. With a device: `adb install -r`, then start the activity.
-7. Skip Android Studio unless the user asks for it.
+5. On failure, read first Kotlin `e:` lines, fix, rebuild.
+6. With device: `adb install -r`, then start activity.
+7. Skip Android Studio unless user ask for it.
 
 ## Out of scope unless asked
 
 - Play signing / Play App Signing
-- AVD/emulator setup (use a physical device when one is plugged in)
+- AVD/emulator setup (use physical device when one plugged in)
 - NDK/CMake on projects that do not already use native code

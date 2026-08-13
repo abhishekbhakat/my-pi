@@ -1,21 +1,21 @@
 ---
 name: android-reverse-engineering
-description: Decompile Android APK, XAPK, JAR, and AAR files using jadx or Fernflower/Vineflower. Reverse engineer Android apps, extract HTTP API endpoints (Retrofit, OkHttp, Volley), and trace call flows from UI to network layer. Use when the user wants to decompile, analyze, or reverse engineer Android packages, find API endpoints, or follow call flows.
+description: Decompile Android APK, XAPK, JAR, and AAR files using jadx or Fernflower/Vineflower. Reverse engineer Android apps, extract HTTP API endpoints (Retrofit, OkHttp, Volley), and trace call flows from UI to network layer. Use when user want to decompile, analyze, or reverse engineer Android packages, find API endpoints, or follow call flows.
 user-invocable: true
 disable-model-invocation: false
 ---
 
 # Android Reverse Engineering
 
-Decompile Android APK, XAPK, JAR, and AAR files using jadx and Fernflower/Vineflower, trace call flows through application code and libraries, and produce structured documentation of extracted APIs. Two decompiler engines are supported — jadx for broad Android coverage and Fernflower for higher-quality output on complex Java code — and can be used together for comparison.
+Decompile Android APK, XAPK, JAR, and AAR files using jadx and Fernflower/Vineflower, trace call flows through application code and libraries, produce structured documentation of extracted APIs. Two decompiler engines supported — jadx for broad Android coverage, Fernflower for higher-quality output on complex Java code — usable together for comparison.
 
 ## Skill location
 
-Scripts and references live under this skill directory. Replace `$SKILL_DIR` with the absolute path of this skill folder (typically `~/.pi/agent/skills/android-reverse-engineering` after install, or the repo source path before install).
+Scripts and references live under this skill directory. Replace `$SKILL_DIR` with absolute path of this skill folder (typical `~/.pi/agent/skills/android-reverse-engineering` after install, or repo source path before install).
 
 ## Prerequisites
 
-This skill requires **Java JDK 17+** and **jadx** to be installed. **Fernflower/Vineflower** and **dex2jar** are optional but recommended for better decompilation quality. Run the dependency checker to verify:
+Skill require **Java JDK 17+** and **jadx**. **Fernflower/Vineflower** and **dex2jar** optional but recommended for better decompilation quality. Run dependency checker to verify:
 
 ```bash
 bash $SKILL_DIR/scripts/check-deps.sh
@@ -26,40 +26,40 @@ On Windows (PowerShell):
 & "$SKILL_DIR/scripts/check-deps.ps1"
 ```
 
-If anything is missing, follow the installation instructions in `$SKILL_DIR/references/setup-guide.md`.
+Anything missing, follow installation instructions in `$SKILL_DIR/references/setup-guide.md`.
 
 ## Workflow
 
-### Phase 0: Fingerprint the App (recommended before anything else)
+### Phase 0: Fingerprint App (recommended before anything else)
 
-Before installing tools or decompiling, run a fast triage to determine what
-kind of app you are looking at. **Decompiling Java is mostly useless for
-Flutter, React Native, Cordova/Capacitor, and Xamarin apps** — the real code
-lives elsewhere. The fingerprint script tells you which.
+Before install tools or decompile, run fast triage to determine what kind of
+app you look at. **Decompile Java mostly useless for Flutter, React Native,
+Cordova/Capacitor, and Xamarin apps** — real code live elsewhere. Fingerprint
+script tell you which.
 
 ```bash
 bash $SKILL_DIR/scripts/fingerprint.sh <file.apk|file.xapk>
 ```
 
-It prints, in one screen:
+Print in one screen:
 
-- **Mobile framework** (Flutter / React Native / Cordova / Xamarin / Native Kotlin / etc.) with the file marker that triggered the verdict.
-- **HTTP stack** (Retrofit, OkHttp, Ktor, Apollo, Volley) detected via DEX string scan — works even when class names are obfuscated.
+- **Mobile framework** (Flutter / React Native / Cordova / Xamarin / Native Kotlin / etc.) with file marker that triggered verdict.
+- **HTTP stack** (Retrofit, OkHttp, Ktor, Apollo, Volley) detected via DEX string scan — work even when class names obfuscated.
 - **DI / serialization** signals (Hilt, Dagger, Koin, kotlinx.serialization, Moshi, Gson, Jackson).
 - **Obfuscation level** estimate based on root-level short-named packages.
 - **Notable third-party SDKs** (AppsFlyer, Datadog, Sentry, Firebase, payment SDKs, support/chat SDKs, etc.).
-- **Consolidated native libraries** across the base APK and all splits — XAPK split bundles often place `.so` files in `config.<abi>.apk`, not in `base.apk`.
-- **Recommended next step**, which differs by framework (e.g. for Flutter the script suggests `blutter` / `strings libapp.so` rather than jadx).
+- **Consolidated native libraries** across base APK and all splits — XAPK split bundles often place `.so` files in `config.<abi>.apk`, not in `base.apk`.
+- **Recommended next step**, differ by framework (e.g. for Flutter script suggest `blutter` / `strings libapp.so` rather than jadx).
 
-If the fingerprint says the app is Flutter / RN / Cordova / Xamarin, **stop**
-and switch to the framework-appropriate tooling. Phases 1–5 below assume a
-native (Java/Kotlin) Android app.
+If fingerprint say app is Flutter / RN / Cordova / Xamarin, **stop** and switch
+to framework-appropriate tooling. Phases 1–5 below assume native (Java/Kotlin)
+Android app.
 
 ### Phase 1: Verify and Install Dependencies
 
-Before decompiling, confirm that the required tools are available — and install any that are missing.
+Before decompile, confirm required tools available — install any missing.
 
-**Action**: Run the dependency check script.
+**Action**: Run dependency check script.
 
 ```bash
 bash $SKILL_DIR/scripts/check-deps.sh
@@ -70,11 +70,11 @@ On Windows (PowerShell):
 & "$SKILL_DIR/scripts/check-deps.ps1"
 ```
 
-The output contains machine-readable lines:
-- `INSTALL_REQUIRED:<dep>` — must be installed before proceeding
-- `INSTALL_OPTIONAL:<dep>` — recommended but not blocking
+Output contain machine-readable lines:
+- `INSTALL_REQUIRED:<dep>` — must install before proceed
+- `INSTALL_OPTIONAL:<dep>` — recommended, not blocking
 
-**If required dependencies are missing** (exit code 1), install them automatically:
+**If required dependencies missing** (exit code 1), install automatic:
 
 ```bash
 bash $SKILL_DIR/scripts/install-dep.sh <dep>
@@ -85,22 +85,22 @@ On Windows (PowerShell):
 & "$SKILL_DIR/scripts/install-dep.ps1" <dep>
 ```
 
-The install script detects the OS and package manager, then:
-- Installs without sudo when possible (downloads to `~/.local/share/`, symlinks in `~/.local/bin/`)
-- Uses sudo and the system package manager when necessary (apt, dnf, pacman)
-- If sudo is needed but unavailable or the user declines, it prints the exact manual command and exits with code 2 — show these instructions to the user
+Install script detect OS and package manager, then:
+- Install without sudo when possible (download to `~/.local/share/`, symlink in `~/.local/bin/`)
+- Use sudo and system package manager when necessary (apt, dnf, pacman)
+- If sudo needed but unavailable or user decline, print exact manual command and exit with code 2 — show these instructions to user
 
-**Windows notes**: The PowerShell install script uses `winget`, `scoop`, or `choco` (in that order). If none are available, it downloads directly to `%USERPROFILE%\.local\share\` and adds the directory to the user's PATH. After running `install-dep.ps1`, the PATH is persisted but the current terminal session may not see it. The `check-deps.ps1` and `decompile.ps1` scripts automatically refresh PATH from the user environment, so re-running them will find newly installed tools without restarting the terminal.
+**Windows notes**: PowerShell install script use `winget`, `scoop`, or `choco` (in that order). If none available, download direct to `%USERPROFILE%\.local\share\` and add directory to user PATH. After run `install-dep.ps1`, PATH persisted but current terminal session may not see it. `check-deps.ps1` and `decompile.ps1` scripts auto-refresh PATH from user environment, so re-run find newly installed tools without terminal restart.
 
-**For optional dependencies**, ask the user if they want to install them. Vineflower and dex2jar are recommended for best results.
+**For optional dependencies**, ask user if they want install. Vineflower and dex2jar recommended for best results.
 
-After installation, re-run `check-deps.sh` to confirm everything is in place. Do not proceed to Phase 2 until all required dependencies are OK.
+After installation, re-run `check-deps.sh` to confirm all in place. Do not proceed to Phase 2 until all required dependencies OK.
 
 ### Phase 2: Decompile
 
-Use the decompile wrapper script to process the target file. The script supports three engines: `jadx`, `fernflower`, and `both`.
+Use decompile wrapper script to process target file. Script support three engines: `jadx`, `fernflower`, `both`.
 
-**Action**: Choose the engine and run the decompile script. The script handles APK, XAPK, JAR, and AAR files.
+**Action**: Choose engine, run decompile script. Script handle APK, XAPK, JAR, AAR files.
 
 ```bash
 bash $SKILL_DIR/scripts/decompile.sh [OPTIONS] <file>
@@ -111,9 +111,9 @@ On Windows (PowerShell):
 & "$SKILL_DIR/scripts/decompile.ps1" [OPTIONS] <file>
 ```
 
-For **XAPK** files (ZIP bundles containing multiple APKs, used by APKPure and similar stores): the script automatically extracts the archive, identifies all APK files inside (base + split APKs), and decompiles each one into a separate subdirectory. The XAPK manifest is copied to the output for reference.
+For **XAPK** files (ZIP bundles containing multiple APKs, used by APKPure and similar stores): script auto-extract archive, identify all APK files inside (base + split APKs), decompile each into separate subdirectory. XAPK manifest copied to output for reference.
 
-**Split/bundled APK detection**: Some APKs are actually bundle wrappers — the outer APK contains `base.apk` plus `split_config.*.apk` files inside its resources directory. When this happens, jadx will decompile the thin wrapper and produce very few Java files. The decompile scripts automatically detect this (≤10 Java files + inner APKs present) and re-decompile `base.apk` into an `<output>/base/` subdirectory. Config-only splits (ABI, language, density) are skipped. The main decompiled source will be in `<output>/base/sources/`.
+**Split/bundled APK detection**: Some APKs are bundle wrappers — outer APK hold `base.apk` plus `split_config.*.apk` inside resources dir. jadx then decompile thin wrapper, produce very few Java files. Decompile scripts auto-detect this (≤10 Java files + inner APKs present) and re-decompile `base.apk` into `<output>/base/`. Config-only splits (ABI, language, density) skipped. Main decompiled source live in `<output>/base/sources/`.
 
 Options:
 - `-o <dir>` — Custom output directory (default: `<filename>-decompiled`)
@@ -129,69 +129,69 @@ Options:
 | JAR/AAR library analysis | `fernflower` (better Java output) |
 | jadx output has warnings/broken code | `both` (compare and pick best per class) |
 | Complex lambdas, generics, streams | `fernflower` |
-| Quick overview of a large APK | `jadx --no-res` |
+| Quick overview of large APK | `jadx --no-res` |
 
-When using `--engine both`, the outputs go into `<output>/jadx/` and `<output>/fernflower/` respectively, with a comparison summary at the end showing file counts and jadx warning counts. Review classes with jadx warnings in the Fernflower output for better code.
+With `--engine both`, outputs go into `<output>/jadx/` and `<output>/fernflower/`, with comparison summary at end showing file counts and jadx warning counts. Review classes with jadx warnings in Fernflower output for better code.
 
-For APK files with Fernflower, the script automatically uses dex2jar as an intermediate step. dex2jar must be installed for this to work.
+For APK files with Fernflower, script auto-use dex2jar as intermediate step. dex2jar must be installed.
 
-See `$SKILL_DIR/references/jadx-usage.md` and `$SKILL_DIR/references/fernflower-usage.md` for the full CLI references.
+See `$SKILL_DIR/references/jadx-usage.md` and `$SKILL_DIR/references/fernflower-usage.md` for full CLI references.
 
 ### Phase 3: Analyze Structure
 
-Navigate the decompiled output to understand the app's architecture.
+Navigate decompiled output to understand app architecture.
 
 **Actions**:
 
 1. **Read AndroidManifest.xml** from `<output>/resources/AndroidManifest.xml`:
-   - Identify the main launcher Activity
+   - Identify main launcher Activity
    - List all Activities, Services, BroadcastReceivers, ContentProviders
    - Note permissions (especially `INTERNET`, `ACCESS_NETWORK_STATE`)
-   - Find the application class (`android:name` on `<application>`)
+   - Find application class (`android:name` on `<application>`)
 
-2. **Survey the package structure** under `<output>/sources/`:
-   - Identify the main app package and sub-packages
+2. **Survey package structure** under `<output>/sources/`:
+   - Identify main app package and sub-packages
    - Distinguish app code from third-party libraries
-   - Look for packages named `api`, `network`, `data`, `repository`, `service`, `retrofit`, `http` — these are where API calls live
+   - Look for packages named `api`, `network`, `data`, `repository`, `service`, `retrofit`, `http` — API calls live here
 
-3. **Read every `BuildConfig.java`** — these are almost never obfuscated and frequently leak the highest-signal constants in the entire APK (base URLs, flavor names, build type, third-party API keys, feature flags):
+3. **Read every `BuildConfig.java`** — almost never obfuscated, frequently leak highest-signal constants in entire APK (base URLs, flavor names, build type, third-party API keys, feature flags):
    ```bash
    find <output>/sources -name BuildConfig.java -exec grep -H '=' {} \;
    ```
-   Each Gradle module emits its own `BuildConfig`, so expect 1–N hits. Read all of them.
+   Each Gradle module emit own `BuildConfig`, expect 1–N hits. Read all.
 
-4. **Identify the architecture pattern**:
+4. **Identify architecture pattern**:
    - MVP: look for `Presenter` classes
    - MVVM: look for `ViewModel` classes and `LiveData`/`StateFlow`
    - Clean Architecture: look for `domain`, `data`, `presentation` packages
-   - This informs where to look for network calls in the next phases
+   - This inform where to look for network calls in next phases
 
 ### Phase 3.5: Recover Kotlin Class Names (only for obfuscated Kotlin apps)
 
-If Phase 0 reported moderate / high obfuscation **and** the app is Kotlin
-(Compose / kotlin_module markers detected), run the metadata recovery
-script before tracing call flows. R8 obfuscates JVM symbols but cannot
-strip Kotlin metadata strings, so original FQNs leak through
-`@DebugMetadata` and `@Metadata.d2`.
+If Phase 0 reported moderate / high obfuscation **and** app is Kotlin
+(Compose / kotlin_module markers detected), run metadata recovery script
+before trace call flows. R8 obfuscate JVM symbols but cannot strip Kotlin
+metadata strings, so original FQNs leak through `@DebugMetadata` and
+`@Metadata.d2`.
 
 ```bash
 bash $SKILL_DIR/scripts/recover-kotlin-names.sh \
     <output>/sources <output>/mapping
 ```
 
-Then use the lookup helper instead of plain grep — every hit comes
-annotated with the owning class's real name:
+Then use lookup helper instead of plain grep — every hit come annotated with
+owning class real name:
 
 ```bash
 bash $SKILL_DIR/scripts/lookup-name.sh \
     <output>/mapping --grep '"/api/' <output>/sources
 ```
 
-Typical recovery on a real-world Kotlin app: ~100% of `*Repository` /
+Typical recovery on real-world Kotlin app: ~100% of `*Repository` /
 `*ViewModel` / `*UseCase` / `*Impl` classes, ~80% of DTOs.
 
 See `$SKILL_DIR/references/kotlin-name-recovery.md`
-for the full technique and limitations.
+for full technique and limitations.
 
 ### Phase 4: Trace Call Flows
 
@@ -199,27 +199,27 @@ Follow execution paths from user-facing entry points down to network calls.
 
 **Actions**:
 
-1. **Start from entry points**: Read the main Activity or Application class identified in Phase 3.
+1. **Start from entry points**: Read main Activity or Application class identified in Phase 3.
 
-2. **Follow the initialization chain**: Application.onCreate() often sets up the HTTP client, base URL, and DI framework. Read this first.
+2. **Follow initialization chain**: Application.onCreate() often set up HTTP client, base URL, DI framework. Read this first.
 
-3. **Trace user actions**: From an Activity, follow:
-   - `onCreate()` → view setup → click listeners
-   - Click handler → ViewModel/Presenter method
-   - ViewModel → Repository → API service interface
-   - API service → actual HTTP call
+3. **Trace user actions**: From Activity, follow:
+   - `onCreate()` > view setup > click listeners
+   - Click handler > ViewModel/Presenter method
+   - ViewModel > Repository > API service interface
+   - API service > actual HTTP call
 
-4. **Map DI bindings** (if Dagger/Hilt is used): Find `@Module` classes to understand which implementations are provided for which interfaces.
+4. **Map DI bindings** (if Dagger/Hilt used): Find `@Module` classes to understand which implementations provided for which interfaces.
 
-5. **Handle obfuscated code**: When class names are mangled, use string literals and library API calls as anchors. Retrofit annotations and URL strings are never obfuscated.
+5. **Handle obfuscated code**: When class names mangled, use string literals and library API calls as anchors. Retrofit annotations and URL strings never obfuscated.
 
 See `$SKILL_DIR/references/call-flow-analysis.md` for detailed techniques and grep commands.
 
 ### Phase 5: Extract and Document APIs
 
-Find all API endpoints and produce structured documentation.
+Find all API endpoints, produce structured documentation.
 
-**Action**: Run the API search script for a broad sweep.
+**Action**: Run API search script for broad sweep.
 
 ```bash
 bash $SKILL_DIR/scripts/find-api-calls.sh <output>/sources/
@@ -254,32 +254,31 @@ On Windows (PowerShell):
 & "$SKILL_DIR/scripts/find-api-calls.ps1" <output>/sources/ -Auth
 ```
 
-Document the endpoints in **two tiers** — going deep on every endpoint is
-prohibitively expensive on apps with 100+ paths, and most of them do not
-warrant it. Always produce Tier 1; expand Tier 2 only for the endpoints
-that matter.
+Document endpoints in **two tiers** — going deep on every endpoint
+prohibitively expensive on apps with 100+ paths, most do not warrant it.
+Always produce Tier 1; expand Tier 2 only for endpoints that matter.
 
 #### Tier 1 — flat inventory (always)
 
-A single table covering every discovered endpoint. Aim for one line each;
-if you cannot determine a column, write `?`.
+Single table covering every discovered endpoint. Aim one line each; cannot
+determine column, write `?`.
 
 | Host | Method | Path | Auth | Source file |
 |------|--------|------|------|-------------|
 | `api.example.com` | GET | `/v1/users/profile` | Bearer | `com/example/api/UserApi.java` |
 | `api.example.com` | POST | `/v1/auth/login` | none | `com/example/api/AuthApi.java` |
 
-This table answers "what does the backend look like" in one screen and
-takes ~5 minutes to produce from the `--paths` output even on a large app.
+This table answer "what does backend look like" in one screen, take ~5
+minutes to produce from `--paths` output even on large app.
 
 #### Tier 2 — per-endpoint detail (only for high-value endpoints)
 
-Reserve the detailed format for the few endpoints that actually need it:
+Reserve detailed format for few endpoints that need it:
 
-- the entire authentication flow (login, refresh, logout, OTP/SMS, anonymous, registration)
+- entire authentication flow (login, refresh, logout, OTP/SMS, anonymous, registration)
 - payment / checkout / order-creation endpoints
-- anything the user explicitly asked about
-- anything that looked unusual during the scan (custom signing, undocumented headers, etc.)
+- anything user explicitly asked about
+- anything unusual during scan (custom signing, undocumented headers, etc.)
 
 ```markdown
 ### `METHOD /path`
@@ -294,19 +293,19 @@ Reserve the detailed format for the few endpoints that actually need it:
 - **Called from**: `LoginActivity → LoginViewModel → UserRepository → ApiService`
 ```
 
-As a default, do not produce Tier 2 entries for more than ~10 endpoints
-unless the user explicitly asks for more — Tier 1 plus a Tier 2 deep dive
-on auth + 1-2 key flows is what most consumers of this work actually want.
+Default: do not produce Tier 2 entries for more than ~10 endpoints unless
+user explicitly ask — Tier 1 plus Tier 2 deep dive on authentication + 1-2 key
+flows is what most consumers of this work want.
 
-See `$SKILL_DIR/references/api-extraction-patterns.md` for library-specific search patterns and the full documentation template.
+See `$SKILL_DIR/references/api-extraction-patterns.md` for library-specific search patterns and full documentation template.
 
 ## Output
 
-At the end of the workflow, deliver:
+At end of workflow, deliver:
 
-1. **Decompiled source** in the output directory
+1. **Decompiled source** in output directory
 2. **Architecture summary** — app structure, main packages, pattern used
-3. **API documentation** — all discovered endpoints in the format above
+3. **API documentation** — all discovered endpoints in format above
 4. **Call flow map** — key paths from UI to network (especially authentication and main features)
 
 ## References

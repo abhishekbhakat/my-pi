@@ -26,7 +26,7 @@ const DEFAULTS = {
 	includeGitDiff: false,
 	includeChangedFiles: true,
 	includeTimeline: false,
-	timelineModel: "deepseek/deepseek-v4-flash",
+	timelineModel: "opencode/deepseek-v4-flash-free",
 	timelineReasoningEffort: "medium",
 	maxContextChars: 360000,
 	maxConversationChars: 40000,

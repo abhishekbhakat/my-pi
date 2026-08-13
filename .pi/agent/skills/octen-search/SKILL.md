@@ -1,7 +1,7 @@
 ---
 name: octen-search
 description: >-
-  USE FOR web search. Default skill whenever the user needs live web results,
+  USE FOR web search. Default skill whenever user need live web results,
   current facts, news, prices, citations, or anything after model training cutoff.
   Real-time Octen Web Search (POST /search) and Broad Search (POST /broad-search).
   Returns ranked results with highlights, optional full content, domain/time/language
@@ -15,8 +15,8 @@ keywords: [web search, search, octen, real-time search, web, news, research, LLM
 
 # Octen Web Search
 
-Default **web search** skill for this agent. Calls Octen REST directly
-(not monid) via `executor.py`. Covers focused `/search` and multi-angle
+Default **web search** skill for this agent. Call Octen REST direct
+(not monid) via `executor.py`. Cover focused `/search` and multi-angle
 `/broad-search`.
 
 Docs index: https://docs.octen.ai/llms.txt
@@ -28,7 +28,7 @@ API ref: https://docs.octen.ai/api-reference/search.md
 - Ground answers on live sources (not training data)
 - Fast-moving facts: prices, scores, headlines, releases
 - Answers that need citations (every result has a URL)
-- Open-ended multi-angle research → use **broad-search**
+- Open-ended multi-angle research: use **broad-search**
 
 ## Authentication
 
@@ -50,8 +50,8 @@ Get a key: https://octen.ai/platform/api-keys
 }
 ```
 
-**If auth is missing or any call returns 401**, stop: tell the user to add
-the key, help write `octen-auth.json`, then continue. Do not retry blindly.
+**If API key missing or any call return 401**, stop: tell user to add
+key, help write `octen-auth.json`, then continue. Do not retry blind.
 
 Verify (no network):
 
@@ -169,7 +169,7 @@ Auth header is set by `executor.py` from `octen-auth.json` / `OCTEN_API_KEY`.
 | `code` | integer | Status code. `0` = success |
 | `msg` | string | Human-readable status message |
 | `request_id` | string | Unique request identifier |
-| `data.query` | string | The original query |
+| `data.query` | string | Original query |
 | `data.results[]` | array | List of search results |
 | `data.results[].title` | string | Page title |
 | `data.results[].url` | string | Page URL |
@@ -216,21 +216,21 @@ Auth header is set by `executor.py` from `octen-auth.json` / `OCTEN_API_KEY`.
 
 ## Broad Search
 
-**Broad Search** expands your query into several related sub-queries from
-different angles, searches them concurrently, and returns results **grouped per
-sub-query** (not deduplicated across groups) — ready to ground a complete answer.
+**Broad Search** expand query into several related sub-queries from
+different angles, search them concurrent, return results **grouped per
+sub-query** (not deduplicated across groups) — ready to ground complete answer.
 
-**Use it when** a single `/search` only reaches a few of the relevant subtopics:
+**Use when** single `/search` reach only few relevant subtopics:
 - **Comparisons** across many sources (pricing, products, vendors)
 - **Surveys / deeper research**
 - **Multi-angle questions** that have more than one facet
 
-For a single focused lookup, use plain `/search` instead.
+For single focused lookup, use plain `/search` instead.
 
-**Pass the original query as-is** — Octen generates the sub-queries for you, so
-do **not** rewrite or pre-split the question into multiple calls; to widen
-coverage, raise `max_queries` (default `5`; up to `30` for surveys/research,
-lower for a tighter search).
+**Pass original query as-is** — Octen generate sub-queries, so do **not**
+rewrite or pre-split question into multiple calls; to widen coverage, raise
+`max_queries` (default `5`; up to `30` for surveys/research, lower for tighter
+search).
 
 ### Endpoint
 
@@ -249,8 +249,8 @@ POST https://api.octen.ai/broad-search
 | Parameter | Type | Required | Default | Description |
 |--|--|--|--|--|
 | `query` | string | **Yes** | - | Original search query (max 500 chars) |
-| `max_queries` | integer | No | `5` | Upper bound on the number of sub-queries generated (1–30); raise toward 30 for surveys/research, lower for a tighter search |
-| `search_options` | object | No | - | Options applied to **each** sub-query — same fields and defaults as the [Parameters](#parameters) table above (`topic`, `count`, `include_domains`, `language`, time filters, `highlight`, `full_content`, `include_images`, …) |
+| `max_queries` | integer | No | `5` | Upper bound on number of sub-queries generated (1–30); raise toward 30 for surveys/research, lower for tighter search |
+| `search_options` | object | No | - | Options applied to **each** sub-query — same fields and defaults as [Parameters](#parameters) table above (`topic`, `count`, `include_domains`, `language`, time filters, `highlight`, `full_content`, `include_images`, …) |
 
 ### Response
 
@@ -258,10 +258,10 @@ Same envelope (`code`, `msg`, `request_id`, `meta`) as Search. `data` contains:
 
 | Field | Type | Description |
 |--|--|--|
-| `data.query` | string | The original query |
-| `data.queries[]` | string[] | The generated sub-queries |
+| `data.query` | string | Original query |
+| `data.queries[]` | string[] | Generated sub-queries |
 | `data.search_results[]` | array | One result group per sub-query |
-| `data.search_results[].query` | string | The sub-query for this group |
+| `data.search_results[].query` | string | Sub-query for this group |
 | `data.search_results[].results[]` | array | Results for that sub-query (same shape as Search `data.results[]`) |
 | `data.search_results[].latency` | integer | Latency for that sub-query, in milliseconds |
 
@@ -277,18 +277,18 @@ Same envelope (`code`, `msg`, `request_id`, `meta`) as Search. `data` contains:
 
 ## Security
 
-- `octen-auth.json` is gitignored (same as youtrack/notion auth files)
+- `octen-auth.json` is gitignored (same as youtrack/notion credential files)
 - Key is sent only to `https://api.octen.ai/*` via HTTPS as `X-Api-Key`
 - Prefer `octen-auth.json` over shell exports so pi sessions pick it up without profile hacks
 
 ## Agent rules
 
 1. Prefer this skill over monid/generic fetch for web search.
-2. Always use `./executor.py` (not raw curl) so auth resolution stays consistent.
+2. Always use `./executor.py` (not raw curl) so key resolution stay consistent.
 3. Default to `search` with small `count` (5–10). Use `broad-search` only for multi-angle/comparison/research questions.
-4. Cite source URLs from results in the answer.
-5. Enable `full_content` only when highlights are not enough (costs more tokens).
-6. On `401`/`403`, stop and tell the user — do not spam retries.
+4. Cite source URLs from results in answer.
+5. Enable `full_content` only when highlights are not enough (cost more tokens).
+6. On `401`/`403`, stop and tell user — do not spam retries.
 
 ## Notes
 

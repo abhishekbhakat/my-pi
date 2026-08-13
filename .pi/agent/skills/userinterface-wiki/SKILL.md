@@ -1,6 +1,6 @@
 ---
 name: userinterface-wiki
-description: UI/UX best practices for web interfaces. Use when reviewing animations, CSS, audio, typography, UX patterns, prefetching, or icon implementations. Covers 11 categories from animation principles to typography. Outputs file:line findings.
+description: UI/UX best practices for web interfaces. Use when review animations, CSS, audio, typography, UX patterns, prefetching, or icon implementations. Cover 11 categories from animation principles to typography. Output file:line findings.
 license: MIT
 metadata:
   author: raphael-salaja
@@ -9,7 +9,7 @@ metadata:
 
 # User Interface Wiki
 
-Comprehensive UI/UX best practices guide for web interfaces. Contains 152 rules across 12 categories, prioritized by impact to guide automated code review and generation.
+UI/UX best practices guide for web interfaces. Contain 152 rules across 12 categories, prioritized by impact to guide automated code review and generation.
 
 ## When to Apply
 

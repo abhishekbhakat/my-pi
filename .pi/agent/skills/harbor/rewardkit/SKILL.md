@@ -1,17 +1,17 @@
 ---
 name: rewardkit
-description: Write Harbor task verifiers using Reward Kit. Use when creating or editing a 
-  task's tests/ directory, adding grading criteria, setting up LLM/agent judges, or designing 
-  verifiers that produce a reward score.
+description: Write Harbor task verifiers using Reward Kit. Use when create or edit
+  task tests/ directory, add grading criteria, set up LLM/agent judges, or design
+  verifiers that produce reward score.
 ---
 
-Help the user write task verifiers with Reward Kit. Reward Kit is a lightweight Python 
-package that turns a directory of criteria files into a reward score. Each criterion is a 
-Python function call or a TOML judge file; folders become separate rewards.
+Help user write task verifiers with Reward Kit. Reward Kit is lightweight Python
+package that turn directory of criteria files into reward score. Each criterion
+is Python function call or TOML judge file; folders become separate rewards.
 
-## Setup in a Harbor task
+## Setup in Harbor task
 
-Put criteria alongside `test.sh` in the task's `tests/` directory:
+Put criteria alongside `test.sh` in task `tests/` directory:
 
 ```
 tests/
@@ -26,19 +26,20 @@ tests/
 uvx --from 'harbor-rewardkit==0.1.*' rewardkit /tests
 ```
 
-This runs all criteria in `/tests/` against the workspace at `/app` and writes 
-`/logs/verifier/reward.json`. Defaults match Harbor's conventions — no extra config needed.
+This run all criteria in `/tests/` against workspace at `/app` and write
+`/logs/verifier/reward.json`. Defaults match Harbor conventions — no extra
+config needed.
 
-If judge criteria need API keys, pass them through `task.toml`:
+Judge criteria need API keys, pass through `task.toml`:
 ```toml
 [verifier.env]
 ANTHROPIC_API_KEY = "${ANTHROPIC_API_KEY}"
 ```
 
-Ask whether Reward Kit should run in the agent's shared environment or in a
-separate verifier environment. Prefer a separate verifier environment when judge
-prompts, grading dependencies, API keys, or clean-room checks should not be
-available to the agent:
+Ask whether Reward Kit should run in agent shared environment or separate
+verifier environment. Prefer separate verifier environment when judge prompts,
+grading dependencies, API keys, or clean-room checks should not be available
+to agent:
 
 ```toml
 [environment]
@@ -52,19 +53,18 @@ network_mode = "public"     # Verifier env baseline — LLM judge API calls
 docker_image = "python:3.12-slim"
 ```
 
-In shared mode, the verifier runs in the agent container and inherits
+In shared mode, verifier run in agent container and inherit
 `[environment].network_mode`. Put `[verifier].network_mode` only when verify()
-needs different network access than the agent phase (a phase override, not a
-baseline). If agent and verifier need different baselines without runtime
-switching, use `environment_mode = "separate"` and set
-`[verifier.environment].network_mode`.
+need different network access than agent phase (phase override, not baseline).
+If agent and verifier need different baselines without runtime switching, use
+`environment_mode = "separate"` and set `[verifier.environment].network_mode`.
 
-Judge criteria that call external APIs need a `public` baseline or allowlist on
-the verifier environment. Programmatic checks that only read local files can use
+Judge criteria that call external APIs need `public` baseline or allowlist on
+verifier environment. Programmatic checks that only read local files can use
 `no-network`.
 
-In separate mode, `tests/` is the verifier image build context and must provide
-`/tests/test.sh` at runtime; Harbor does not upload `tests/` into the running
+In separate mode, `tests/` is verifier image build context and must provide
+`/tests/test.sh` at runtime; Harbor do not upload `tests/` into running
 verifier container.
 
 ## Programmatic criteria
@@ -80,26 +80,26 @@ rk.command_succeeds("python main.py", weight=2.0)
 rk.json_key_equals("result.json", "status", "ok")
 ```
 
-All criteria accept `weight` (default `1.0`) and `isolated` (default `False`, runs in 
-overlayfs so side effects don't leak).
+All criteria accept `weight` (default `1.0`) and `isolated` (default `False`,
+run in overlayfs so side effects do not leak).
 
 ### Available built-ins
 
-- **Files**: `file_exists`, `file_not_exists`, `file_contains`, `file_contains_regex`, 
+- **Files**: `file_exists`, `file_not_exists`, `file_contains`, `file_contains_regex`,
   `file_matches`, `files_equal`, `diff_ratio`
-- **Commands**: `command_succeeds`, `command_output_contains`, `command_output_matches`, 
+- **Commands**: `command_succeeds`, `command_output_contains`, `command_output_matches`,
   `command_output_matches_regex` (30s default timeout, optional `cwd`)
-- **Data**: `json_key_equals`, `json_path_equals`, `csv_cell_equals`, `xlsx_cell_equals` 
-  (needs `[office]` extra), `sqlite_query_equals`
+- **Data**: `json_key_equals`, `json_path_equals`, `csv_cell_equals`, `xlsx_cell_equals`
+  (need `[office]` extra), `sqlite_query_equals`
 - **HTTP**: `http_status_equals`, `http_response_contains`
-- **Images**: `image_similarity`, `image_size_equals` (needs `[image]` extra)
+- **Images**: `image_similarity`, `image_size_equals` (need `[image]` extra)
 - **Trajectory**: `trajectory_tool_used`, `trajectory_tool_not_used`, `trajectory_turn_count`
 
 For extras, install with `uv tool install harbor-rewardkit[all]`.
 
 ## Custom criteria
 
-Use the `@criterion` decorator. First parameter is always `workspace: Path`. Returns 
+Use `@criterion` decorator. First parameter always `workspace: Path`. Return
 `bool` or `float`:
 
 ```python
@@ -111,7 +111,8 @@ def has_valid_output(workspace: Path) -> bool:
     return (workspace / "output.txt").read_text().strip() != ""
 ```
 
-Zero-parameter criteria auto-register. Criteria with extra args must be called via `rk`:
+Zero-parameter criteria auto-register. Criteria with extra args must be called
+via `rk`:
 
 ```python
 @criterion(description="output has at least {n} lines")
@@ -122,12 +123,12 @@ rk.has_n_lines(10, weight=2.0)
 rk.has_n_lines(50, weight=1.0)
 ```
 
-For criteria shared across reward subdirs, define with `shared=True` in a root-level file 
-and call from subdirs.
+For criteria shared across reward subdirs, define with `shared=True` in
+root-level file and call from subdirs.
 
 ## Judge criteria (LLM or agent-as-a-judge)
 
-For subjective checks (quality, readability, edge cases), create a TOML file:
+For subjective checks (quality, readability, edge cases), create TOML file:
 
 ```toml
 [judge]
@@ -146,13 +147,13 @@ weight = 2.0
 ```
 
 Criterion types:
-- `binary` — yes/no → 1.0 or 0.0
+- `binary` — yes/no = 1.0 or 0.0
 - `likert` — 1..points, normalized to [0, 1]
 - `numeric` — min..max, normalized to [0, 1]
 
 ### Agent judges
 
-Agent judges shell out to a CLI and can explore the filesystem:
+Agent judges shell out to CLI and can explore filesystem:
 
 ```toml
 [judge]
@@ -165,13 +166,15 @@ description = "Does the solution handle edge cases?"
 type = "binary"
 ```
 
-Slower and more expensive than LLM judges, but they can run commands and inspect files.
+Slower and more expensive than LLM judges, but can run commands and inspect
+files.
 
 ### Useful `[judge]` options
 
-`timeout` (default 300), `reasoning_effort` (`low`|`medium`|`high`), `reference` (path to 
-reference solution), `atif-trajectory` (evaluate the agent's trajectory), `weight`, 
-`prompt_template` (custom prompt with `{criteria}` placeholder).
+`timeout` (default 300), `reasoning_effort` (`low`|`medium`|`high`),
+`reference` (path to reference solution), `atif-trajectory` (evaluate agent
+trajectory), `weight`, `prompt_template` (custom prompt with `{criteria}`
+placeholder).
 
 ### Scoring aggregation (within one judge TOML)
 
@@ -181,12 +184,12 @@ aggregation = "all_pass"   # weighted_mean | all_pass | any_pass | threshold
 threshold = 0.7             # only for threshold
 ```
 
-Only affects how this file's own criteria combine. To aggregate *across*
+Affect only how this file own criteria combine. To aggregate *across*
 dimensions, see [Aggregating dimensions](#aggregating-dimensions).
 
 ## Multi-reward tasks
 
-Put criteria in subdirectories — each becomes a separate reward:
+Put criteria in subdirectories — each become separate reward:
 
 ```
 tests/
@@ -206,9 +209,9 @@ Produces:
 
 ### Aggregating dimensions
 
-To add aggregated scores on top of the per-dimension keys, add a root-level
-`tests/reward.toml` with one or more `[[reward]]` tables. Each adds one key to
-`reward.json`, aggregating the dimensions with the same modes as `[scoring]`:
+To add aggregated scores on top of per-dimension keys, add root-level
+`tests/reward.toml` with one or more `[[reward]]` tables. Each add one key to
+`reward.json`, aggregate dimensions with same modes as `[scoring]`:
 
 ```toml
 # tests/reward.toml
@@ -222,9 +225,9 @@ aggregation = "all_pass"   # weighted_mean | all_pass | any_pass | threshold
 { "correctness": 0.75, "structure": 1.0, "quality": 0.6, "reward": 0.0 }
 ```
 
-The per-dimension scores stay; aggregated keys are added alongside them (a
-`name` may not collide with a dimension). Each dimension is weighted by the sum
-of its criteria weights; `reward-details.json` keeps the full breakdown.
+Per-dimension scores stay; aggregated keys added alongside them (`name` may not
+collide with dimension). Each dimension weighted by sum of its criteria
+weights; `reward-details.json` keep full breakdown.
 
 ## Output files
 
@@ -233,39 +236,38 @@ of its criteria weights; `reward-details.json` keeps the full breakdown.
 
 ## Multi-step tasks
 
-In a multi-step task, each step has its own `tests/` under
-`steps/{name}/tests/`, and the verifier runs once per step. Reward Kit behaves
-the same as in a single-step task: for each step it reads `/tests`, runs the
-criteria against `/app`, and writes `/logs/verifier/reward.json` for that step.
-Harbor then aggregates per-step results into a trial-level reward via
-`multi_step_reward_strategy` in `task.toml` — aggregation happens *outside*
-Reward Kit, so don't try to encode cross-step logic in your criteria.
+In multi-step task, each step have own `tests/` under `steps/{name}/tests/`,
+verifier run once per step. Reward Kit behave same as single-step task: for
+each step read `/tests`, run criteria against `/app`, write
+`/logs/verifier/reward.json` for that step. Harbor then aggregate per-step
+results into trial-level reward via `multi_step_reward_strategy` in `task.toml`
+— aggregation happen *outside* Reward Kit, so do not encode cross-step logic in
+criteria.
 
-A task-level `tests/` directory (at the task root) is uploaded to `/tests`
-first, then the step's own `tests/` is layered on top (same-name files win).
-Put shared helpers (common `checks.py` functions with `shared=True`, fixture
-files, a fallback `test.sh`) at the task level, and step-specific criteria
-under each step.
+Task-level `tests/` directory (at task root) uploaded to `/tests` first, then
+step own `tests/` layered on top (same-name files win). Put shared helpers
+(common `checks.py` functions with `shared=True`, fixture files, fallback
+`test.sh`) at task level, and step-specific criteria under each step.
 
-Multi-reward subdirectories still work *within* a step: `steps/foo/tests/`
-can contain `correctness/`, `structure/`, `quality/` — each produces a
-separate reward key for that step, and `multi_step_reward_strategy = "mean"`
-averages each key across steps. Use `"final"` when the last step is an
-end-to-end check whose rewards already represent the full task.
+Multi-reward subdirectories work *within* step: `steps/foo/tests/` can contain
+`correctness/`, `structure/`, `quality/` — each produce separate reward key for
+that step, and `multi_step_reward_strategy = "mean"` average each key across
+steps. Use `"final"` when last step is end-to-end check whose rewards already
+represent full task.
 
 ## When to reach for what
 
-- **Use built-ins** for file existence, string matches, command output, JSON/CSV checks, 
+- **Built-ins** for file existence, string matches, command output, JSON/CSV checks,
   HTTP probes.
-- **Use `@criterion`** when logic is task-specific but still programmatic.
-- **Use LLM judges** for subjective quality dimensions (readability, correctness of prose).
-- **Use agent judges** when the rubric requires exploring the filesystem or running code 
-  (e.g. "does the test suite actually pass?").
-- **Use subdirectories** when you want separate scores (correctness vs structure vs 
+- **`@criterion`** when logic task-specific but programmatic.
+- **LLM judges** for subjective quality dimensions (readability, correctness of prose).
+- **Agent judges** when rubric require explore filesystem or run code
+  (e.g. "does test suite pass?").
+- **Subdirectories** when you want separate scores (correctness vs structure vs
   quality) rather than one blended number.
-- **Use `isolated=True`** for any criterion that runs mutating commands, so it doesn't 
-  corrupt the workspace for other criteria.
+- **`isolated=True`** for any criterion that run mutating commands, so it do not
+  corrupt workspace for other criteria.
 
 ## Working example
 
-See `examples/tasks/reward-kit-example/` in the Harbor repo.
+See `examples/tasks/reward-kit-example/` in Harbor repo.
