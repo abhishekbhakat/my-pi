@@ -1,6 +1,6 @@
 export type Kind = "question" | "instruction";
 export type Lane = "ops" | "code" | "terminal";
-export type Level = "basic" | "adv";
+export type Level = "basic" | "adv" | "readonly";
 
 export interface ModelRef {
 	provider: string;
@@ -21,11 +21,11 @@ export interface ClassifierRef extends ModelRef {
 
 export type RouteKey =
 	| "question"
-	| "tool"
 	| "instruction.code.basic"
 	| "instruction.code.adv"
 	| "instruction.ops.basic"
 	| "instruction.ops.adv"
+	| "instruction.terminal.readonly"
 	| "instruction.terminal.basic"
 	| "instruction.terminal.adv";
 
@@ -33,30 +33,33 @@ export interface IntentRouterConfig {
 	allowEnable: boolean;
 	classifier: ClassifierRef;
 	routes: Partial<Record<RouteKey, ModelRef>>;
+	migrationNotes: string[];
+}
+
+export function instructionRouteKey(lane: Lane, level: Level): RouteKey {
+	if (lane === "terminal" && level === "readonly") return "instruction.terminal.readonly";
+	if (level === "basic" || level === "adv") {
+		return `instruction.${lane}.${level}`;
+	}
+	throw new Error(`invalid instruction route: ${lane}.${level}`);
 }
 
 export interface Decision {
 	kind: Kind;
 	lane?: Lane;
 	level?: Level;
-	tool?: string;
 	needsCurrentThread?: boolean;
 	includesEnglish: boolean;
 	key: RouteKey;
 }
 
-export interface ToolInfo {
-	name: string;
-	description: string;
-}
-
 export const ROUTE_KEYS: RouteKey[] = [
 	"question",
-	"tool",
 	"instruction.code.basic",
 	"instruction.code.adv",
 	"instruction.ops.basic",
 	"instruction.ops.adv",
+	"instruction.terminal.readonly",
 	"instruction.terminal.basic",
 	"instruction.terminal.adv",
 ];
@@ -72,7 +75,6 @@ export function modelLabel(ref: ModelRef): string {
 export function formatDecision(decision: Decision): string {
 	if (decision.needsCurrentThread) return "stay";
 	const suffix = decision.includesEnglish ? "+en" : "";
-	if (decision.tool) return `tool/${decision.tool}${suffix}`;
 	if (decision.kind === "question") return "question";
 	return `${decision.kind}/${decision.lane}/${decision.level}${suffix}`;
 }

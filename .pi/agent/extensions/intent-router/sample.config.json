@@ -15,10 +15,6 @@
       "provider": "",
       "id": ""
     },
-    "tool": {
-      "provider": "runinfra",
-      "id": "deepseek-v4-flash"
-    },
     "instruction.code.basic": {
       "provider": "runinfra",
       "id": "deepseek-v4-flash"
@@ -34,6 +30,10 @@
     "instruction.ops.adv": {
       "provider": "",
       "id": ""
+    },
+    "instruction.terminal.readonly": {
+      "provider": "runinfra",
+      "id": "deepseek-v4-flash"
     },
     "instruction.terminal.basic": {
       "provider": "",

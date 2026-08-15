@@ -2,7 +2,7 @@ import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { classifyGemini } from "./gemini";
 import { classifyOpenRouter } from "./openrouter";
 import { parseDecision } from "./parse";
-import { PROBE_PROMPT, type IntentRouterConfig, type ToolInfo } from "./types";
+import { PROBE_PROMPT, type IntentRouterConfig } from "./types";
 
 function sleep(ms: number, signal?: AbortSignal): Promise<void> {
 	if (ms <= 0) return Promise.resolve();
@@ -25,7 +25,6 @@ export async function classify(
 	ctx: ExtensionContext,
 	config: IntentRouterConfig,
 	prompt: string,
-	tools: ToolInfo[],
 	lastAssistant?: string,
 	signal?: AbortSignal,
 ) {
@@ -37,9 +36,9 @@ export async function classify(
 		try {
 			const raw =
 				config.classifier.backend === "gemini"
-					? await classifyGemini(ctx, config.classifier, clipped, tools, lastAssistant, signal)
-					: await classifyOpenRouter(ctx, config.classifier, clipped, tools, lastAssistant, signal);
-			return parseDecision(raw, tools);
+					? await classifyGemini(ctx, config.classifier, clipped, lastAssistant, signal)
+					: await classifyOpenRouter(ctx, config.classifier, clipped, lastAssistant, signal);
+			return parseDecision(raw);
 		} catch (error) {
 			lastError = error;
 			if (signal?.aborted || attempt >= attempts) break;
@@ -54,7 +53,7 @@ export async function probeClassifier(
 	config: IntentRouterConfig,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
 	try {
-		await classify(ctx, config, PROBE_PROMPT, [], undefined, AbortSignal.timeout(15000));
+		await classify(ctx, config, PROBE_PROMPT, undefined, AbortSignal.timeout(15000));
 		return { ok: true };
 	} catch (error) {
 		return { ok: false, error: error instanceof Error ? error.message : String(error) };

@@ -1,10 +1,4 @@
-import { isRecord, type Decision, type Lane, type Level, type RouteKey, type ToolInfo } from "./types";
-
-export function routeKey(decision: Omit<Decision, "key">): RouteKey {
-	if (decision.tool) return "tool";
-	if (decision.kind === "question") return "question";
-	return `instruction.${decision.lane}.${decision.level}` as RouteKey;
-}
+import { instructionRouteKey, isRecord, type Decision } from "./types";
 
 export function extractJsonObject(text: string): unknown {
 	const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
@@ -22,12 +16,11 @@ export function extractJsonObject(text: string): unknown {
 	return JSON.parse(raw.slice(start, end + 1));
 }
 
-export function parseDecision(value: unknown, tools: ToolInfo[]): Decision {
+export function parseDecision(value: unknown): Decision {
 	if (!isRecord(value) || (value.kind !== "question" && value.kind !== "instruction")) {
 		throw new Error("classifier kind must be question|instruction");
 	}
-	const needsCurrentThread = value.needsCurrentThread === true;
-	if (needsCurrentThread) {
+	if (value.needsCurrentThread === true) {
 		return {
 			kind: value.kind,
 			needsCurrentThread: true,
@@ -35,32 +28,23 @@ export function parseDecision(value: unknown, tools: ToolInfo[]): Decision {
 			key: "question",
 		};
 	}
-	const allowed = new Set(tools.map((tool) => tool.name));
-	const tool = typeof value.tool === "string" && allowed.has(value.tool) ? value.tool : undefined;
-	if (value.kind === "question" && !tool) {
+	if (value.kind === "question") {
 		return { kind: "question", includesEnglish: false, key: "question" };
-	}
-	const includesEnglish = value.includesEnglish !== false;
-	if (tool) {
-		const lane: Lane | undefined =
-			value.lane === "ops" || value.lane === "code" || value.lane === "terminal"
-				? value.lane
-				: undefined;
-		const level: Level | undefined =
-			value.level === "basic" || value.level === "adv" ? value.level : undefined;
-		return { kind: "instruction", lane, level, tool, includesEnglish: false, key: "tool" };
 	}
 	if (value.lane !== "ops" && value.lane !== "code" && value.lane !== "terminal") {
 		throw new Error("instruction lane must be ops|code|terminal");
 	}
-	if (value.level !== "basic" && value.level !== "adv") {
-		throw new Error("instruction level must be basic|adv");
+	if (value.level !== "basic" && value.level !== "adv" && value.level !== "readonly") {
+		throw new Error("instruction level must be basic|adv|readonly");
 	}
-	const parsed = {
-		kind: "instruction" as const,
+	if (value.level === "readonly" && value.lane !== "terminal") {
+		throw new Error("readonly is only valid with lane=terminal");
+	}
+	return {
+		kind: "instruction",
 		lane: value.lane,
 		level: value.level,
-		includesEnglish,
+		includesEnglish: value.includesEnglish !== false,
+		key: instructionRouteKey(value.lane, value.level),
 	};
-	return { ...parsed, key: routeKey(parsed) };
 }

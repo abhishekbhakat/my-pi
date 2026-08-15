@@ -62,9 +62,19 @@ export function loadConfig(): IntentRouterConfig | null {
 		throw new Error("intent-router config missing classifier/routes");
 	}
 	const routes: Partial<Record<RouteKey, ModelRef>> = {};
+	const migrationNotes: string[] = [];
 	for (const key of ROUTE_KEYS) {
 		const parsed = parseOptionalModelRef(raw.routes[key], key);
 		if (parsed) routes[key] = parsed;
+	}
+	const leftoverTool = parseOptionalModelRef(raw.routes.tool, "tool");
+	if (leftoverTool && !routes["instruction.terminal.readonly"]) {
+		routes["instruction.terminal.readonly"] = leftoverTool;
+		migrationNotes.push(
+			"routes.tool is deprecated; copied to instruction.terminal.readonly. Remove routes.tool from config.json.",
+		);
+	} else if (leftoverTool) {
+		migrationNotes.push("routes.tool is ignored. Use instruction.terminal.readonly.");
 	}
 	const classifier = parseClassifier(raw.classifier);
 	if (!classifier.id) throw new Error("intent-router classifier.id is required");
@@ -72,6 +82,7 @@ export function loadConfig(): IntentRouterConfig | null {
 		allowEnable: raw.enabled !== false,
 		classifier,
 		routes,
+		migrationNotes,
 	};
 }
 

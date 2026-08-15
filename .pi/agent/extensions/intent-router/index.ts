@@ -9,21 +9,9 @@ import {
 	ROUTE_KEYS,
 	type Decision,
 	type ModelRef,
-	type ToolInfo,
 } from "./types";
 
 type ColorState = "plain" | "switch" | "restore" | "adv" | "fail";
-
-function activeTools(pi: ExtensionAPI): ToolInfo[] {
-	const active = new Set(pi.getActiveTools());
-	return pi
-		.getAllTools()
-		.filter((tool) => active.has(tool.name))
-		.map((tool) => ({
-			name: tool.name,
-			description: tool.description || tool.name,
-		}));
-}
 
 function sameModel(left: ModelRef | undefined, right: ModelRef): boolean {
 	return left?.provider === right.provider && left?.id === right.id;
@@ -106,6 +94,9 @@ export default function (pi: ExtensionAPI) {
 				result.ok ? "info" : "warning",
 			);
 		}
+		if (notify && fileConfig.migrationNotes.length > 0) {
+			ctx.ui.notify(fileConfig.migrationNotes.join("\n"), "warning");
+		}
 	}
 
 	pi.on("session_start", async (_event, ctx) => {
@@ -126,10 +117,10 @@ export default function (pi: ExtensionAPI) {
 						includesEnglish: false,
 						key: "question" as const,
 				  }
-				: await classify(ctx, fileConfig, prompt, activeTools(pi), prior, ctx.signal);
+				: await classify(ctx, fileConfig, prompt, prior, ctx.signal);
 			const current = ctx.model ? modelLabel(ctx.model) : "current";
 			const skipEnglish =
-				decision.includesEnglish && !decision.tool && !decision.needsCurrentThread;
+				decision.includesEnglish && !decision.needsCurrentThread;
 			const target =
 				!decision.needsCurrentThread && !skipEnglish
 					? fileConfig.routes[decision.key]

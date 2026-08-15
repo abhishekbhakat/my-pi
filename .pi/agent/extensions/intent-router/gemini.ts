@@ -3,7 +3,7 @@ import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { resolveConfigApiKey } from "./config";
 import { extractJsonObject } from "./parse";
 import { buildClassifyPrompt, DECISION_JSON_SCHEMA } from "./prompt";
-import { DEFAULT_GEMINI_MODEL, type ClassifierRef, type ToolInfo } from "./types";
+import { DEFAULT_GEMINI_MODEL, type ClassifierRef } from "./types";
 
 async function resolveGeminiKey(ctx: ExtensionContext, classifier: ClassifierRef): Promise<string> {
 	const configApiKey = resolveConfigApiKey(classifier.apiKey);
@@ -23,7 +23,6 @@ export async function classifyGemini(
 	ctx: ExtensionContext,
 	classifier: ClassifierRef,
 	prompt: string,
-	tools: ToolInfo[],
 	lastAssistant: string | undefined,
 	signal?: AbortSignal,
 ): Promise<unknown> {
@@ -33,7 +32,7 @@ export async function classifyGemini(
 		model: geminiModelId(classifier.id),
 		contents: prompt,
 		config: {
-			systemInstruction: buildClassifyPrompt(tools, lastAssistant),
+			systemInstruction: buildClassifyPrompt(lastAssistant),
 			responseMimeType: "application/json",
 			responseJsonSchema: DECISION_JSON_SCHEMA,
 			temperature: 0,

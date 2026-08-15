@@ -2,7 +2,7 @@ import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { resolveConfigApiKey } from "./config";
 import { extractJsonObject } from "./parse";
 import { buildClassifyPrompt } from "./prompt";
-import { DEFAULT_CLASSIFIER_BASE_URL, isRecord, type ClassifierRef, type ToolInfo } from "./types";
+import { DEFAULT_CLASSIFIER_BASE_URL, isRecord, type ClassifierRef } from "./types";
 
 async function resolveOpenRouterRequest(
 	ctx: ExtensionContext,
@@ -65,7 +65,6 @@ export async function classifyOpenRouter(
 	ctx: ExtensionContext,
 	classifier: ClassifierRef,
 	prompt: string,
-	tools: ToolInfo[],
 	lastAssistant: string | undefined,
 	signal?: AbortSignal,
 ): Promise<unknown> {
@@ -82,7 +81,7 @@ export async function classifyOpenRouter(
 			max_tokens: classifier.maxTokens ?? 1024,
 			response_format: { type: "json_object" },
 			messages: [
-				{ role: "system", content: buildClassifyPrompt(tools, lastAssistant) },
+				{ role: "system", content: buildClassifyPrompt(lastAssistant) },
 				{ role: "user", content: prompt },
 			],
 		}),
