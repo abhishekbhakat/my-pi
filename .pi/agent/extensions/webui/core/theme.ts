@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { getPiPackageRoot } from "../utils/path";
+import { getCoreThemesDir } from "../utils/path";
 
 interface ThemeJson {
 	vars?: Record<string, string | number>;
@@ -24,8 +24,8 @@ function getThemeFile(themeName?: string): string {
 	const globalTheme = resolve(homeDir, ".pi", "agent", "themes", `${name}.json`);
 	if (existsSync(globalTheme)) return globalTheme;
 
-	// 3. Built-in theme shipped with pi package
-	return resolve(getPiPackageRoot(), "dist", "modes", "interactive", "theme", `${name}.json`);
+	// 3. Built-in theme shipped with pi package (node + bun layouts)
+	return resolve(getCoreThemesDir(), `${name}.json`);
 }
 
 function loadThemeJson(themeName?: string): ThemeJson {

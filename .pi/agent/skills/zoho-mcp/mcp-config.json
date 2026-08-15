@@ -1,0 +1,9 @@
+{
+  "command": "npx",
+  "args": [
+    "mcp-remote",
+    "https://books-transactions-60081589433.zohomcp.in/mcp/761a1bda3ed2a40a6324226fca4731a4/message",
+    "--transport",
+    "http-only"
+  ]
+}

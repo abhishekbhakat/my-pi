@@ -1,0 +1,47 @@
+{
+  "enabled": true,
+  "classifier": {
+    "backend": "gemini",
+    "provider": "google",
+    "id": "gemini-3.7-flash",
+    "thinkingLevel": "medium",
+    "maxTokens": 1024,
+    "retries": 1,
+    "retryDelayMs": 250,
+    "apiKey": ""
+  },
+  "routes": {
+    "question": {
+      "provider": "",
+      "id": ""
+    },
+    "tool": {
+      "provider": "opencode",
+      "id": "deepseek-v4-flash"
+    },
+    "instruction.code.basic": {
+      "provider": "opencode",
+      "id": "deepseek-v4-flash"
+    },
+    "instruction.code.adv": {
+      "provider": "",
+      "id": ""
+    },
+    "instruction.ops.basic": {
+      "provider": "opencode",
+      "id": "deepseek-v4-flash"
+    },
+    "instruction.ops.adv": {
+      "provider": "",
+      "id": ""
+    },
+    "instruction.terminal.basic": {
+      "provider": "",
+      "id": ""
+    },
+    "instruction.terminal.adv": {
+      "provider": "",
+      "id": ""
+    }
+  }
+}

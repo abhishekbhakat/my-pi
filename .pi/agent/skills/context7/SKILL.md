@@ -1,29 +1,29 @@
 ---
 name: context7
-description: Use the ctx7 CLI to fetch library documentation, manage AI coding skills, and configure Context7 MCP. Activate when the user mentions "ctx7" or "context7", needs current docs for any library, wants to install/search/generate skills, or needs to set up Context7 for their AI coding agent.
+description: Use ctx7 CLI to fetch library documentation, manage AI coding skills, and configure Context7 MCP. Activate when user mention "ctx7" or "context7", need current docs for any library, want to install/search/generate skills, or need to set up Context7 for AI coding agent.
 user-invocable: false
 disable-model-invocation: false
 ---
 
 # ctx7 CLI
 
-The Context7 CLI does three things: fetches up-to-date library documentation, manages AI coding skills, and sets up Context7 MCP for your editor.
+Context7 CLI do three things: fetch up-to-date library documentation, manage AI coding skills, and set up Context7 MCP for editor.
 
-Make sure the CLI is up to date before running commands:
+Make sure CLI is up to date before run commands:
 
 ```bash
 npm install -g ctx7@latest
 ```
 
-Or run directly without installing:
+Or run direct without install:
 
 ```bash
 npx ctx7@latest <command>
 ```
 
-## What this skill covers
+## What this skill cover
 
-- **[Documentation](references/docs.md)** — Fetch current docs for any library. Use when writing code, verifying API signatures, or when training data may be outdated.
+- **[Documentation](references/docs.md)** — Fetch current docs for any library. Use when write code, verify API signatures, or when training data may be outdated.
 - **[Skills management](references/skills.md)** — Install, search, suggest, list, remove, and generate AI coding skills.
 - **[Setup](references/setup.md)** — Configure Context7 MCP for Claude Code / Cursor / OpenCode.
 
@@ -58,9 +58,9 @@ ctx7 logout              # Clear stored tokens
 ctx7 whoami              # Show current login status (name + email)
 ```
 
-Most commands work without login. Exceptions: `skills generate` always requires it; `ctx7 setup` requires it unless `--api-key` or `--oauth` is passed. Login also unlocks higher rate limits on docs commands.
+Most commands work without login. Exceptions: `skills generate` always require it; `ctx7 setup` require it unless `--api-key` or `--oauth` is passed. Login also unlock higher rate limits on docs commands.
 
-Set an API key via environment variable to skip interactive login entirely:
+Set API key via environment variable to skip interactive login entire:
 
 ```bash
 export CONTEXT7_API_KEY=your_key
@@ -68,7 +68,7 @@ export CONTEXT7_API_KEY=your_key
 
 ## Common Mistakes
 
-- Library IDs require a `/` prefix — `/facebook/react` not `facebook/react`
-- Always run `ctx7 library` first — `ctx7 docs react "hooks"` will fail without a valid ID
+- Library IDs require `/` prefix — `/facebook/react` not `facebook/react`
+- Always run `ctx7 library` first — `ctx7 docs react "hooks"` will fail without valid ID
 - Repository format for skills is `/owner/repo` — e.g., `ctx7 skills install /anthropics/skills`
-- `skills generate` requires login — run `ctx7 login` first
+- `skills generate` require login — run `ctx7 login` first

@@ -1,44 +1,44 @@
 ---
 name: ontology
 description: >
-  Read, create, and edit OWL/RDF ontology files (.owl, .ttl, .rdf) with Python, and
-  generate ORM database models from them — SQLAlchemy models.py in Python and Drizzle
-  schema.ts in TypeScript. Use when the user mentions ontology, OWL, RDF, turtle, SPARQL,
-  OWLReady2, RDFLib, schema.org, SALI, legal ontology, knowledge graph schema, class
-  hierarchy, object property, datatype property, or wants to turn an ontology into
-  SQLAlchemy / Drizzle ORM models, derive database schemas from an ontology, or keep
-  an ontology and ORM in sync.
+  Read, create, edit OWL/RDF ontology files (.owl, .ttl, .rdf) with Python,
+  generate ORM database models from them — SQLAlchemy models.py in Python,
+  Drizzle schema.ts in TypeScript. Use when user mention ontology, OWL, RDF,
+  turtle, SPARQL, OWLReady2, RDFLib, schema.org, SALI, legal ontology,
+  knowledge graph schema, class hierarchy, object property, datatype property,
+  or want to turn ontology into SQLAlchemy / Drizzle ORM models, derive
+  database schemas from ontology, or keep ontology and ORM in sync.
 user-invocable: true
 disable-model-invocation: false
 ---
 
-# Ontology Engineering (Python + OWL → ORM)
+# Ontology Engineering (Python + OWL to ORM)
 
 Work with OWL/RDF ontologies in Python using **uv-managed tooling**, then derive database models: **SQLAlchemy 2.0** (Python) and **Drizzle ORM** (TypeScript). Never use bare `python3`, `pip`, `poetry`, or `conda`.
 
 ## When to use this skill
 
-- Read / inspect an existing `.owl`, `.ttl`, `.rdf`, `.n3` file (classes, properties, individuals)
-- Create a new ontology from scratch (TBox + ABox)
-- Edit an ontology: add classes, subclass links, datatype properties, object properties, individuals
-- Generate SQLAlchemy `models.py` from an ontology
-- Generate Drizzle `schema.ts` from an ontology
-- Keep an ontology and ORM schema in sync (single source of truth = ontology)
+- Read / inspect existing `.owl`, `.ttl`, `.rdf`, `.n3` file (classes, properties, individuals)
+- Create new ontology from scratch (TBox + ABox)
+- Edit ontology: add classes, subclass links, datatype properties, object properties, individuals
+- Generate SQLAlchemy `models.py` from ontology
+- Generate Drizzle `schema.ts` from ontology
+- Keep ontology and ORM schema in sync (single source of truth = ontology)
 - Write SPARQL queries against ontology files
 
 ## Scripts (fast track — prefer these)
 
-All scripts have a `#!/usr/bin/env -S uv run --script` shebang with PEP 723 inline deps — execute them directly, no `uv run` prefix, no project setup. Deps auto-resolve on first run.
+All scripts have `#!/usr/bin/env -S uv run --script` shebang with PEP 723 inline dependencies — execute direct, no `uv run` prefix, no project setup. Dependencies auto-resolve on first run.
 
 | Script | Command | Output |
 |--------|---------|--------|
 | Inspect ontology | `$SKILL_DIR/scripts/inspect_owl.py file.owl [--tree "Indian court"]` | counts, class tree |
-| OWL → IR | `$SKILL_DIR/scripts/extract_ir.py file.owl ir.json [--root LABEL \| --filter REGEX]` | `ir.json` |
-| IR → SQLAlchemy | `$SKILL_DIR/scripts/gen_sqlalchemy.py ir.json models.py` | `models.py` (SA 2.0 typed) |
-| IR → Drizzle | `$SKILL_DIR/scripts/gen_drizzle.mjs ir.json schema.ts` (Node) | `schema.ts` |
-| OWL → Mermaid | `$SKILL_DIR/scripts/owl_to_mermaid.py file.owl out.mmd [--root LABEL] [--filter REGEX] [--mode class\|instances] [--direction TD\|LR] [--max-nodes N]` | `.mmd` diagram |
+| OWL to IR | `$SKILL_DIR/scripts/extract_ir.py file.owl ir.json [--root LABEL \| --filter REGEX]` | `ir.json` |
+| IR to SQLAlchemy | `$SKILL_DIR/scripts/gen_sqlalchemy.py ir.json models.py` | `models.py` (SA 2.0 typed) |
+| IR to Drizzle | `$SKILL_DIR/scripts/gen_drizzle.mjs ir.json schema.ts` (Node) | `schema.ts` |
+| OWL to Mermaid | `$SKILL_DIR/scripts/owl_to_mermaid.py file.owl out.mmd [--root LABEL] [--filter REGEX] [--mode class\|instances] [--direction TD\|LR] [--max-nodes N]` | `.mmd` diagram |
 
-`$SKILL_DIR` = the directory containing this skill (parent of `SKILL.md`). Scripts are executable; the `uv run <script>` form also works if exec bits are lost (e.g. after copying). Toolchain note: OWL parsing stays Python (OWLReady2 is the right tool for OWL semantics); the Drizzle generator is **Node ESM** (`gen_drizzle.mjs`) so TS projects need no Python beyond the IR step, and the SQLAlchemy generator stays Python.
+`$SKILL_DIR` = directory containing this skill (parent of `SKILL.md`). Scripts executable; `uv run <script>` form also work if exec bits lost (e.g. after copy). Toolchain note: OWL parsing stay Python (OWLReady2 right tool for OWL semantics); Drizzle generator is **Node ESM** (`gen_drizzle.mjs`) so TS projects need no Python beyond IR step; SQLAlchemy generator stay Python.
 
 Typical pipeline:
 
@@ -50,9 +50,9 @@ $SKILL_DIR/scripts/gen_drizzle.mjs ir.json schema.ts    # ts stack (either/or)
 $SKILL_DIR/scripts/owl_to_mermaid.py ontology.owl diagram.mmd --root "Indian court"
 ```
 
-**Large ontologies** (10k+ classes, e.g. SALI/LMSS-based): always scope with `--root` or `--filter` before generating IR or diagrams.
+**Large ontologies** (10k+ classes, e.g. SALI/LMSS-based): always scope with `--root` or `--filter` before generate IR or diagrams.
 
-Edge cases the generators handle: SQL reserved table names (`case` → `case_tbl`), TS reserved exports (`case` → `caseTable`), self-referencing many-to-many (distinct FK columns), class emission in dependency order (parents first). Self-referencing m2m relationships are generated as tables but need manual `back_populates`/`relationName` wiring — flagged in output.
+Edge cases generators handle: SQL reserved table names (`case` becomes `case_tbl`), TS reserved exports (`case` becomes `caseTable`), self-referencing many-to-many (distinct FK columns), class emission in dependency order (parents first). Self-referencing m2m relationships generated as tables but need manual `back_populates`/`relationName` wiring — flagged in output.
 
 ## Environment (uv only)
 
@@ -65,7 +65,7 @@ uv run python script.py
 uv run python -c "from owlready2 import *; ..."
 ```
 
-`owlready2` needs **Java** for reasoners (HermiT/Pellet) only; basic read/write works without it.
+`owlready2` need **Java** for reasoners (HermiT/Pellet) only; basic read/write work without it.
 
 ```bash
 # macOS if reasoners needed
@@ -73,7 +73,7 @@ brew install openjdk@17
 export JAVA_HOME="$(/usr/libexec/java_home -v 17)"
 ```
 
-## Core idea: ontology is the schema source of truth
+## Core idea: ontology is schema source of truth
 
 ```text
 ontology.owl / .ttl
@@ -87,11 +87,11 @@ models.py  schema.ts
 (SQLAlchemy) (Drizzle)
 ```
 
-Build **one IR** (classes → tables, datatype props → columns, object props → FKs/relations), then render both ORMs from it so they never drift.
+Build **one IR** (classes become tables, datatype props become columns, object props become FKs/relations), then render both ORMs from it so they never drift.
 
 Full pipeline details: [references/orm-codegen.md](references/orm-codegen.md).
 
-## Workflow 1 — Read / inspect an OWL file
+## Workflow 1 — Read / inspect OWL file
 
 Always use `uv run`. Prefer OWLReady2 for class/property introspection.
 
@@ -151,7 +151,7 @@ OWLReady2 vs RDFLib (when to use which):
 
 Deep reference: [references/owl.md](references/owl.md).
 
-## Workflow 2 — Create / edit an ontology
+## Workflow 2 — Create / edit ontology
 
 Use OWLReady2. Mutate inside `with onto:` so entities bind to that ontology.
 
@@ -188,7 +188,7 @@ print("saved legal.owl")
 PY
 ```
 
-### Edit an existing ontology
+### Edit existing ontology
 
 ```bash
 uv run python <<'PY'
@@ -208,13 +208,13 @@ PY
 
 Authoring rules, restrictions, bulk loading from files, and pitfalls: [references/owl.md](references/owl.md).
 
-## Workflow 3 — Generate ORM models from the ontology
+## Workflow 3 — Generate ORM models from ontology
 
-Use the scripts (see fast track). Manual flow when scripts don't fit:
+Use scripts (see fast track). Manual flow when scripts do not fit:
 
-Parse the ontology once into an IR, then emit **either** SQLAlchemy **or** Drizzle (or both) from that IR.
+Parse ontology once into IR, then emit **either** SQLAlchemy **or** Drizzle (or both) from that IR.
 
-### 3.1 Extract the IR
+### 3.1 Extract IR
 
 ```bash
 $SKILL_DIR/scripts/extract_ir.py ontology.owl ontology_ir.json --root "Indian court"
@@ -235,7 +235,7 @@ The IR shape:
 }
 ```
 
-Generators consume only the IR — never re-read the OWL file.
+Generators consume only IR — never re-read OWL file.
 
 ### 3.2 Type mapping
 
@@ -256,7 +256,7 @@ XSD_TO_DRIZZLE    = {"string": "text", "integer": "integer", "float": "real",
 $SKILL_DIR/scripts/gen_sqlalchemy.py ontology_ir.json models.py
 ```
 
-Output follows **SQLAlchemy 2.0 typed style**: `DeclarativeBase`, `Mapped[]`, `mapped_column()`, `relationship()`. `rdfs:subClassOf` → **joined-table inheritance** (child `id` is `ForeignKey(parent.id)`); non-functional object properties → association tables.
+Output follow **SQLAlchemy 2.0 typed style**: `DeclarativeBase`, `Mapped[]`, `mapped_column()`, `relationship()`. `rdfs:subClassOf` = **joined-table inheritance** (child `id` is `ForeignKey(parent.id)`); non-functional object properties = association tables.
 
 ### 3.4 Generate Drizzle `schema.ts`
 
@@ -264,13 +264,13 @@ Output follows **SQLAlchemy 2.0 typed style**: `DeclarativeBase`, `Mapped[]`, `m
 $SKILL_DIR/scripts/gen_drizzle.mjs ontology_ir.json schema.ts
 ```
 
-Emits `pgTable` + `relations()` on both sides + junction tables for many-to-many. Re-export from a central `schema/index.ts` (drizzle-kit needs every table exported). Drizzle output is flat (no ORM-level inheritance); subclass tables share the parent's shape — add parent FK manually if wanted.
+Emit `pgTable` + `relations()` on both sides + junction tables for many-to-many. Re-export from central `schema/index.ts` (drizzle-kit need every table exported). Drizzle output flat (no ORM-level inheritance); subclass tables share parent shape — add parent FK manual if wanted.
 
 Mapping tables, junction details, edge cases: [references/orm-codegen.md](references/orm-codegen.md).
 
-### 3.5 SQLAlchemy → Alembic, Drizzle → drizzle-kit
+### 3.5 SQLAlchemy to Alembic, Drizzle to drizzle-kit
 
-After generating models:
+After generate models:
 
 ```bash
 # SQLAlchemy migrations
@@ -287,11 +287,11 @@ npx drizzle-kit migrate
 
 Rules:
 
-- ORM models are the source of truth for the DB; migrations are reviewed, versioned artifacts.
+- ORM models are source of truth for DB; migrations are reviewed, versioned artifacts.
 - One migration per logical change; never hand-edit old revision chains.
-- Keep `alembic_version` as the DB's version-of-record.
+- Keep `alembic_version` as DB version-of-record.
 
-## Workflow 4 — Ontology → Mermaid diagram
+## Workflow 4 — Ontology to Mermaid diagram
 
 ```bash
 # whole TBox (small ontologies only)
@@ -307,19 +307,19 @@ $SKILL_DIR/scripts/owl_to_mermaid.py ontology.owl trib.mmd --filter "(?i)tribuna
 $SKILL_DIR/scripts/owl_to_mermaid.py ontology.owl inst.mmd --mode instances --max-nodes 60
 ```
 
-Paste `.mmd` into Markdown with a ` ```mermaid ` fence, mermaid.live, or GitHub/Obsidian (both render Mermaid natively).
+Paste `.mmd` into Markdown with ` ```mermaid ` fence, mermaid.live, or GitHub/Obsidian (both render Mermaid native).
 
-## Design rules (ontology → ORM)
+## Design rules (ontology to ORM)
 
 | Rule                                           | Why                                                  |
 |------------------------------------------------|------------------------------------------------------|
-| Ontology file is the schema source of truth    | single place to evolve classes/properties            |
+| Ontology file is schema source of truth    | single place to evolve classes/properties            |
 | One IR, two generators                         | Python and TS models never drift                     |
-| `rdfs:label` → human-readable class/table name | fall back to URI local name if missing               |
-| Datatype property → column (XSD type mapped)   | keep type maps shared between generators             |
-| Object property → FK + relationship            | functional = one FK; non-functional = junction table |
-| `rdfs:subClassOf` → joined-table inheritance   | child `id` FK to parent `id`                         |
-| Always generate `relations()` in Drizzle       | needed for the relational query API                  |
+| `rdfs:label` = human-readable class/table name | fall back to URI local name if missing               |
+| Datatype property = column (XSD type mapped)   | keep type maps shared between generators             |
+| Object property = FK + relationship            | functional = one FK; non-functional = junction table |
+| `rdfs:subClassOf` = joined-table inheritance   | child `id` FK to parent `id`                         |
+| Always generate `relations()` in Drizzle       | needed for relational query API                  |
 | Run formatters after codegen                   | `ruff format` / `prettier`                           |
 | Re-run codegen when ontology changes           | CI diff check catches drift                          |
 
@@ -330,7 +330,7 @@ Anti-patterns and full checklist: [references/orm-codegen.md](references/orm-cod
 - [ ] Ontology loads with `uv run` + OWLReady2 without errors
 - [ ] Every class/property has `rdfs:label`
 - [ ] IR extraction script committed under `scripts/`
-- [ ] `models.py` and `schema.ts` both generated from the same IR
+- [ ] `models.py` and `schema.ts` both generated from same IR
 - [ ] SQLAlchemy models use 2.0 typed style (`Mapped[]`, `mapped_column()`)
 - [ ] Drizzle schema has `relations()` and real FK `references()`
 - [ ] Alembic / drizzle-kit migrations produced and reviewed
@@ -341,4 +341,4 @@ Anti-patterns and full checklist: [references/orm-codegen.md](references/orm-cod
 | File                                                   | Contents                                                                    |
 |--------------------------------------------------------|-----------------------------------------------------------------------------|
 | [references/owl.md](references/owl.md)                 | OWLReady2 + RDFLib: read, create, edit, SPARQL, pitfalls                    |
-| [references/orm-codegen.md](references/orm-codegen.md) | Full OWL→ORM mapping, Jinja templates, junction tables, Alembic/Drizzle-kit |
+| [references/orm-codegen.md](references/orm-codegen.md) | Full OWL-to-ORM mapping, Jinja templates, junction tables, Alembic/Drizzle-kit |

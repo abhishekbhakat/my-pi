@@ -341,6 +341,7 @@ export default function (pi: ExtensionAPI) {
 
 	pi.on("tool_call", async (event, ctx) => {
 		let violationReason: string | null = null;
+		let violationCommand: string | null = null;
 		let shouldAsk = false;
 
 		const checkPaths = (pathsToCheck: string[]) => {
@@ -397,6 +398,7 @@ export default function (pi: ExtensionAPI) {
 				for (const rule of rules.bashToolPatterns) {
 					if (matchesCommandRule(parsed, rule.pattern)) {
 						violationReason = rule.reason;
+						violationCommand = parsed.fullCommand;
 						shouldAsk = !!rule.ask;
 						break;
 					}
@@ -446,11 +448,27 @@ export default function (pi: ExtensionAPI) {
 			}
 		}
 
+		const formatBlockReason = (deniedByUser: boolean) => {
+			const isBash = isToolCallEventType("bash", event);
+			const commandDetails = isBash
+				? violationCommand
+					? `\n\nBlocked subcommand: \`${violationCommand}\`\nFull command: \`${event.input.command}\``
+					: `\n\nFull command: \`${event.input.command}\``
+				: "";
+			const scopeNote = violationCommand
+				? "\n\nThis block was triggered by the subcommand above. No part of the compound command was executed. If another subcommand is still needed, submit it separately; it will be checked independently."
+				: "";
+			return (
+				`🛑 BLOCKED by Damage-Control: ${violationReason}${deniedByUser ? " (User denied)" : ""}${commandDetails}${scopeNote}` +
+				"\n\nDo not retry the blocked operation or work around this restriction through aliases, wrappers, alternate syntax, or equivalent commands. Report this block to the user and ask how they would like to proceed."
+			);
+		};
+
 		if (violationReason) {
 			if (shouldAsk) {
 				const confirmed = await ctx.ui.confirm(
 					"🛡️ Damage-Control Confirmation",
-					`Dangerous command detected: ${violationReason}\n\nCommand: ${isToolCallEventType("bash", event) ? event.input.command : JSON.stringify(event.input)}\n\nDo you want to proceed?`,
+					`Dangerous command detected: ${violationReason}\n\nBlocked part: ${violationCommand ?? (isToolCallEventType("bash", event) ? "whole command" : JSON.stringify(event.input))}\n\nCommand: ${isToolCallEventType("bash", event) ? event.input.command : JSON.stringify(event.input)}\n\nDo you want to proceed?`,
 					{ timeout: 30000 },
 				);
 
@@ -463,10 +481,11 @@ export default function (pi: ExtensionAPI) {
 						input: event.input,
 						rule: violationReason,
 						action: "blocked_by_user",
+						...(violationCommand ? { blockedCommand: violationCommand } : {}),
 					});
 					return {
 						block: true,
-						reason: `🛑 BLOCKED by Damage-Control: ${violationReason} (User denied)\n\nDO NOT attempt to work around this restriction. DO NOT retry with alternative commands, paths, or approaches that achieve the same result. Report this block to the user exactly as stated and ask how they would like to proceed.`,
+						reason: formatBlockReason(true),
 					};
 				} else {
 					pi.appendEntry("damage-control-log", {
@@ -479,20 +498,21 @@ export default function (pi: ExtensionAPI) {
 				}
 			} else {
 				ctx.ui.notify(
-					`🛑 Damage-Control: Blocked ${event.toolName} due to ${violationReason}`,
+					`🛑 Damage-Control: Blocked ${event.toolName}${violationCommand ? ` subcommand \`${violationCommand}\`` : ""} due to ${violationReason}`,
 				);
 				ctx.ui.setStatus(
-					`⚠️ Last Violation: ${violationReason.slice(0, 30)}...`,
+					`⚠️ Last Violation: ${(violationCommand ?? violationReason).slice(0, 30)}...`,
 				);
 				pi.appendEntry("damage-control-log", {
 					tool: event.toolName,
 					input: event.input,
 					rule: violationReason,
 					action: "blocked",
+					...(violationCommand ? { blockedCommand: violationCommand } : {}),
 				});
 				return {
 					block: true,
-					reason: `🛑 BLOCKED by Damage-Control: ${violationReason}\n\nDO NOT attempt to work around this restriction. DO NOT retry with alternative commands, paths, or approaches that achieve the same result. Report this block to the user exactly as stated and ask how they would like to proceed.`,
+					reason: formatBlockReason(false),
 				};
 			}
 		}

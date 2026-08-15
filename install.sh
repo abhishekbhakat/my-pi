@@ -211,6 +211,62 @@ npm_install_extensions() {
 
 npm_install_extensions
 
+# -------------------------------------------------------
+# apply_skill_sparse_checkouts - trim skill submodules via
+# sibling *.sparse-checkout files (cone mode path lists)
+# -------------------------------------------------------
+apply_skill_sparse_checkouts() {
+    local skills_dir="${SOURCE}/skills"
+    local cfg base submod
+
+    [ -d "$skills_dir" ] || return 0
+    command -v git >/dev/null 2>&1 || return 0
+
+    shopt -s nullglob
+    for cfg in "${skills_dir}"/*.sparse-checkout; do
+        base="$(basename "$cfg" .sparse-checkout)"
+        submod="${skills_dir}/${base}"
+        if [ ! -d "$submod" ]; then
+            echo "[sparse-checkout] Skipping ${base}: directory missing"
+            continue
+        fi
+        if [ ! -e "${submod}/.git" ]; then
+            echo "[sparse-checkout] Skipping ${base}: not a git checkout"
+            continue
+        fi
+
+        # Drop comments/blank lines; remaining lines are cone paths.
+        local paths=()
+        while IFS= read -r line || [ -n "$line" ]; do
+            line="${line%%#*}"
+            line="${line#"${line%%[![:space:]]*}"}"
+            line="${line%"${line##*[![:space:]]}"}"
+            [ -n "$line" ] || continue
+            paths+=("$line")
+        done < "$cfg"
+
+        if [ "${#paths[@]}" -eq 0 ]; then
+            echo "[sparse-checkout] Skipping ${base}: no paths in $(basename "$cfg")"
+            continue
+        fi
+
+        echo "[sparse-checkout] ${base}: ${paths[*]}"
+        if (
+            cd "$submod"
+            git sparse-checkout init --cone
+            git sparse-checkout set "${paths[@]}"
+        ); then
+            echo "  Applied."
+        else
+            echo "  WARNING: sparse-checkout failed for ${base}."
+        fi
+    done
+    shopt -u nullglob
+    echo ""
+}
+
+apply_skill_sparse_checkouts
+
 copy_dir "${SOURCE}/skills" "${TARGET}/skills" "skills"
 copy_dir "${SOURCE}/themes" "${TARGET}/themes" "themes"
 copy_root_files

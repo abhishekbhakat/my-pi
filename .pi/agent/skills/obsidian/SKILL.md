@@ -1,24 +1,24 @@
 ---
 name: obsidian
-description: "Work with Obsidian vaults -- create, edit, search, and reorganize markdown notes. Use when the user mentions 'vault', 'notes', 'obsidian', 'frontmatter', 'backlinks', 'wikilinks', 'dataview', 'kanban', 'callouts', 'embeds', or asks to manage their knowledge base."
+description: "Work with Obsidian vaults -- create, edit, search, and reorganize markdown notes. Use when user mention 'vault', 'notes', 'obsidian', 'frontmatter', 'backlinks', 'wikilinks', 'dataview', 'kanban', 'callouts', 'embeds', or ask to manage their knowledge base."
 user-invocable: true
 disable-model-invocation: false
 ---
 
 # Obsidian Vault Management
 
-Obsidian is a local-first knowledge base built on plain markdown files. Vaults are directories of `.md` files that use Obsidian Flavored Markdown (OFM) -- an extension of CommonMark and GFM with wikilinks, embeds, callouts, properties, and plugin syntax.
+Obsidian is local-first knowledge base built on plain markdown files. Vaults are directories of `.md` files that use Obsidian Flavored Markdown (OFM) -- extension of CommonMark and GFM with wikilinks, embeds, callouts, properties, and plugin syntax.
 
-## Finding the Vault
+## Finding Vault
 
-1. Look for an `AGENTS.md` or `.obsidian/` directory in the workspace or common locations.
-2. Ask the user for the vault path if not obvious.
-3. **Never assume or hardcode a vault path.** Never store vault-specific paths or content in global skill files.
+1. Look for `AGENTS.md` or `.obsidian/` directory in workspace or common locations.
+2. Ask user for vault path if not obvious.
+3. **Never assume or hardcode vault path.** Never store vault-specific paths or content in global skill files.
 
-## Workflow: Creating a Note
+## Workflow: Creating Note
 
-1. **Audit the vault** -- grep existing notes for `type:`, `tags:`, and folder structure to match conventions.
-2. **Add frontmatter** at the top with properties. See [references/PROPERTIES.md](references/PROPERTIES.md).
+1. **Audit vault** -- grep existing notes for `type:`, `tags:`, and folder structure to match conventions.
+2. **Add frontmatter** at top with properties. See [references/PROPERTIES.md](references/PROPERTIES.md).
 3. **Write content** using standard Markdown plus Obsidian-specific syntax below.
 4. **Link related notes** using `[[wikilinks]]` for internal connections, `[text](url)` for external.
 5. **Embed content** using `![[embed]]` syntax. See [references/EMBEDS.md](references/EMBEDS.md).
@@ -34,13 +34,13 @@ Obsidian is a local-first knowledge base built on plain markdown files. Vaults a
 [[#Heading in same note]]              Same-note heading link
 ```
 
-Define a block ID by appending `^block-id` to any paragraph, or on a separate line after lists/quotes:
+Define block ID by append `^block-id` to any paragraph, or on separate line after lists/quotes:
 
 ```markdown
 This paragraph can be linked to. ^my-block-id
 ```
 
-**When to use:** `[[wikilinks]]` for vault-internal notes (Obsidian tracks renames). `[text](url)` for external URLs only.
+**When to use:** `[[wikilinks]]` for vault-internal notes (Obsidian track renames). `[text](url)` for external URLs only.
 
 ## Embeds
 
@@ -84,15 +84,15 @@ aliases:
 ---
 ```
 
-- `tags` -- searchable labels, supports `category/subcategory` hierarchy.
+- `tags` -- searchable labels, support `category/subcategory` hierarchy.
 - `aliases` -- alternative names for link suggestions.
 - Any custom key-value pairs are valid.
 
 Full property reference: [references/PROPERTIES.md](references/PROPERTIES.md).
 
-**Rules when editing notes:**
-- Match the existing frontmatter schema the vault already uses. Do not invent new fields.
-- Reuse existing `type` and `tag` values from sibling notes. Audit with `grep` before creating new ones.
+**Rules when edit notes:**
+- Match existing frontmatter schema vault already use. Do not invent new fields.
+- Reuse existing `type` and `tag` values from sibling notes. Audit with `grep` before create new ones.
 
 ## Tags
 
@@ -188,22 +188,22 @@ Kanban boards are markdown with columns as `##` headings and items as checkboxes
 
 ## Rules for Creating and Editing Notes
 
-1. **Always match the vault's existing frontmatter schema.**
-2. **Reuse existing `type` and `tag` values.** Audit the vault first.
-3. **Add a body backlink** as the first line after frontmatter if the vault convention uses parent links.
-4. **Add frontmatter `related` links** to connect to sibling and parent notes if the vault convention uses them.
+1. **Always match vault existing frontmatter schema.**
+2. **Reuse existing `type` and `tag` values.** Audit vault first.
+3. **Add body backlink** as first line after frontmatter if vault convention use parent links.
+4. **Add frontmatter `related` links** to connect to sibling and parent notes if vault convention use them.
 5. **Code blocks must have language hints** (```bash, ```python, ```sql, ```yaml).
 6. **Keep notes under 300 lines.** Split if too large.
 7. **No emojis in filenames or titles.** ASCII only.
-8. **Filename should match the title** in natural casing with `.md` extension.
-9. **Place notes in the correct folder** matching the vault's existing organization.
-10. **Prefer extending existing notes** over creating new files for small additions.
+8. **Filename should match title** in natural casing with `.md` extension.
+9. **Place notes in correct folder** match vault existing organization.
+10. **Prefer extend existing notes** over create new files for small additions.
 
 ## Safety Guardrails
 
-- **Never delete notes** without explicit user approval. Suggest archiving instead.
+- **Never delete notes** without explicit user approval. Suggest archive instead.
 - **Never restructure folders** without explicit user approval. Wikilinks and plugins reference paths.
 - **Never expose vault paths, credentials, or personal content** in skill files or external systems.
-- **Never modify kanban boards** without asking.
-- **Never change the frontmatter schema** without auditing the vault first.
+- **Never modify kanban boards** without ask.
+- **Never change frontmatter schema** without audit vault first.
 - **Never store vault-specific information in this global skill.**

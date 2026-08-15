@@ -1,15 +1,15 @@
 ---
 name: notion
-description: "Read and write Notion pages, databases, data sources, comments, and markdown via the Notion REST API. Use when the user mentions Notion, ntn tokens, Notion pages/databases, workspace notes, or wants to search/create/update Notion content."
+description: "Read and write Notion pages, databases, data sources, comments, and markdown via Notion REST API. Use when user mention Notion, ntn tokens, Notion pages/databases, workspace notes, or want to search/create/update Notion content."
 user-invocable: true
 disable-model-invocation: false
 ---
 
 # Notion Skill
 
-Work with a Notion workspace through the official REST API (`Notion-Version: 2026-03-11`).
+Work with Notion workspace through official REST API (`Notion-Version: 2026-03-11`).
 
-This skill is **token-based and headless** (PAT or internal integration secret). It does not use the hosted Notion MCP OAuth flow.
+This skill is **token-based and headless** (PAT or internal integration secret). It do not use hosted Notion MCP OAuth flow.
 
 ## Authentication
 
@@ -26,8 +26,8 @@ cp notion-auth.sample.json notion-auth.json
 ### Recommended: personal access token (PAT)
 
 1. Open https://www.notion.so/developers/tokens
-2. **New token** → enable **Notion API** capability
-3. Copy the `ntn_...` token into `notion-auth.json` or export `NOTION_API_KEY`
+2. **New token**, enable **Notion API** capability
+3. Copy `ntn_...` token into `notion-auth.json` or export `NOTION_API_KEY`
 
 PAT notes:
 
@@ -37,9 +37,9 @@ PAT notes:
 
 ### Alternative: internal integration
 
-1. https://www.notion.so/my-integrations → new integration
-2. Copy the secret
-3. In Notion, open each page/database → **...** → **Connections** → add the integration
+1. Open https://www.notion.so/my-integrations, create new integration
+2. Copy secret
+3. In Notion, open each page/database > **...** > **Connections** > add integration
 
 Internal bots only see content explicitly shared with them.
 
@@ -57,7 +57,7 @@ cd $SKILL_DIR
 ./executor.py --call '{"tool":"whoami","arguments":{}}'
 ```
 
-Replace `$SKILL_DIR` with this skill's path (under the installed agent skills tree).
+Replace `$SKILL_DIR` with this skill path (under installed agent skills tree).
 
 ## Tools
 
@@ -70,17 +70,17 @@ Replace `$SKILL_DIR` with this skill's path (under the installed agent skills tr
 | `create_page`          | Create page or database row (`markdown` supported)             |
 | `update_page`          | Update properties, icon, cover, archived/trash                 |
 | `update_page_markdown` | Edit body: `update_content` / `replace_content` / insert       |
-| `move_page`            | Move page under a new parent                                   |
+| `move_page`            | Move page under new parent                                     |
 | `get_database`         | Database metadata + data sources                               |
 | `get_data_source`      | Schema/properties for querying and row creation                |
 | `query_data_source`    | Filter/sort database rows                                      |
 | `list_children`        | List child blocks                                              |
 | `append_children`      | Append block children                                          |
-| `get_block`            | Retrieve a block                                               |
-| `update_block`         | Update a block                                                 |
-| `delete_block`         | Delete/archive a block                                         |
-| `list_comments`        | Comments on a page/block                                       |
-| `create_comment`       | Add a comment (`text` shortcut or `rich_text`)                 |
+| `get_block`            | Retrieve block                                                 |
+| `update_block`         | Update block                                                   |
+| `delete_block`         | Delete/archive block                                           |
+| `list_comments`        | Comments on page/block                                         |
+| `create_comment`       | Add comment (`text` shortcut or `rich_text`)                   |
 | `list_users`           | Workspace users (internal integration only)                    |
 | `get_user`             | Single user                                                    |
 | `get_async_task`       | Poll async create/markdown jobs                                |
@@ -170,7 +170,7 @@ Modern Notion API separates:
 
 Always:
 
-1. `get_database` → read `data_sources`
+1. `get_database`, read `data_sources`
 2. `get_data_source` / `query_data_source` / create with `parent_data_source_id`
 
 Do **not** use deprecated `POST /v1/databases/{id}/query` patterns unless forced by old docs.
@@ -212,7 +212,7 @@ If you prefer OAuth MCP tools in another client:
 - Tools: `notion-search`, `notion-fetch`, `notion-create-pages`, `notion-update-page`, etc.
 - Docs: https://developers.notion.com/guides/mcp/get-started-with-mcp
 
-This skill intentionally uses the REST executor so agents can run authenticated calls from the shell without interactive OAuth.
+This skill intentionally use REST executor so agents can run authenticated calls from shell without interactive OAuth.
 
 ## References
 

@@ -1,6 +1,6 @@
 ---
 name: surf
-description: Control Chrome browser via CLI for testing, automation, and debugging. Use when the user needs browser automation, screenshots, form filling, page inspection, network/CPU emulation, DevTools streaming, or AI queries via ChatGPT/Gemini/Perplexity/Grok/AI Studio.
+description: Control Chrome browser via CLI for testing, automation, and debugging. Use when user need browser automation, screenshots, form filling, page inspection, network/CPU emulation, DevTools streaming, or AI queries via ChatGPT/Gemini/Perplexity/Grok/AI Studio.
 ---
 
 # Surf Browser Automation
@@ -39,7 +39,7 @@ surf screenshot --output /tmp/shot.png
 
 ## AI Assistants (No API Keys)
 
-Query AI models using your browser's logged-in session. Must be logged into the respective service in Chrome.
+Query AI models using browser logged-in session. Must be logged into respective service in Chrome.
 
 ### ChatGPT
 ```bash
@@ -95,9 +95,9 @@ surf aistudio "quick answer" --model gemini-3-flash-preview  # Model selection
 surf aistudio "analyze" --timeout 600             # Custom timeout (default: 300s)
 ```
 
-**Why AI Studio over Gemini?** AI Studio gives access to less restricted Gemini models. For Gemini 3 Pro the difference can be significant with certain prompts. Downside: aggressive per-day rate limits on Pro and Flash models.
+**Why AI Studio over Gemini?** AI Studio give access to less restricted Gemini models. For Gemini 3 Pro difference can be significant with certain prompts. Downside: aggressive per-day rate limits on Pro and Flash models.
 
-**Model selection is best-effort:** Pass any AI Studio model id (e.g. `gemini-3.1-pro-preview`, `gemini-3-flash-preview`, `gemini-flash-lite-latest`). If the model isn't found, AI Studio uses whatever model was last selected in the UI.
+**Model selection is best-effort:** Pass any AI Studio model id (e.g. `gemini-3.1-pro-preview`, `gemini-3-flash-preview`, `gemini-flash-lite-latest`). If model not found, AI Studio use whatever model last selected in UI.
 
 ### AI Studio App Builder
 ```bash
@@ -107,12 +107,12 @@ surf aistudio.build "crm dashboard" --output ./out              # Extract zip to
 surf aistudio.build "game" --keep-open --timeout 600            # Keep tab open, 10min timeout
 ```
 
-Automates AI Studio's App Builder at `aistudio.google.com/apps`. Types your prompt, clicks Build, waits for completion, downloads the generated zip, and optionally extracts it.
+Automate AI Studio App Builder at `aistudio.google.com/apps`. Type your prompt, click Build, wait for completion, download generated zip, optionally extract.
 
-- `--output <dir>` extracts the zip to a directory
-- `--model <id>` overrides the model in Advanced Settings
+- `--output <dir>` extract zip to directory
+- `--model <id>` override model in Advanced Settings
 - `--timeout <seconds>` build timeout (default: 600s)
-- `--keep-open` leaves the AI Studio tab open after completion
+- `--keep-open` leave AI Studio tab open after completion
 
 Returns `zipPath`, `extractedPath`, `model`, `buildDuration`, and `tookMs`.
 
@@ -120,10 +120,10 @@ Returns `zipPath`, `extractedPath`, `model`, `buildDuration`, and `tookMs`.
 
 When AI queries fail, check these common issues:
 
-1. **Not logged in**: The error "login required" means you need to log into the service in Chrome (chatgpt.com, gemini.google.com, perplexity.ai, x.com, or aistudio.google.com)
-2. **Model selection failed**: The UI may have changed. Run `surf grok --validate` to check
+1. **Not logged in**: error "login required" means log into service in Chrome (chatgpt.com, gemini.google.com, perplexity.ai, x.com, or aistudio.google.com)
+2. **Model selection failed**: UI may have changed. Run `surf grok --validate` to check
 3. **Response timeout**: Thinking models (ChatGPT o1, Grok thinking) can take 45+ seconds. AI Studio builds can take several minutes.
-4. **Element not found**: The service's UI changed. Check for surf-cli updates
+4. **Element not found**: service UI changed. Check for surf-cli updates
 
 **Debugging workflow for agents:**
 ```bash
@@ -136,7 +136,7 @@ surf grok --validate --save-models
 # 3. Retry with explicit model name from validation output
 surf grok "query" --model <model-from-validation>
 
-# 4. If still failing, try with longer timeout
+# 4. If fail again, try with longer timeout
 surf grok "query" --timeout 600
 ```
 
@@ -435,7 +435,7 @@ surf smoke --urls "..." --screenshot /tmp/smoke
 
 ## Workflows
 
-Execute multi-step browser automation as a single command with smart auto-waits.
+Execute multi-step browser automation as single command with smart auto-waits.
 
 ### Inline Workflows
 
@@ -525,11 +525,11 @@ surf workflow.validate workflow.json
 ```
 
 **Auto-waits:** Commands automatically wait for completion:
-- Navigation (`go`, `back`, `forward`) → waits for page load
-- Clicks, key presses, form fills → waits for DOM stability
-- Tab switches → waits for tab to load
+- Navigation (`go`, `back`, `forward`): wait for page load
+- Clicks, key presses, form fills: wait for DOM stability
+- Tab switches: wait for tab to load
 
-**Why use `do`?** Instead of 6-8 separate CLI calls with LLM orchestration between each, a workflow executes deterministically. Faster, cheaper, and more reliable.
+**Why use `do`?** Instead of 6-8 separate CLI calls with LLM orchestration between each, workflow execute deterministic. Faster, cheaper, more reliable.
 
 ## Error Diagnostics
 
@@ -556,7 +556,7 @@ surf wait.element ".missing" --auto-capture --timeout 2000
 3. **JS method for contenteditable** - Modern editors (ChatGPT, Claude, Notion) need `--method js`
 4. **Named tabs for workflows** - `tab.name app` then `tab.switch app`
 5. **Auto-capture for debugging** - `--auto-capture` saves diagnostics on failure
-6. **AI tools use browser session** - Must be logged into the service (ChatGPT, Gemini, Perplexity, Grok, AI Studio), no API keys needed
+6. **AI tools use browser session** - Must be logged into service (ChatGPT, Gemini, Perplexity, Grok, AI Studio), no API keys needed
 7. **Grok validation** - Run `surf grok --validate` if queries fail to check UI changes
 8. **Long timeouts for thinking models** - ChatGPT o1, Grok thinking can take 60+ seconds. AI Studio builds default to 600s.
 9. **AI Studio for unrestricted Gemini** - `surf aistudio` gives less filtered responses than `surf gemini` for the same models

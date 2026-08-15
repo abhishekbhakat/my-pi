@@ -152,6 +152,9 @@ if exist "%TARGET%\extensions\package.json" (
 )
 echo.
 
+:: Sparse-checkout skill submodules (sibling *.sparse-checkout files)
+call :ApplySkillSparseCheckouts
+
 :: Skills
 echo [skills]
 call :CopyDir "%SOURCE%\skills" "%TARGET%\skills"
@@ -279,6 +282,50 @@ set "PI_PROXY_ORIGIN="
 echo   Updated models.json proxy origin to %PROXY_ORIGIN%.
 echo.
 exit /b 0
+
+:: -------------------------------------------------------
+:: ApplySkillSparseCheckouts - trim skill submodules via
+:: sibling *.sparse-checkout files (cone mode path lists)
+:: -------------------------------------------------------
+:ApplySkillSparseCheckouts
+where git >nul 2>&1
+if errorlevel 1 goto :eof
+if not exist "%SOURCE%\skills\*.sparse-checkout" goto :eof
+for %%C in ("%SOURCE%\skills\*.sparse-checkout") do (
+    set "SC_BASE=%%~nC"
+    :: %%~nC on file.sparse-checkout yields file.sparse — strip trailing .sparse
+    if /i "!SC_BASE:~-7!"==".sparse" set "SC_BASE=!SC_BASE:~0,-7!"
+    set "SC_SUBMOD=%SOURCE%\skills\!SC_BASE!"
+    if not exist "!SC_SUBMOD!\" (
+        echo [sparse-checkout] Skipping !SC_BASE!: directory missing
+    ) else if not exist "!SC_SUBMOD!\.git" (
+        echo [sparse-checkout] Skipping !SC_BASE!: not a git checkout
+    ) else (
+        set "SC_PATHS="
+        for /f "usebackq tokens=* delims=" %%L in ("%%~fC") do (
+            set "SC_LINE=%%L"
+            for /f "tokens=1 delims=#" %%T in ("!SC_LINE!") do set "SC_LINE=%%T"
+            for /f "tokens=* delims= " %%T in ("!SC_LINE!") do set "SC_LINE=%%T"
+            if not "!SC_LINE!"=="" set "SC_PATHS=!SC_PATHS! !SC_LINE!"
+        )
+        if "!SC_PATHS!"=="" (
+            echo [sparse-checkout] Skipping !SC_BASE!: no paths in %%~nxC
+        ) else (
+            echo [sparse-checkout] !SC_BASE!:!SC_PATHS!
+            pushd "!SC_SUBMOD!"
+            git sparse-checkout init --cone >nul 2>&1
+            git sparse-checkout set !SC_PATHS!
+            if errorlevel 1 (
+                echo   WARNING: sparse-checkout failed for !SC_BASE!.
+            ) else (
+                echo   Applied.
+            )
+            popd
+        )
+    )
+)
+echo.
+goto :eof
 
 :: -------------------------------------------------------
 :: Usage - print command line options

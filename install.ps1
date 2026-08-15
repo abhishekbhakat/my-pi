@@ -73,12 +73,53 @@ Write-Host ''
 if (-not (Test-Path $Target)) { New-Item -ItemType Directory -Path $Target | Out-Null }
 
 # -------------------------------------------------------
+# ConvertTo-ExtendedPath - address long and reserved Windows paths literally
+# -------------------------------------------------------
+function ConvertTo-ExtendedPath {
+    param([string]$Path)
+    $fullPath = $Path
+    if ($fullPath.StartsWith('\\?\')) { return $fullPath }
+    $fullPath = [IO.Path]::GetFullPath($Path)
+    if ($fullPath.StartsWith('\\')) { return "\\?\UNC\$($fullPath.Substring(2))" }
+    return "\\?\$fullPath"
+}
+
+# -------------------------------------------------------
+# Remove-Tree - remove a subtree, including reserved Windows names
+# -------------------------------------------------------
+function Remove-Tree {
+    param([string]$Path)
+    if (-not (Test-Path -LiteralPath $Path)) { return }
+
+    try {
+        Remove-Item -LiteralPath $Path -Recurse -Force -ErrorAction Stop
+        return
+    } catch {
+        # PowerShell cannot remove stale files named NUL, CON, etc. Use the
+        # extended-length path namespace so Windows treats them literally.
+        $extendedPath = ConvertTo-ExtendedPath $Path
+        $envName = 'PI_INSTALL_REMOVE_TREE_PATH'
+        $previousPath = [Environment]::GetEnvironmentVariable($envName, [EnvironmentVariableTarget]::Process)
+        try {
+            [Environment]::SetEnvironmentVariable($envName, $extendedPath, [EnvironmentVariableTarget]::Process)
+            & cmd.exe /d /v:off /c 'rmdir /s /q "%PI_INSTALL_REMOVE_TREE_PATH%"' 2>$null | Out-Null
+            $exitCode = $LASTEXITCODE
+        } finally {
+            [Environment]::SetEnvironmentVariable($envName, $previousPath, [EnvironmentVariableTarget]::Process)
+        }
+        if ($exitCode -ne 0 -or (Test-Path -LiteralPath $Path)) {
+            throw
+        }
+    }
+}
+
+# -------------------------------------------------------
 # CopyDir - replace a subtree, then copy source contents into it
 # -------------------------------------------------------
 function Copy-Dir {
     param([string]$Src, [string]$Dst)
     if (-not (Test-Path $Src)) { return }
-    if (Test-Path $Dst) { Remove-Item -Recurse -Force $Dst }
+    if (Test-Path -LiteralPath $Dst) { Remove-Tree $Dst }
     Copy-Item -Recurse $Src $Dst
     Get-ChildItem -Recurse -Filter 'package-lock.json' $Dst | Remove-Item -Force
     Write-Host '  Files copied.'
@@ -106,6 +147,56 @@ if (Test-Path $extPkg) {
     }
 }
 Write-Host ''
+
+# --- Sparse-checkout skill submodules (sibling *.sparse-checkout files) ---
+function Apply-SkillSparseCheckouts {
+    $skillsDir = Join-Path $Source 'skills'
+    if (-not (Test-Path $skillsDir)) { return }
+    if (-not (Get-Command git -ErrorAction SilentlyContinue)) { return }
+
+    $configs = Get-ChildItem -Path $skillsDir -Filter '*.sparse-checkout' -File -ErrorAction SilentlyContinue
+    foreach ($cfg in $configs) {
+        $base = [IO.Path]::GetFileNameWithoutExtension($cfg.Name)  # strips only last ext; name is *.sparse-checkout
+        # GetFileNameWithoutExtension('x.sparse-checkout') => 'x.sparse' — fix:
+        $base = $cfg.Name -replace '\.sparse-checkout$', ''
+        $submod = Join-Path $skillsDir $base
+        if (-not (Test-Path $submod)) {
+            Write-Host "[sparse-checkout] Skipping ${base}: directory missing"
+            continue
+        }
+        if (-not (Test-Path (Join-Path $submod '.git'))) {
+            Write-Host "[sparse-checkout] Skipping ${base}: not a git checkout"
+            continue
+        }
+
+        $paths = @()
+        foreach ($raw in Get-Content -LiteralPath $cfg.FullName) {
+            $line = $raw
+            $hash = $line.IndexOf('#')
+            if ($hash -ge 0) { $line = $line.Substring(0, $hash) }
+            $line = $line.Trim()
+            if ($line.Length -gt 0) { $paths += $line }
+        }
+        if ($paths.Count -eq 0) {
+            Write-Host "[sparse-checkout] Skipping ${base}: no paths in $($cfg.Name)"
+            continue
+        }
+
+        Write-Host "[sparse-checkout] ${base}: $($paths -join ' ')"
+        Push-Location $submod
+        try {
+            git sparse-checkout init --cone | Out-Null
+            & git sparse-checkout set @paths
+            if ($LASTEXITCODE -eq 0) { Write-Host '  Applied.' }
+            else { Write-Host "  WARNING: sparse-checkout failed for ${base}." }
+        } finally {
+            Pop-Location
+        }
+    }
+    Write-Host ''
+}
+
+Apply-SkillSparseCheckouts
 
 # --- Skills ---
 Write-Host '[skills]'
@@ -158,7 +249,7 @@ $agentsSrc = Join-Path $PSScriptRoot '.pi\agents'
 $agentsDst = Join-Path $HOME '.pi\agents'
 if (Test-Path $agentsSrc) {
     Write-Host '[agents]'
-    if (Test-Path $agentsDst) { Remove-Item -Recurse -Force $agentsDst }
+    if (Test-Path -LiteralPath $agentsDst) { Remove-Tree $agentsDst }
     New-Item -ItemType Directory -Path $agentsDst | Out-Null
     Copy-Item (Join-Path $agentsSrc '*.md') $agentsDst -ErrorAction SilentlyContinue
     Write-Host '  Done.'

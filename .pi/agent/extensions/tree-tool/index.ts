@@ -4,6 +4,95 @@ import { readdir, stat } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { resolve, join, relative, basename } from "node:path";
 
+/**
+ * Dependency / cache / generated dirs skipped unless includeCacheDirs is true.
+ * Basename exact match only — keep names high-precision (no build/dist/target/out).
+ */
+const CACHE_DIRS = new Set([
+	// JS / TS / Bun / Node
+	"node_modules",
+	"bower_components",
+	".pnpm-store",
+	".parcel-cache",
+	".turbo",
+	".next",
+	".nuxt",
+	".svelte-kit",
+	".angular",
+	".nx",
+	".vite",
+	".vercel",
+	".netlify",
+	".output",
+	// Python
+	"__pycache__",
+	".pytest_cache",
+	".ruff_cache",
+	".mypy_cache",
+	".pytype",
+	".pyre",
+	".tox",
+	".nox",
+	".venv",
+	".eggs",
+	".hypothesis",
+	".ipynb_checkpoints",
+	"htmlcov",
+	// Go / PHP / generic vendor
+	"vendor",
+	// Java / JVM
+	".gradle",
+	// Rust — target/ omitted (too generic as a basename)
+	// C / C++
+	"CMakeFiles",
+	"cmake-build-debug",
+	"cmake-build-release",
+	// Swift / ObjC
+	".build",
+	"Pods",
+	"DerivedData",
+	// Dart / Flutter
+	".dart_tool",
+	// Haskell
+	".stack-work",
+	"dist-newstyle",
+	// Elixir / Erlang / OCaml / Zig
+	"_build",
+	"zig-cache",
+	"zig-out",
+	// Terraform / infra
+	".terraform",
+	// Generic tooling cache
+	".cache",
+]);
+
+function isCacheDir(name: string): boolean {
+	return CACHE_DIRS.has(name);
+}
+
+/** True if any path segment is a known cache/vendor dir (posix or win separators). */
+function pathHasCacheSegment(relPath: string): boolean {
+	return relPath.split(/[/\\]/).some((seg) => seg.length > 0 && isCacheDir(seg));
+}
+
+/**
+ * When includeCacheDirs is on, drop gitignore hits under cache/vendor dirs so a
+ * single flag is enough to inspect them (node_modules is almost always ignored).
+ * Other gitignored paths stay hidden. Target root that is itself a cache dir
+ * clears the set entirely (children have no cache segment in their relPath).
+ */
+function applyCacheDirGitignoreBypass(
+	gitIgnored: Set<string>,
+	targetPath: string,
+	includeCacheDirs: boolean,
+): Set<string> {
+	if (!includeCacheDirs || gitIgnored.size === 0) return gitIgnored;
+	if (isCacheDir(basename(targetPath)) || pathHasCacheSegment(targetPath)) {
+		return new Set();
+	}
+	return new Set([...gitIgnored].filter((p) => !pathHasCacheSegment(p)));
+}
+
 function globMatch(pattern: string, name: string): boolean {
 	let pi = 0;
 	let ni = 0;
@@ -56,6 +145,7 @@ interface WalkOpts {
 	maxDepth?: number;
 	includePatterns?: string[];
 	excludePatterns?: string[];
+	includeCacheDirs: boolean;
 	gitIgnored: Set<string>;
 	rootDir: string;
 }
@@ -77,6 +167,7 @@ async function walkDir(dir: string, opts: WalkOpts, depth: number): Promise<Tree
 		const fullPath = join(dir, entry.name);
 		const relPath = relative(opts.rootDir, fullPath);
 		if (entry.name === ".git") continue;
+		if (!opts.includeCacheDirs && entry.isDirectory() && isCacheDir(entry.name)) continue;
 		if (opts.gitIgnored.has(relPath)) continue;
 		if (opts.excludePatterns?.some((p) => globMatch(p, entry.name))) continue;
 		if (entry.isDirectory()) {
@@ -127,8 +218,13 @@ function countNodes(nodes: TreeNode[]): { dirs: number; files: number } {
 	return { dirs, files };
 }
 
-async function collectAllPaths(dir: string, rootDir: string, maxDepth?: number, depth = 0): Promise<string[]> {
-	if (maxDepth !== undefined && depth >= maxDepth) return [];
+async function collectAllPaths(
+	dir: string,
+	rootDir: string,
+	opts: { maxDepth?: number; includeCacheDirs: boolean },
+	depth = 0,
+): Promise<string[]> {
+	if (opts.maxDepth !== undefined && depth >= opts.maxDepth) return [];
 	let entries;
 	try {
 		entries = await readdir(dir, { withFileTypes: true });
@@ -138,11 +234,12 @@ async function collectAllPaths(dir: string, rootDir: string, maxDepth?: number, 
 	const paths: string[] = [];
 	for (const entry of entries) {
 		if (entry.name === ".git") continue;
+		if (!opts.includeCacheDirs && entry.isDirectory() && isCacheDir(entry.name)) continue;
 		const fullPath = join(dir, entry.name);
 		const relPath = relative(rootDir, fullPath);
 		paths.push(relPath);
 		if (entry.isDirectory()) {
-			paths.push(...await collectAllPaths(fullPath, rootDir, maxDepth, depth + 1));
+			paths.push(...await collectAllPaths(fullPath, rootDir, opts, depth + 1));
 		}
 	}
 	return paths;
@@ -152,13 +249,15 @@ export default function treeToolExtension(pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "tree",
 		label: "Tree",
-		description: "Display directory structure in a tree-like format. Respects .gitignore by default.",
-		promptSnippet: "Show directory structure, respecting .gitignore",
+		description:
+			"Display directory structure in a tree-like format. Respects .gitignore by default. Skips dependency, cache, and generated-output dirs (node_modules, __pycache__, .venv, vendor, .next, .gradle, etc.) unless includeCacheDirs is true. When includeCacheDirs is true, .gitignore is also bypassed for those dirs only.",
+		promptSnippet: "Show directory structure, respecting .gitignore; cache/vendor dirs off by default",
 		promptGuidelines: [
 			"Use this tool instead of `ls` or `find` when exploring project structure",
 			"Always use this first when entering a new project directory",
 			"Use maxDepth to limit output for large directories",
 			"Use includePatterns to filter for specific file types",
+			"Do not set includeCacheDirs unless you specifically need dependency/cache/generated dirs (node_modules, vendor, .venv, .next, …). That flag alone is enough; you do not also need respectGitignore: false for those dirs",
 		],
 		parameters: Type.Object({
 			path: Type.String({
@@ -174,6 +273,13 @@ export default function treeToolExtension(pi: ExtensionAPI) {
 				Type.Boolean({
 					description: "Respect .gitignore rules (default: true)",
 					default: true,
+				})
+			),
+			includeCacheDirs: Type.Optional(
+				Type.Boolean({
+					description:
+					"Include dependency, cache, and generated-output dirs such as node_modules, vendor, __pycache__, .venv, .next, .gradle, .terraform (default: false). Must be true to tree inside those directories. Also bypasses .gitignore for those dirs and their contents only; other ignored paths stay hidden.",
+					default: false,
 				})
 			),
 			includePatterns: Type.Optional(
@@ -195,6 +301,7 @@ export default function treeToolExtension(pi: ExtensionAPI) {
 		async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
 			const cwd = ctx.cwd;
 			const targetPath = resolve(cwd, params.path);
+			const includeCacheDirs = params.includeCacheDirs === true;
 
 			try {
 				await stat(targetPath);
@@ -205,16 +312,35 @@ export default function treeToolExtension(pi: ExtensionAPI) {
 				};
 			}
 
+			const targetName = basename(targetPath);
+			if (!includeCacheDirs && isCacheDir(targetName)) {
+				return {
+					content: [{
+						type: "text",
+						text: `Error: refusing to tree inside '${targetName}' without includeCacheDirs: true`,
+					}],
+					details: { error: "cache_dir_blocked", dir: targetName },
+				};
+			}
+
 			let gitIgnored = new Set<string>();
 			if (params.respectGitignore !== false) {
-				const allPaths = await collectAllPaths(targetPath, targetPath, params.maxDepth);
-				gitIgnored = getGitIgnored(targetPath, allPaths);
+				const allPaths = await collectAllPaths(targetPath, targetPath, {
+					maxDepth: params.maxDepth,
+					includeCacheDirs,
+				});
+				gitIgnored = applyCacheDirGitignoreBypass(
+					getGitIgnored(targetPath, allPaths),
+					targetPath,
+					includeCacheDirs,
+				);
 			}
 
 			const nodes = await walkDir(targetPath, {
 				maxDepth: params.maxDepth,
 				includePatterns: params.includePatterns,
 				excludePatterns: params.excludePatterns,
+				includeCacheDirs,
 				gitIgnored,
 				rootDir: targetPath,
 			}, 0);

@@ -53,6 +53,16 @@ const SECTION_PRIORITY: Record<string, string[]> = {
 		"Workspace Tree",
 		"Git Diff",
 	],
+	commit_message: [
+		"Workspace",
+		"Git Diff",
+		"Recent Commits",
+		"Git Status",
+		"Path Context",
+		"Recent Conversation",
+		"Action Timeline",
+		"Workspace Tree",
+	],
 	default: [
 		"Workspace",
 		"Git Diff",
@@ -93,6 +103,50 @@ function stripPathSigil(rawPath: string): string {
 function toWorkspaceRelative(cwd: string, targetPath: string): string {
 	const relative = path.relative(cwd, targetPath);
 	return relative === "" ? "." : relative;
+}
+
+function ancestorStarts(start: string, max = 8): string[] {
+	const out: string[] = [];
+	let current = start;
+	for (let i = 0; i < max; i++) {
+		out.push(current);
+		const parent = path.dirname(current);
+		if (parent === current) break;
+		current = parent;
+	}
+	return out;
+}
+
+function gitLookupStarts(cwd: string, requestedPaths: string[]): string[] {
+	return dedupe([
+		...requestedPaths.flatMap((start) => ancestorStarts(start)),
+		...ancestorStarts(cwd),
+	]).slice(0, 16);
+}
+
+async function resolveGitCwd(
+	pi: ExtensionAPI,
+	cwd: string,
+	requestedPaths: string[],
+	signal?: AbortSignal,
+): Promise<string> {
+	const starts = gitLookupStarts(cwd, requestedPaths);
+	for (const start of starts) {
+		if (signal?.aborted) return cwd;
+		try {
+			const result = await pi.exec("git", ["-C", start, "rev-parse", "--show-toplevel"], {
+				cwd,
+				signal,
+				timeout: 15000,
+			});
+			const root = result.stdout.trim();
+			if (result.code === 0 && root) return root;
+		} catch (error) {
+			if (signal?.aborted) return cwd;
+			if (error instanceof Error && error.name === "AbortError") return cwd;
+		}
+	}
+	return cwd;
 }
 
 function normalizeRel(value: string): string {
@@ -281,7 +335,7 @@ function enforceContextBudget(
 		if (!section) break;
 
 		// Keep a useful prefix for high-signal sections instead of deleting them.
-		if (title === "Git Diff" || title === "Path Context" || title === "Recent Conversation") {
+		if (title === "Git Diff" || title === "Recent Commits" || title === "Path Context" || title === "Recent Conversation") {
 			const overflow = sectionsSize(next) - maxContextChars;
 			const target = Math.max(256, section.content.length - overflow - 64);
 			if (target < section.content.length) {
@@ -383,6 +437,63 @@ async function collectTree(
 	} catch {
 		return "";
 	}
+}
+
+async function collectStagedDiff(
+	pi: ExtensionAPI,
+	cwd: string,
+	maxChars: number,
+	signal?: AbortSignal,
+): Promise<string> {
+	try {
+		const names = await pi.exec("git", ["diff", "--cached", "--name-only"], { cwd, signal, timeout: 15000 });
+		const diff = await pi.exec("git", ["diff", "--cached", "--no-ext-diff"], { cwd, signal, timeout: 15000 });
+		if (diff.code !== 0) {
+			const err = diff.stderr.trim() || diff.stdout.trim() || `git diff --cached exited ${diff.code}`;
+			return `[git error]\n${err}`;
+		}
+		const stagedNames = names.code === 0 ? names.stdout.trim() : "";
+		const patch = diff.stdout.trim();
+		if (!stagedNames && !patch) return "";
+		const header = stagedNames ? `### Staged Files\n${stagedNames}\n\n` : "";
+		const body = patch ? `### Cached Diff\n${patch}` : "[no staged patch]";
+		return truncateHead(`${header}${body}`, maxChars);
+	} catch {
+		return "[git error]\nfailed to read staged diff";
+	}
+}
+
+async function collectRecentCommits(
+	pi: ExtensionAPI,
+	cwd: string,
+	maxChars: number,
+	signal?: AbortSignal,
+): Promise<string> {
+	const sections: string[] = [];
+
+	try {
+		const last = await pi.exec(
+			"git",
+			["show", "--stat", "--summary", "--format=%h %s", "-1"],
+			{ cwd, signal, timeout: 15000 },
+		);
+		if (last.code === 0 && last.stdout.trim()) {
+			sections.push(`### Last Commit\n${last.stdout.trim()}`);
+		}
+	} catch {}
+
+	try {
+		const log = await pi.exec("git", ["log", "--oneline", "--decorate", "-n", "10"], {
+			cwd,
+			signal,
+			timeout: 15000,
+		});
+		if (log.code === 0 && log.stdout.trim()) {
+			sections.push(`### Recent Log\n${log.stdout.trim()}`);
+		}
+	} catch {}
+
+	return truncateHead(sections.join("\n\n"), maxChars);
 }
 
 async function collectGitDiff(
@@ -567,19 +678,22 @@ export async function buildCapabilityContext(
 			.map((value) => path.resolve(ctx.cwd, value)),
 	);
 	const explicitSet = new Set(requestedPaths);
+	const gitCwd = def.toolName === "commit_message"
+		? await resolveGitCwd(pi, ctx.cwd, requestedPaths, signal)
+		: ctx.cwd;
 
 	const changedPaths = def.includeChangedFiles
-		? (await collectChangedPaths(pi, ctx.cwd, signal)).map((value) => path.resolve(ctx.cwd, value))
+		? (await collectChangedPaths(pi, gitCwd, signal)).map((value) => path.resolve(gitCwd, value))
 		: [];
 
 	const filteredChanged = changedPaths.filter((targetPath) => {
 		if (explicitSet.has(targetPath)) return true;
-		const relative = toWorkspaceRelative(ctx.cwd, targetPath);
+		const relative = toWorkspaceRelative(gitCwd, targetPath);
 		return !matchesIgnore(relative, def.ignorePaths);
 	});
 
 	const autoPaths = dedupe([...requestedPaths, ...filteredChanged]).slice(0, def.maxFiles);
-	const relativeAutoPaths = autoPaths.map((item) => toWorkspaceRelative(ctx.cwd, item));
+	const relativeAutoPaths = autoPaths.map((item) => toWorkspaceRelative(gitCwd, item));
 
 	const promptBudget = Math.max(4000, def.maxContextChars - TASK_OVERHEAD_CHARS);
 	const sections: CapabilityContextSection[] = [
@@ -587,6 +701,7 @@ export async function buildCapabilityContext(
 			title: "Workspace",
 			content: [
 				`cwd: ${ctx.cwd}`,
+				gitCwd !== ctx.cwd ? `git: ${gitCwd}` : "",
 				relativeAutoPaths.length > 0 ? `selected paths: ${relativeAutoPaths.join(", ")}` : "",
 			].filter(Boolean).join("\n"),
 		},
@@ -610,7 +725,7 @@ export async function buildCapabilityContext(
 	}
 
 	if (def.includeGitStatus) {
-		const gitStatus = await collectGitStatus(pi, ctx.cwd, signal);
+		const gitStatus = await collectGitStatus(pi, gitCwd, signal);
 		if (gitStatus) sections.push({ title: "Git Status", content: gitStatus });
 	}
 
@@ -628,7 +743,7 @@ export async function buildCapabilityContext(
 
 	const fillDiff = async (budget: number) => {
 		if (!wantsDiff || budget <= 0) return;
-		const diff = await collectGitDiff(pi, ctx.cwd, relativeAutoPaths, budget, signal);
+		const diff = await collectGitDiff(pi, gitCwd, relativeAutoPaths, budget, signal);
 		if (diff) {
 			sections.push({ title: "Git Diff", content: diff });
 			remaining = Math.max(0, promptBudget - sectionsSize(sections));
@@ -652,6 +767,18 @@ export async function buildCapabilityContext(
 		// Conversation already included; code is optional backup.
 		await fillPaths(remaining);
 		await fillDiff(remaining);
+	} else if (def.toolName === "commit_message") {
+		// Staged index only. Never load working-tree files.
+		const historyBudget = Math.min(4000, Math.max(0, remaining - 256));
+		const stagedBudget = Math.max(256, remaining - historyBudget);
+		const staged = await collectStagedDiff(pi, gitCwd, stagedBudget, signal);
+		sections.push({
+			title: "Git Diff",
+			content: staged || "[no staged changes]",
+		});
+		remaining = Math.max(0, promptBudget - sectionsSize(sections));
+		const history = await collectRecentCommits(pi, gitCwd, Math.min(historyBudget, remaining), signal);
+		if (history) sections.push({ title: "Recent Commits", content: history });
 	} else {
 		// code_scout and default: files first, then optional diff.
 		await fillPaths(remaining);

@@ -72,7 +72,7 @@ export async function collectActionTimeline(
 	if (!model) return "";
 
 	const auth = await ctx.modelRegistry.getApiKeyAndHeaders(model);
-	if (!auth.ok || !auth.apiKey) return "";
+	if (!auth.ok || (!auth.apiKey && !auth.headers)) return "";
 
 	try {
 		const response = await complete(
@@ -100,7 +100,7 @@ export async function collectActionTimeline(
 				apiKey: auth.apiKey,
 				headers: auth.headers,
 				signal,
-				reasoningEffort: model.reasoning ? "medium" : undefined,
+				reasoningEffort: model.reasoning ? (def.timelineReasoningEffort ?? "medium") : undefined,
 			},
 		);
 
