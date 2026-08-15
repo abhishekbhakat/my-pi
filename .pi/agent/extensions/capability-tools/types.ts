@@ -34,6 +34,7 @@ export interface CapabilityToolInput {
 	includeTree?: boolean;
 	includeDiff?: boolean;
 	includeTimeline?: boolean;
+	previewLines?: number;
 }
 
 export interface CapabilityContextSection {

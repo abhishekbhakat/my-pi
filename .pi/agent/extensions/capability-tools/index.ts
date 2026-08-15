@@ -1,5 +1,6 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
+import { registerCapabilityCommands } from "./commands";
 import { loadCapabilityDefs } from "./definitions";
 import { executeCapability } from "./runner";
 import type { CapabilityDef, CapabilityToolInput } from "./types";
@@ -33,6 +34,8 @@ export default function (pi: ExtensionAPI) {
 	for (const capability of capabilities) {
 		registerCapabilityTool(pi, capability);
 	}
+
+	registerCapabilityCommands(pi, capabilities);
 
 	function toggleCapabilities(): { enabled: boolean; names: string[] } {
 		const active = pi.getActiveTools();

@@ -5,7 +5,7 @@
  * Format: Tools (N): [Bash 3] [Read 7] [Write 2]
  */
 
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
 
 const palette = [
@@ -28,20 +28,22 @@ export default function (pi: ExtensionAPI) {
 	const toolColors: Record<string, number[]> = {};
 	let total = 0;
 	let colorIdx = 0;
+	let currentCtx: ExtensionContext | undefined;
 
-	pi.on("tool_execution_end", async (event) => {
-		if (!(event.toolName in toolColors)) {
-			toolColors[event.toolName] = palette[colorIdx % palette.length];
+	function record(toolName: string): void {
+		if (!(toolName in toolColors)) {
+			toolColors[toolName] = palette[colorIdx % palette.length];
 			colorIdx++;
 		}
-		counts[event.toolName] = (counts[event.toolName] || 0) + 1;
+		counts[toolName] = (counts[toolName] || 0) + 1;
 		total++;
-	});
+		paint();
+	}
 
-	pi.on("session_start", async (_event, ctx) => {
-		ctx.ui.setWidget("tool-counter", (_tui, theme) => {
+	function paint(): void {
+		if (!currentCtx?.hasUI) return;
+		currentCtx.ui.setWidget("tool-counter", (_tui, theme) => {
 			const text = new Text("", 1, 1);
-
 			return {
 				render(width: number): string[] {
 					const entries = Object.entries(counts);
@@ -51,7 +53,7 @@ export default function (pi: ExtensionAPI) {
 					});
 					text.setText(
 						theme.fg("accent", `Tools (${total}):`) +
-						(entries.length > 0 ? " " + parts.join(" ") : "")
+						(entries.length > 0 ? " " + parts.join(" ") : ""),
 					);
 					return text.render(width);
 				},
@@ -60,5 +62,19 @@ export default function (pi: ExtensionAPI) {
 				},
 			};
 		});
+	}
+
+	pi.on("tool_execution_end", async (event) => {
+		record(event.toolName);
+	});
+
+	pi.events.on("capability:complete", (data) => {
+		const toolName = (data as { toolName?: string }).toolName;
+		if (typeof toolName === "string" && toolName) record(toolName);
+	});
+
+	pi.on("session_start", async (_event, ctx) => {
+		currentCtx = ctx;
+		paint();
 	});
 }

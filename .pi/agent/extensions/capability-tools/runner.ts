@@ -108,12 +108,12 @@ function streamingPreview(text: string, maxLines = 2, maxLineChars = 140): strin
 		.join("\n");
 }
 
-function formatStreamingPreview(source: PartialStreamSource): string {
+function formatStreamingPreview(source: PartialStreamSource, maxLines = 2): string {
+	const lines = Math.max(1, maxLines);
 	if (source.kind === "text") {
-		return streamingPreview(source.text, 2);
+		return streamingPreview(source.text, lines);
 	}
-	// Keep total height to 2 lines: label + latest thinking line.
-	const latest = streamingPreview(source.text, 1);
+	const latest = streamingPreview(source.text, Math.max(1, lines - 1));
 	return latest ? `thinking…\n${latest}` : "thinking…";
 }
 
@@ -217,7 +217,7 @@ export async function executeCapability(
 			const source = extractPartialStreamSource(partial);
 			if (!source) continue;
 
-			const preview = formatStreamingPreview(source);
+			const preview = formatStreamingPreview(source, input.previewLines ?? 2);
 			if (!preview || preview === lastPreview) continue;
 
 			const now = Date.now();
