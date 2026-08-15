@@ -120,18 +120,20 @@ export default function (pi: ExtensionAPI) {
 			if (ctx.hasUI) ctx.ui.setStatus("intent-router", "intent routing...");
 			const prior = lastAssistantText(ctx);
 			const decision = isConfirmation(prompt) && prior
-				? { kind: "instruction" as const, needsCurrentThread: true, key: "question" as const }
+				? {
+						kind: "instruction" as const,
+						needsCurrentThread: true,
+						includesEnglish: false,
+						key: "question" as const,
+				  }
 				: await classify(ctx, fileConfig, prompt, activeTools(pi), prior, ctx.signal);
 			const current = ctx.model ? modelLabel(ctx.model) : "current";
-			if (decision.needsCurrentThread) {
-				last = { decision, model: current, prompt };
-				previousModel = undefined;
-				colorState = "restore";
-				setIndicator(ctx, statusLine(decision, current));
-				ctx.ui.notify(`${formatDecision(decision)} → ${current}`, "info");
-				return;
-			}
-			const target = fileConfig.routes[decision.key];
+			const skipEnglish =
+				decision.includesEnglish && !decision.tool && !decision.needsCurrentThread;
+			const target =
+				!decision.needsCurrentThread && !skipEnglish
+					? fileConfig.routes[decision.key]
+					: undefined;
 			if (!target) {
 				last = { decision, model: current, prompt };
 				previousModel = undefined;

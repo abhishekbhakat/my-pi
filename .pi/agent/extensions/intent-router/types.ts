@@ -41,6 +41,7 @@ export interface Decision {
 	level?: Level;
 	tool?: string;
 	needsCurrentThread?: boolean;
+	includesEnglish: boolean;
 	key: RouteKey;
 }
 
@@ -70,9 +71,10 @@ export function modelLabel(ref: ModelRef): string {
 
 export function formatDecision(decision: Decision): string {
 	if (decision.needsCurrentThread) return "stay";
-	if (decision.tool) return `tool/${decision.tool}`;
+	const suffix = decision.includesEnglish ? "+en" : "";
+	if (decision.tool) return `tool/${decision.tool}${suffix}`;
 	if (decision.kind === "question") return "question";
-	return `${decision.kind}/${decision.lane}/${decision.level}`;
+	return `${decision.kind}/${decision.lane}/${decision.level}${suffix}`;
 }
 
 export function isRecord(value: unknown): value is Record<string, unknown> {

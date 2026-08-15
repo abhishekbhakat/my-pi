@@ -28,13 +28,19 @@ export function parseDecision(value: unknown, tools: ToolInfo[]): Decision {
 	}
 	const needsCurrentThread = value.needsCurrentThread === true;
 	if (needsCurrentThread) {
-		return { kind: value.kind, needsCurrentThread: true, key: "question" };
+		return {
+			kind: value.kind,
+			needsCurrentThread: true,
+			includesEnglish: false,
+			key: "question",
+		};
 	}
 	const allowed = new Set(tools.map((tool) => tool.name));
 	const tool = typeof value.tool === "string" && allowed.has(value.tool) ? value.tool : undefined;
 	if (value.kind === "question" && !tool) {
-		return { kind: "question", key: "question" };
+		return { kind: "question", includesEnglish: false, key: "question" };
 	}
+	const includesEnglish = value.includesEnglish !== false;
 	if (tool) {
 		const lane: Lane | undefined =
 			value.lane === "ops" || value.lane === "code" || value.lane === "terminal"
@@ -42,7 +48,7 @@ export function parseDecision(value: unknown, tools: ToolInfo[]): Decision {
 				: undefined;
 		const level: Level | undefined =
 			value.level === "basic" || value.level === "adv" ? value.level : undefined;
-		return { kind: "instruction", lane, level, tool, key: "tool" };
+		return { kind: "instruction", lane, level, tool, includesEnglish: false, key: "tool" };
 	}
 	if (value.lane !== "ops" && value.lane !== "code" && value.lane !== "terminal") {
 		throw new Error("instruction lane must be ops|code|terminal");
@@ -50,6 +56,11 @@ export function parseDecision(value: unknown, tools: ToolInfo[]): Decision {
 	if (value.level !== "basic" && value.level !== "adv") {
 		throw new Error("instruction level must be basic|adv");
 	}
-	const parsed = { kind: "instruction" as const, lane: value.lane, level: value.level };
+	const parsed = {
+		kind: "instruction" as const,
+		lane: value.lane,
+		level: value.level,
+		includesEnglish,
+	};
 	return { ...parsed, key: routeKey(parsed) };
 }
