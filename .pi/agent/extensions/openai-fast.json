@@ -1,4 +1,5 @@
 {
   "enabled": true,
-  "showStatus": true
+  "showStatus": true,
+  "debug": false
 }

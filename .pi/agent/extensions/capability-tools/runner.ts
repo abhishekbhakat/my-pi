@@ -13,9 +13,12 @@ function splitModelRef(modelRef: string): { provider: string; modelId: string } 
 	};
 }
 
-function openaiServiceTier(provider: string): "priority" | undefined {
-	if (provider === "openai-codex" || provider === "openai") return "priority";
-	return undefined;
+const FAST_WRAP_KEY = Symbol.for("my-pi.fast-mode.wrap.v2");
+
+type FastWireState = { enabled?: boolean; remember?: (provider: string, id: string) => void };
+
+function fastWireState(): FastWireState | undefined {
+	return (globalThis as typeof globalThis & { [FAST_WRAP_KEY]?: FastWireState })[FAST_WRAP_KEY];
 }
 
 function extractText(response: {
@@ -161,7 +164,9 @@ export async function executeCapability(
 	const context = await buildCapabilityContext(pi, ctx, def, input, signal);
 	const prompt = buildCapabilityPrompt(input.task, context);
 
-	const serviceTier = openaiServiceTier(model.provider);
+	const fast = fastWireState();
+	const serviceTier = model.provider === "openai-codex" && fast?.enabled ? "priority" : undefined;
+	fast?.remember?.(model.provider, model.id);
 
 	onUpdate?.({
 		content: [{
