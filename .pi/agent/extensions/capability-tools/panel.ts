@@ -1,6 +1,6 @@
-import type { ExtensionCommandContext, Theme } from "@earendil-works/pi-coding-agent";
+import type { ExtensionCommandContext, ExtensionUIContext, Theme } from "@earendil-works/pi-coding-agent";
 import { getMarkdownTheme } from "@earendil-works/pi-coding-agent";
-import type { OverlayHandle, TUI } from "@earendil-works/pi-tui";
+import type { TUI } from "@earendil-works/pi-tui";
 import { Markdown, matchesKey, truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 
 export type PanelState = {
@@ -11,21 +11,27 @@ export type PanelState = {
 };
 
 const HINT = "Esc cancel";
+const WIDGET_KEY = "capability-panel";
+// Overlays used to cap at maxHeight: 40%. Widgets render every line they
+// return, so bound the body instead to keep the editor visible.
+const MAX_BODY_LINES = 8;
 
-let handle: OverlayHandle | undefined;
-let finish: (() => void) | undefined;
+let uiRef: ExtensionUIContext | undefined;
 let panel: CapabilityPanel | undefined;
 let inputUnsub: (() => void) | undefined;
 let onEscape: (() => void) | undefined;
 
-export function closeCapabilityPanel(): void {
+function cleanupInput(): void {
 	inputUnsub?.();
 	inputUnsub = undefined;
 	onEscape = undefined;
-	handle?.hide();
-	finish?.();
-	handle = undefined;
-	finish = undefined;
+}
+
+export function closeCapabilityPanel(): void {
+	cleanupInput();
+	// Clearing the widget disposes the panel component via the TUI.
+	uiRef?.setWidget(WIDGET_KEY, undefined);
+	uiRef = undefined;
 	panel = undefined;
 }
 
@@ -84,9 +90,15 @@ class CapabilityPanel {
 		const wrap = (text: string): string => (
 			th.fg("border", "│") + truncateToWidth(` ${text}`, innerW, "...", true) + th.fg("border", "│")
 		);
-		const body = this.markdown.render(Math.max(1, innerW - 1)).map((line) => wrap(line));
+		const body = this.markdown.render(Math.max(1, innerW - 1));
+		const overflow = body.length - MAX_BODY_LINES;
+		const visible = overflow > 0 ? body.slice(-MAX_BODY_LINES) : body;
+		const lines = visible.map((line) => wrap(line));
+		if (overflow > 0) {
+			lines.unshift(wrap(th.fg("dim", `... ${overflow} earlier line(s) hidden`)));
+		}
 		const bottom = th.fg("border", `╰${"─".repeat(innerW)}╯`);
-		return [top, wrap(th.fg("dim", this.status)), ...body, wrap(th.fg("dim", HINT)), bottom];
+		return [top, wrap(th.fg("dim", this.status)), ...lines, wrap(th.fg("dim", HINT)), bottom];
 	}
 
 	invalidate(): void {
@@ -94,22 +106,32 @@ class CapabilityPanel {
 	}
 
 	dispose(): void {
+		// The TUI can dispose widgets externally (session switch, reload).
+		// Drop the Escape listener so a dead panel never consumes input.
+		cleanupInput();
 		if (panel === this) {
 			panel = undefined;
-			handle = undefined;
-			finish = undefined;
+			uiRef = undefined;
 		}
 	}
 }
 
-export async function showCapabilityPanel(
+/**
+ * Show the streaming panel as a widget above the editor so it sits with the
+ * other status widgets instead of covering the top of the screen.
+ * Widget order is insertion order; emit "capability:panel-open" after showing
+ * so widgets like tool-counter re-paint and land below this panel.
+ */
+export function showCapabilityPanel(
 	ctx: ExtensionCommandContext,
 	state: PanelState,
-): Promise<void> {
+): void {
 	if (ctx.mode !== "tui" || !ctx.hasUI) {
 		ctx.ui.notify(`${state.title}: ${state.body}`, state.failed ? "error" : "info");
 		return;
 	}
+
+	uiRef = ctx.ui;
 
 	if (panel) {
 		panel.setState(state);
@@ -117,27 +139,10 @@ export async function showCapabilityPanel(
 		return;
 	}
 
-	await new Promise<void>((resolve, reject) => {
-		void ctx.ui.custom<void>((tui, theme, _kb, done) => {
-			finish = done;
-			panel = new CapabilityPanel(tui, theme, state);
-			resolve();
-			return panel;
-		}, {
-			overlay: true,
-			overlayOptions: {
-				anchor: "top-center",
-				width: "100%",
-				maxHeight: "40%",
-				margin: { top: 0, left: 0, right: 0 },
-				nonCapturing: true,
-			},
-			onHandle: (next) => {
-				handle = next;
-				next.unfocus();
-			},
-		}).catch(reject);
-	});
+	ctx.ui.setWidget(WIDGET_KEY, (tui, theme) => {
+		panel = new CapabilityPanel(tui, theme, state);
+		return panel;
+	}, { placement: "aboveEditor" });
 
 	bindInput(ctx);
 }

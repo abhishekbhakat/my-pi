@@ -48,12 +48,8 @@ export default function (pi: ExtensionAPI) {
 	function setIndicator(ctx: ExtensionContext, text?: string): void {
 		if (!ctx.hasUI) return;
 		const line = paint(text ?? statusLine(enabled ? last?.decision : undefined, enabled ? last?.model : undefined));
+		// Footer status only; a second widget line would duplicate the indicator.
 		ctx.ui.setStatus("intent-router", line);
-		if (!enabled) {
-			ctx.ui.setWidget("intent-router", undefined);
-			return;
-		}
-		ctx.ui.setWidget("intent-router", [line]);
 	}
 
 	async function setRouteModel(ctx: ExtensionContext, target: ModelRef): Promise<string> {

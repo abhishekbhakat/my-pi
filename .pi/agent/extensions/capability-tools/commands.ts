@@ -36,11 +36,16 @@ async function runCapabilityCommand(
 
 	const controller = new AbortController();
 	setPanelEscape(() => controller.abort());
-	await showCapabilityPanel(ctx, {
+	showCapabilityPanel(ctx, {
 		title: def.label,
 		body: "Assembling context...",
 		status: "running",
 	});
+	// Re-paint listeners (e.g. tool-counter) so their widgets move below the panel.
+	// Widget render order follows Map insertion order, and pi's setExtensionWidget
+	// always deletes the key before re-setting it, so a re-paint moves that
+	// widget to the end (verified in interactive-mode.js setExtensionWidget).
+	pi.events.emit("capability:panel-open", {});
 
 	const onUpdate: AgentToolUpdateCallback = (update) => {
 		const preview = resultText(update);

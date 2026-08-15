@@ -73,6 +73,14 @@ export default function (pi: ExtensionAPI) {
 		if (typeof toolName === "string" && toolName) record(toolName);
 	});
 
+	// Re-paint when the capability panel opens so this widget lands below it.
+	// pi's setExtensionWidget deletes the key before re-setting it, so calling
+	// paint() here removes and re-adds this widget, moving it to the end of the
+	// render order (below the panel).
+	pi.events.on("capability:panel-open", () => {
+		paint();
+	});
+
 	pi.on("session_start", async (_event, ctx) => {
 		currentCtx = ctx;
 		paint();
