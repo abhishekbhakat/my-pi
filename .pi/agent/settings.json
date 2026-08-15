@@ -17,6 +17,7 @@
     "opencode/deepseek-v4-flash"
   ],
   "packages": [
-    "npm:pi-intercom"
+    "npm:pi-intercom",
+    "npm:@diegopetrucci/pi-openai-fast"
   ]
 }

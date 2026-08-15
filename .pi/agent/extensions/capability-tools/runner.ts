@@ -13,6 +13,11 @@ function splitModelRef(modelRef: string): { provider: string; modelId: string } 
 	};
 }
 
+function openaiServiceTier(provider: string): "priority" | undefined {
+	if (provider === "openai-codex" || provider === "openai") return "priority";
+	return undefined;
+}
+
 function extractText(response: {
 	content?: Array<{ type: string; text?: string; thinking?: string }>;
 	stopReason?: string;
@@ -156,16 +161,19 @@ export async function executeCapability(
 	const context = await buildCapabilityContext(pi, ctx, def, input, signal);
 	const prompt = buildCapabilityPrompt(input.task, context);
 
+	const serviceTier = openaiServiceTier(model.provider);
+
 	onUpdate?.({
 		content: [{
 			type: "text",
-			text: `Calling ${def.model} for ${def.label}... (${prompt.length.toLocaleString()} prompt chars, ${context.autoPaths.length} paths)`,
+			text: `Calling ${def.model} for ${def.label}... (${prompt.length.toLocaleString()} prompt chars, ${context.autoPaths.length} paths${serviceTier ? `, ${serviceTier}` : ""})`,
 		}],
 		details: {
 			status: "running",
 			capability: def.toolName,
 			paths: context.autoPaths,
 			promptChars: prompt.length,
+			serviceTier,
 		},
 	});
 
@@ -187,6 +195,7 @@ export async function executeCapability(
 				headers: auth.headers,
 				signal,
 				reasoningEffort: model.reasoning ? def.reasoningEffort : undefined,
+				serviceTier,
 			},
 		);
 
