@@ -14,7 +14,8 @@
     "openai-codex/gpt-5.6-sol",
     "kimi-coding/k3-256k",
     "xai/grok-4.6",
-    "opencode/deepseek-v4-flash"
+    "runinfra/deepseek-v4-flash",
+    "opencode/gemini-3.7-flash"
   ],
   "packages": [
     "npm:pi-intercom",

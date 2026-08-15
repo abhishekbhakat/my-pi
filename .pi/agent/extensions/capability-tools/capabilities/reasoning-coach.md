@@ -12,7 +12,7 @@ includeGitStatus: true
 includeGitDiff: false
 includeChangedFiles: true
 includeTimeline: true
-timelineModel: opencode/deepseek-v4-flash
+timelineModel: runinfra/deepseek-v4-flash
 maxContextChars: 360000
 reasoningEffort: max
 ---

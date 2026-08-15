@@ -7,23 +7,21 @@
 - The only way to install or update the live agent config is:
 
 ```bash
-./install.sh -y
+make install
 ```
 
-On Windows, use the native PowerShell equivalent instead of `install.bat`:
+Same command on Windows. Or call Node directly:
 
-```powershell
-.\install.ps1 -y
-# or, if execution policy blocks it:
-powershell -ExecutionPolicy Bypass -File .\install.ps1 -y
+```bash
+node scripts/pi.mjs install
 ```
 
 Optional flags:
 
 ```bash
-./install.sh -y           # overwrite protected config without prompting (default)
-./install.sh -h <host>    # set models.json proxy host
-./install.sh              # interactive mode (prompt before overwriting protected files)
+make install                  # overwrite protected config
+make install ARGS="-h HOST"   # set models.json proxy host
+make help                     # list targets
 ```
 
 ## Edit only the repo source
@@ -41,39 +39,30 @@ Examples:
 - themes: `.pi/agent/themes/`
 - settings/models: `.pi/agent/settings.json`, `.pi/agent/models.json`, etc.
 
-After changing source files, run `./install.sh -y`.
+After changing source files, run `make install`. Install also merges repo `.pi/agent/auth.json` into `~/.pi/agent/auth.json` (repo keys override, live-only keys stay).
 
 ## Sync live config back into the repo
 
 To pull current live `~/.pi` state into this repository (reverse of install):
 
 ```bash
-./sync.sh -y
+make sync
 ```
 
-On Windows:
+Or:
 
-```powershell
-.\sync.ps1 -y
-# or, if execution policy blocks it:
-powershell -ExecutionPolicy Bypass -File .\sync.ps1 -y
+```bash
+node scripts/pi.mjs sync
 ```
 
 Optional flags:
 
 ```bash
-./sync.sh -y           # overwrite protected config in the repo without prompting
-./sync.sh -p           # also delete repo files missing from live (mirror/prune)
-./sync.sh              # interactive mode (prompt before overwriting protected files)
+make sync             # overwrite protected config in the repo
+make sync ARGS="-p"   # also delete repo files missing from live (mirror/prune)
 ```
 
-On Windows, prune is `-Prune`:
-
-```powershell
-.\sync.ps1 -y -Prune
-```
-
-Sync copies extensions, skills, themes, and root config files. **Default is additive** (update/add only) so repo-only work is never wiped when live lags. Pass `-p` / `-Prune` only when you intentionally want a live mirror. It skips runtime/secrets (`auth.json`, `bin/`, `sessions/`, `node_modules`, `package-lock.json`).
+Sync copies extensions, skills, themes, and root config files. **Default is additive** (update/add only) so repo-only work is never wiped when live lags. Pass `-p` only when you intentionally want a live mirror. It skips runtime files (`bin/`, `sessions/`, `node_modules`, `package-lock.json`). `auth.json` is merge-only both ways: incoming provider keys override, destination-only keys stay, nothing is deleted. Keep `auth.json` gitignored.
 
 ## After install
 

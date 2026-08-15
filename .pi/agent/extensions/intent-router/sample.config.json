@@ -16,11 +16,11 @@
       "id": ""
     },
     "tool": {
-      "provider": "opencode",
+      "provider": "runinfra",
       "id": "deepseek-v4-flash"
     },
     "instruction.code.basic": {
-      "provider": "opencode",
+      "provider": "runinfra",
       "id": "deepseek-v4-flash"
     },
     "instruction.code.adv": {
@@ -28,7 +28,7 @@
       "id": ""
     },
     "instruction.ops.basic": {
-      "provider": "opencode",
+      "provider": "runinfra",
       "id": "deepseek-v4-flash"
     },
     "instruction.ops.adv": {

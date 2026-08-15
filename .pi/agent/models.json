@@ -1,13 +1,41 @@
 {
   "providers": {
+    "runinfra": {
+      "baseUrl": "https://api.runinfra.ai/v1",
+      "api": "openai-completions",
+      "headers": {
+        "X-Client-Request-Id": "!uuidgen"
+      },
+      "compat": {
+        "supportsStore": false,
+        "supportsDeveloperRole": false,
+        "maxTokensField": "max_tokens",
+        "requiresReasoningContentOnAssistantMessages": true,
+        "thinkingFormat": "deepseek"
+      },
+      "models": [
+        {
+          "id": "deepseek-v4-flash",
+          "name": "DeepSeek V4 Flash (RunInfra)",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 1000000,
+          "maxTokens": 32768,
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": null,
+            "medium": "medium",
+            "high": "high",
+            "xhigh": null,
+            "max": "max"
+          }
+        }
+      ]
+    },
     "modal-kimi": {
       "baseUrl": "https://abhishek-avi-bak--ep-kimi-k3-server.us-west.modal.direct/v1",
       "api": "openai-completions",
-      "apiKey": "unused",
-      "headers": {
-        "Modal-Key": "$MODAL_PROXY_TOKEN_ID",
-        "Modal-Secret": "$MODAL_PROXY_TOKEN_SECRET"
-      },
       "compat": {
         "supportsDeveloperRole": false,
         "supportsReasoningEffort": false,
