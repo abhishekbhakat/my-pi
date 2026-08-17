@@ -10,6 +10,7 @@ export const CLASSIFY_RULES = [
 	"- needsCurrentThread true: user is confirming, continuing, or answering the last assistant message (yes, ok, go, do it, proceed, continue). Stay on the current thread. includesEnglish false.",
 	"- instruction: user wants work done.",
 	"  - code: write, edit, review, or debug source",
+	"  - review of existing changes, diffs, or PRs (review, audit, critique, check my work) is always adv, never basic",
 	"  - terminal: raw shell, git, process, packages, install, build, test runners",
 	"  - ops: files, config, deploy, infra, rename, organize, non-code repo work",
 	"  - code and ops levels: basic or adv only. Never readonly.",
