@@ -30,7 +30,8 @@ export type RouteKey =
 	| "instruction.terminal.adv";
 
 export interface IntentRouterConfig {
-	allowEnable: boolean;
+	/** When true, session_start / reload auto-probes and enables routing. */
+	defaultEnabled: boolean;
 	classifier: ClassifierRef;
 	routes: Partial<Record<RouteKey, ModelRef>>;
 	migrationNotes: string[];

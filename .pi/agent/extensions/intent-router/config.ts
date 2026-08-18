@@ -79,7 +79,8 @@ export function loadConfig(): IntentRouterConfig | null {
 	const classifier = parseClassifier(raw.classifier);
 	if (!classifier.id) throw new Error("intent-router classifier.id is required");
 	return {
-		allowEnable: raw.enabled !== false,
+		// Opt-in auto-on. false/missing => start off; user enables with /intent on.
+		defaultEnabled: raw.enabled === true,
 		classifier,
 		routes,
 		migrationNotes,

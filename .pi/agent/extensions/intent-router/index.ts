@@ -68,14 +68,12 @@ export default function (pi: ExtensionAPI) {
 			lastProbeError = "no config";
 			colorState = "plain";
 			setIndicator(ctx);
-			return;
-		}
-		if (!fileConfig.allowEnable) {
-			enabled = false;
-			lastProbeError = "disabled in config";
-			colorState = "plain";
-			setIndicator(ctx);
-			if (notify) ctx.ui.notify("intent-router off (config.enabled is false)", "warning");
+			if (notify) {
+				ctx.ui.notify(
+					`No config.json. Copy ${SAMPLE_CONFIG_PATH} to ${CONFIG_PATH}`,
+					"warning",
+				);
+			}
 			return;
 		}
 		if (ctx.hasUI) ctx.ui.setStatus("intent-router", "intent probing...");
@@ -95,8 +93,26 @@ export default function (pi: ExtensionAPI) {
 		}
 	}
 
+	function startOff(ctx: ExtensionContext): void {
+		enabled = false;
+		lastProbeError = undefined;
+		colorState = "plain";
+		setIndicator(ctx);
+	}
+
 	pi.on("session_start", async (_event, ctx) => {
-		await applyProbe(ctx, ctx.hasUI);
+		// Fresh chat: off by default. Auto-on only when config.enabled is true.
+		if (!fileConfig) {
+			lastProbeError = "no config";
+			colorState = "plain";
+			setIndicator(ctx);
+			return;
+		}
+		if (fileConfig.defaultEnabled) {
+			await applyProbe(ctx, ctx.hasUI);
+			return;
+		}
+		startOff(ctx);
 	});
 
 	pi.on("before_agent_start", async (event, ctx) => {
@@ -172,11 +188,8 @@ export default function (pi: ExtensionAPI) {
 			if (!sub) {
 				// Bare /intent toggles: off -> probe on, on -> off.
 				if (enabled) {
-					enabled = false;
-					lastProbeError = "forced off";
-					colorState = "plain";
-					setIndicator(ctx);
-					ctx.ui.notify("intent off until next probe", "info");
+					startOff(ctx);
+					ctx.ui.notify("intent off. /intent on to enable.", "info");
 				} else {
 					await applyProbe(ctx, true);
 				}
@@ -187,11 +200,8 @@ export default function (pi: ExtensionAPI) {
 				return;
 			}
 			if (sub === "off") {
-				enabled = false;
-				lastProbeError = "forced off";
-				colorState = "plain";
-				setIndicator(ctx);
-				ctx.ui.notify("intent-router off until next probe", "info");
+				startOff(ctx);
+				ctx.ui.notify("intent off. /intent on to enable.", "info");
 				return;
 			}
 			if (sub === "routes") {
@@ -230,7 +240,7 @@ export default function (pi: ExtensionAPI) {
 					statusLine(last?.decision, last?.model),
 					"Usage: /intent toggles. /intent on|off|probe|last|routes subcommands.",
 					fileConfig
-						? "Bare /intent toggles. Startup and /reload probe the classifier. off lasts until next probe."
+						? "Fresh chats start off unless config.enabled is true. /intent on probes and enables."
 						: `Copy ${SAMPLE_CONFIG_PATH} to ${CONFIG_PATH} to enable.`,
 				].join("\n"),
 				"info",

@@ -8,14 +8,17 @@
   "followUpMode": "all",
   "enableInstallTelemetry": false,
   "defaultProjectTrust": "always",
-  "defaultProvider": "opencode",
-  "defaultModel": "gemini-3.7-flash",
+  "defaultProvider": "xai",
+  "defaultModel": "grok-4.5",
   "enabledModels": [
     "openai-codex/gpt-5.6-sol",
     "kimi-coding/k3-256k",
+    "xai/grok-4.5",
     "xai/grok-4.6",
     "runinfra/deepseek-v4-flash",
-    "opencode/gemini-3.7-flash"
+    "commandcode/xai/grok-4.5",
+    "commandcode/moonshotai/Kimi-K3",
+    "commandcode/zai-org/GLM-5.3"
   ],
   "packages": [
     "npm:pi-intercom"

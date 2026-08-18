@@ -96,8 +96,79 @@
             "low": null,
             "medium": null
           }
+        },
+        "grok-4.6": {
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": null,
+            "medium": null,
+            "high": "high",
+            "xhigh": null,
+            "max": null
+          }
         }
       }
+    },
+    "commandcode": {
+      "baseUrl": "https://api.commandcode.ai/provider/v1",
+      "api": "openai-completions",
+      "compat": {
+        "supportsStore": false,
+        "supportsDeveloperRole": false,
+        "maxTokensField": "max_tokens"
+      },
+      "models": [
+        {
+          "id": "xai/grok-4.5",
+          "name": "Grok 4.5 (Command Code)",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "contextWindow": 500000,
+          "maxTokens": 128000,
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": null,
+            "medium": null,
+            "high": "high",
+            "xhigh": null,
+            "max": null
+          }
+        },
+        {
+          "id": "moonshotai/Kimi-K3",
+          "name": "Kimi K3 (Command Code)",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 1000000,
+          "maxTokens": 128000,
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": null,
+            "medium": null,
+            "high": null,
+            "xhigh": null,
+            "max": "max"
+          },
+          "compat": {
+            "thinkingFormat": "together",
+            "supportsReasoningEffort": false
+          }
+        },
+        {
+          "id": "zai-org/GLM-5.3",
+          "name": "GLM 5.3 (Command Code)",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 1000000,
+          "maxTokens": 128000,
+          "compat": {
+            "thinkingFormat": "zai"
+          }
+        }
+      ]
     }
   }
 }

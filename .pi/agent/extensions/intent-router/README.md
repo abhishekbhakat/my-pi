@@ -2,7 +2,11 @@
 
 Per-message model routing. A classifier labels the prompt; this extension switches the session model for that turn, then restores the previous model when the agent settles.
 
-Copy `sample.config.json` to `config.json`. Startup and `/reload` probe the classifier. Fail-open: a classify or switch error keeps the current model.
+Copy `sample.config.json` to `config.json`.
+
+- Fresh chat starts **off** unless `config.enabled` is `true` (then startup/`/reload` auto-probes).
+- Turn on with `/intent` or `/intent on` (probes classifier first).
+- Fail-open: a classify or switch error keeps the current model.
 
 ## Decision tree
 
