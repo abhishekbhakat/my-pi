@@ -41,6 +41,9 @@ interface CommandMatchContext {
 
 const UV_SAFE_WRAPPED_COMMANDS = new Set(["pip", "pip3", "python", "python3"]);
 
+// Base commands treated as delete/move operations for noDeletePaths checks
+const DELETE_COMMANDS = new Set(["rm", "mv", "rmdir", "unlink"]);
+
 const WRAPPER_COMMANDS: Record<string, WrapperCommand> = {
 	uv: {
 		unwrap(tokens) {
@@ -419,18 +422,31 @@ export default function (pi: ExtensionAPI) {
 				}
 			}
 
-			// Check for delete/move operations on protected paths
+			// Check for delete/move operations on protected paths.
+			// Only flag subcommands whose base command is an actual delete/move
+			// verb (rm, mv, ...) and only when one of that subcommand's
+			// arguments references a protected path. Scanning the whole command
+			// string for \brm\b or a filename causes false positives: docker's
+			// --rm flag or prompt text like "Read /workspace/Dockerfile" must
+			// never trip this guard.
 			if (!violationReason) {
-				for (const ndp of rules.noDeletePaths) {
-					const isDeleteCommand = /\brm\b/.test(command) || /\bmv\b/.test(command);
-					if (isDeleteCommand) {
+				for (const parsed of parsedCommands) {
+					const baseCmd = getBaseCommandName(parsed.baseCommand);
+					if (!DELETE_COMMANDS.has(baseCmd)) continue;
+
+					const args = parsed.tokens.slice(1);
+					for (const ndp of rules.noDeletePaths) {
 						const escapedNdp = ndp.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 						const regex = new RegExp(`(^|[^\\w])${escapedNdp}($|[^\\w])`);
-						if (regex.test(command)) {
-							violationReason = `Bash command attempts to delete/move protected path: ${ndp}`;
-							break;
+						for (const arg of args) {
+							if (regex.test(arg)) {
+								violationReason = `Bash command attempts to delete/move protected path: ${ndp}`;
+								break;
+							}
 						}
+						if (violationReason) break;
 					}
+					if (violationReason) break;
 				}
 			}
 		} else if (

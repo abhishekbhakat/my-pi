@@ -414,6 +414,29 @@ async function collectChangedPaths(
 	}
 }
 
+async function collectStagedPaths(
+	pi: ExtensionAPI,
+	cwd: string,
+	signal?: AbortSignal,
+): Promise<string[]> {
+	try {
+		const names = await pi.exec("git", ["diff", "--cached", "--name-only"], {
+			cwd,
+			signal,
+			timeout: 15000,
+		});
+		if (names.code !== 0) return [];
+		return dedupe(
+			names.stdout
+				.split("\n")
+				.map((line) => line.trim())
+				.filter(Boolean),
+		);
+	} catch {
+		return [];
+	}
+}
+
 async function collectTree(
 	pi: ExtensionAPI,
 	cwd: string,
@@ -444,10 +467,20 @@ async function collectStagedDiff(
 	cwd: string,
 	maxChars: number,
 	signal?: AbortSignal,
+	paths: string[] = [],
 ): Promise<string> {
+	const pathArgs = paths.length > 0 ? ["--", ...paths] : [];
 	try {
-		const names = await pi.exec("git", ["diff", "--cached", "--name-only"], { cwd, signal, timeout: 15000 });
-		const diff = await pi.exec("git", ["diff", "--cached", "--no-ext-diff"], { cwd, signal, timeout: 15000 });
+		const names = await pi.exec("git", ["diff", "--cached", "--name-only", ...pathArgs], {
+			cwd,
+			signal,
+			timeout: 15000,
+		});
+		const diff = await pi.exec("git", ["diff", "--cached", "--no-ext-diff", ...pathArgs], {
+			cwd,
+			signal,
+			timeout: 15000,
+		});
 		if (diff.code !== 0) {
 			const err = diff.stderr.trim() || diff.stdout.trim() || `git diff --cached exited ${diff.code}`;
 			return `[git error]\n${err}`;
@@ -678,12 +711,16 @@ export async function buildCapabilityContext(
 			.map((value) => path.resolve(ctx.cwd, value)),
 	);
 	const explicitSet = new Set(requestedPaths);
-	const gitCwd = def.toolName === "commit_message"
+	const stagedOnly = input.stagedOnly === true;
+	const gitCwd = def.toolName === "commit_message" || stagedOnly
 		? await resolveGitCwd(pi, ctx.cwd, requestedPaths, signal)
 		: ctx.cwd;
 
 	const changedPaths = def.includeChangedFiles
-		? (await collectChangedPaths(pi, gitCwd, signal)).map((value) => path.resolve(gitCwd, value))
+		? (await (stagedOnly
+			? collectStagedPaths(pi, gitCwd, signal)
+			: collectChangedPaths(pi, gitCwd, signal)
+		)).map((value) => path.resolve(gitCwd, value))
 		: [];
 
 	const filteredChanged = changedPaths.filter((targetPath) => {
@@ -759,8 +796,22 @@ export async function buildCapabilityContext(
 		}
 	};
 
-	if (def.toolName === "patch_reviewer") {
-		// Diff is the primary evidence; files fill whatever is left.
+	if (def.toolName === "patch_reviewer" && stagedOnly) {
+		// /patch-review command: staged index only.
+		// Explicit paths scope the staged diff; otherwise use full staged set.
+		const stagedDiffPaths = requestedPaths.length > 0
+			? requestedPaths.map((item) => toWorkspaceRelative(gitCwd, item))
+			: relativeAutoPaths;
+		const stagedBudget = Math.floor(remaining * 0.7);
+		const staged = await collectStagedDiff(pi, gitCwd, stagedBudget, signal, stagedDiffPaths);
+		sections.push({
+			title: "Git Diff",
+			content: staged || "[no staged changes]",
+		});
+		remaining = Math.max(0, promptBudget - sectionsSize(sections));
+		await fillPaths(remaining);
+	} else if (def.toolName === "patch_reviewer") {
+		// Agent tool: working tree + staged. Diff primary; files fill remainder.
 		await fillDiff(Math.floor(remaining * 0.7));
 		await fillPaths(remaining);
 	} else if (def.toolName === "reasoning_coach") {

@@ -4,7 +4,7 @@ import { executeCapability } from "./runner";
 import type { CapabilityDef } from "./types";
 
 const DEFAULT_TASKS: Record<string, string> = {
-	patch_reviewer: "Review current changes for correctness risks, regressions, and missing tests.",
+	patch_reviewer: "Review staged changes for correctness risks, regressions, and missing tests.",
 	commit_message: "Generate a concise one-line conventional commit message from staged changes.",
 };
 
@@ -28,6 +28,7 @@ async function runCapabilityCommand(
 	ctx: ExtensionCommandContext,
 	task: string,
 	paths?: string[],
+	options?: { stagedOnly?: boolean },
 ): Promise<void> {
 	if (!ctx.isIdle()) {
 		ctx.ui.notify("Agent busy. Wait or abort first.", "warning");
@@ -60,7 +61,7 @@ async function runCapabilityCommand(
 		const result = await executeCapability(
 			pi,
 			def,
-			{ task, paths, previewLines: 4 },
+			{ task, paths, previewLines: 4, stagedOnly: options?.stagedOnly },
 			controller.signal,
 			onUpdate,
 			ctx,
@@ -111,7 +112,7 @@ export function registerCapabilityCommands(pi: ExtensionAPI, capabilities: Capab
 
 	if (patchReviewer) {
 		pi.registerCommand("patch-review", {
-			description: "Review current changes with Patch Reviewer",
+			description: "Review staged changes with Patch Reviewer",
 			handler: async (args, ctx) => {
 				const note = args.trim();
 				await runCapabilityCommand(
@@ -119,6 +120,8 @@ export function registerCapabilityCommands(pi: ExtensionAPI, capabilities: Capab
 					patchReviewer,
 					ctx,
 					note || DEFAULT_TASKS.patch_reviewer,
+					undefined,
+					{ stagedOnly: true },
 				);
 			},
 		});

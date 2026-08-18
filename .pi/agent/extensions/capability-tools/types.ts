@@ -34,6 +34,8 @@ export interface CapabilityToolInput {
 	includeTree?: boolean;
 	includeDiff?: boolean;
 	includeTimeline?: boolean;
+	/** When true, only staged/cached git changes (used by /patch-review command). */
+	stagedOnly?: boolean;
 	previewLines?: number;
 }
 
