@@ -1,221 +1,186 @@
 ---
 name: notion
-description: "Read and write Notion pages, databases, data sources, comments, and markdown via Notion REST API. Use when user mention Notion, ntn tokens, Notion pages/databases, workspace notes, or want to search/create/update Notion content."
+description: "Hosted Notion MCP via OAuth (mcp-remote). Search/fetch pages, create/update content, databases, comments, views, meeting notes. Use when user mention Notion, Notion MCP, OAuth Notion, or workspace notes."
 user-invocable: true
 disable-model-invocation: false
 ---
 
-# Notion Skill
+# notion Skill
 
-Work with Notion workspace through official REST API (`Notion-Version: 2026-03-11`).
+Hosted Notion MCP. OAuth. Act as you.
 
-This skill is **token-based and headless** (PAT or internal integration secret). It do not use hosted Notion MCP OAuth flow.
+- URL: `https://mcp.notion.com/mcp`
+- Proxy: `mcp-remote` (stdio)
+- Tokens: `~/.mcp-auth/` (not in this dir)
 
-## Authentication
+## Auth (OAuth)
 
-Precedence:
-
-1. Environment: `NOTION_API_KEY`, `NOTION_TOKEN`, or `NOTION_PAT`
-2. `notion-auth.json` in this skill directory (copy from `notion-auth.sample.json`)
-
-```bash
-cp notion-auth.sample.json notion-auth.json
-# put token in access_token
-```
-
-### Recommended: personal access token (PAT)
-
-1. Open https://www.notion.so/developers/tokens
-2. **New token**, enable **Notion API** capability
-3. Copy `ntn_...` token into `notion-auth.json` or export `NOTION_API_KEY`
-
-PAT notes:
-
-- Acts as **you** (your page permissions). No "share with connection" step.
-- Can create private workspace-level pages (omit parent / `workspace: true`).
-- `list_users` is **not** available for PATs. Use `whoami` instead.
-
-### Alternative: internal integration
-
-1. Open https://www.notion.so/my-integrations, create new integration
-2. Copy secret
-3. In Notion, open each page/database > **...** > **Connections** > add integration
-
-Internal bots only see content explicitly shared with them.
-
-Optional: set `notion_version` in auth JSON or `NOTION_VERSION` env (default `2026-03-11`).
-
-## Executor
-
-All calls go through `executor.py` in this directory.
+**Do now — first time or expired:**
 
 ```bash
 cd $SKILL_DIR
 ./executor.py --list
-./executor.py --describe search
-./executor.py --normalize-id "https://www.notion.so/My-Page-195de9221179449fab8075a27c979105"
-./executor.py --call '{"tool":"whoami","arguments":{}}'
 ```
 
-Replace `$SKILL_DIR` with this skill path (under installed agent skills tree).
+Browser open → sign Notion → token cache auto-refresh after.
 
-## Tools
-
-| Tool                   | Purpose                                                        |
-|------------------------|----------------------------------------------------------------|
-| `whoami`               | Current token identity (`GET /v1/users/me`)                    |
-| `search`               | Title search across pages / data sources                       |
-| `get_page`             | Page properties/metadata                                       |
-| `get_page_markdown`    | Full page body as enhanced markdown (preferred for reading)    |
-| `create_page`          | Create page or database row (`markdown` supported)             |
-| `update_page`          | Update properties, icon, cover, archived/trash                 |
-| `update_page_markdown` | Edit body: `update_content` / `replace_content` / insert       |
-| `move_page`            | Move page under new parent                                     |
-| `get_database`         | Database metadata + data sources                               |
-| `get_data_source`      | Schema/properties for querying and row creation                |
-| `query_data_source`    | Filter/sort database rows                                      |
-| `list_children`        | List child blocks                                              |
-| `append_children`      | Append block children                                          |
-| `get_block`            | Retrieve block                                                 |
-| `update_block`         | Update block                                                   |
-| `delete_block`         | Delete/archive block                                           |
-| `list_comments`        | Comments on page/block                                         |
-| `create_comment`       | Add comment (`text` shortcut or `rich_text`)                   |
-| `list_users`           | Workspace users (internal integration only)                    |
-| `get_user`             | Single user                                                    |
-| `get_async_task`       | Poll async create/markdown jobs                                |
-| `raw`                  | Escape hatch: any method + path + JSON body                    |
-
-## Usage pattern
-
-**Step 1 — identify tool**
+**Auth dead?**
 
 ```bash
+rm -rf ~/.mcp-auth
 ./executor.py --list
+```
+
+**Force proxy alone:**
+
+```bash
+npx -y mcp-remote https://mcp.notion.com/mcp --transport http-only
+```
+
+Optional: `MCP_REMOTE_CONFIG_DIR` move token store off `~/.mcp-auth`.
+
+## Tools (28)
+
+Schema for one tool:
+
+```bash
 ./executor.py --describe <tool>
 ```
 
-**Step 2 — call**
+### Do-now (read)
+
+| Tool                         | Purpose                                                         |
+| ---------------------------- | --------------------------------------------------------------- |
+| `notion-search`              | Search workspace + connected sources; ranked results            |
+| `notion-fetch`               | Page/DB/data-source by URL or ID; markdown; `id: "self"` for me |
+| `notion-list-recent-pages`   | Recently viewed                                                 |
+| `notion-list-favorite-pages` | Favorite / pinned                                               |
+| `notion-list-private-pages`  | Private sidebar                                                 |
+| `notion-list-shared-pages`   | Shared sidebar                                                  |
+| `notion-query-meeting-notes` | Filter my meeting notes                                         |
+| `notion-get-comments`        | Read discussions on page                                        |
+| `notion-get-users`           | Workspace users; `user_id: "self"`                              |
+| `notion-get-teams`           | Teamspaces                                                      |
+| `notion-get-async-task`      | Poll async jobs                                                 |
+| `notion-search-agents`       | Search / browse agents                                          |
+
+### Write / structure
+
+| Tool                           | Purpose                                                  |
+| ------------------------------ | -------------------------------------------------------- |
+| `notion-create-pages`          | Create page(s); parent page/data source or private       |
+| `notion-update-page`           | Props + content (replace / update / insert markdown)     |
+| `notion-move-pages`            | Move pages/DBs to new parent                             |
+| `notion-duplicate-page`        | Async duplicate                                          |
+| `notion-create-comment`        | Page or block comment / reply                            |
+| `notion-create-database`       | DB via SQL DDL or typed template (tasks/projects/skills) |
+| `notion-update-data-source`    | Alter data-source schema via SQL DDL                     |
+| `notion-query-data-sources`    | Query rows via SQL or view mode                          |
+| `notion-create-view`           | Create database / linked view                            |
+| `notion-update-view`           | Rename / filter / sort / group view                      |
+| `notion-create-folder`         | Empty Notion Folder                                      |
+| `notion-update-folder`         | Add/remove files or nested folder                        |
+| `notion-create-attachment`     | Upload text / URL / file-upload attachment               |
+| `notion-create-file-upload`    | Short-lived multipart upload URL                         |
+| `notion-download-attachment`   | Download small UTF-8 attachment from MCP                 |
+| `notion-convert-page-to-skill` | Mark page as AI skill                                    |
+
+## Call pattern
+
+1. Pick tool from tables (or `--list`)
+2. Unknown params → `--describe <tool>`
+3. Run call:
 
 ```bash
-./executor.py --call '{"tool":"search","arguments":{"query":"roadmap","filter_object":"page","page_size":10}}'
+cd $SKILL_DIR
+./executor.py --call '{"tool":"notion-search","arguments":{"query":"roadmap"}}'
 ```
 
-IDs may be bare UUIDs (with/without dashes) or full Notion URLs.
+IDs: bare UUID, dashed UUID, or full Notion URL.
 
-## Common workflows
+## Workflows
 
-### Search then read
+### Who am I
 
 ```bash
-./executor.py --call '{"tool":"search","arguments":{"query":"Q2 plan","filter_object":"page"}}'
-./executor.py --call '{"tool":"get_page_markdown","arguments":{"id":"PAGE_ID_OR_URL"}}'
+./executor.py --call '{"tool":"notion-fetch","arguments":{"id":"self"}}'
 ```
 
-### Create a private page (PAT)
+### Search → read
 
 ```bash
-./executor.py --call '{"tool":"create_page","arguments":{"workspace":true,"icon":{"emoji":"🚀"},"markdown":"# Hello\n\nCreated by the agent."}}'
+./executor.py --call '{"tool":"notion-search","arguments":{"query":"Q2 plan"}}'
+./executor.py --call '{"tool":"notion-fetch","arguments":{"id":"PAGE_ID_OR_URL"}}'
 ```
 
-### Create a child page
+### Create private page
 
 ```bash
-./executor.py --call '{"tool":"create_page","arguments":{"parent_page_id":"PARENT_ID","title":"Notes","markdown":"## Agenda\n\n- Item 1\n- Item 2"}}'
+./executor.py --call '{"tool":"notion-create-pages","arguments":{"pages":[{"properties":{"title":"Notes"},"content":"## Agenda\n\n- Item 1"}]}}'
 ```
 
-### Edit page body (search/replace)
+### Create child page
 
 ```bash
-./executor.py --call '{"tool":"update_page_markdown","arguments":{"id":"PAGE_ID","command":"update_content","content_updates":[{"old_str":"Draft","new_str":"Final"}]}}'
+./executor.py --call '{"tool":"notion-create-pages","arguments":{"parent":{"page_id":"PARENT_ID"},"pages":[{"properties":{"title":"Child"},"content":"Body"}]}}'
 ```
 
-### Replace entire page body
+### Edit body (search/replace)
 
 ```bash
-./executor.py --call '{"tool":"update_page_markdown","arguments":{"id":"PAGE_ID","command":"replace_content","new_str":"# New title\n\nFull replacement"}}'
+./executor.py --call '{"tool":"notion-update-page","arguments":{"page_id":"PAGE_ID","command":"update_content","content_updates":[{"old_str":"Draft","new_str":"Final"}]}}'
 ```
 
-### Database row workflow
+### DB row flow
 
 ```bash
-# 1. Resolve database → data source
-./executor.py --call '{"tool":"get_database","arguments":{"id":"DATABASE_ID_OR_URL"}}'
-# 2. Inspect schema
-./executor.py --call '{"tool":"get_data_source","arguments":{"id":"DATA_SOURCE_ID"}}'
-# 3. Query
-./executor.py --call '{"tool":"query_data_source","arguments":{"id":"DATA_SOURCE_ID","filter":{"property":"Status","status":{"equals":"Todo"}},"page_size":20}}'
-# 4. Create row
-./executor.py --call '{"tool":"create_page","arguments":{"parent_data_source_id":"DATA_SOURCE_ID","properties":{"Name":{"title":[{"text":{"content":"New task"}}]}}}}'
+# 1. fetch DB → data source id from <data-source url="collection://...">
+./executor.py --call '{"tool":"notion-fetch","arguments":{"id":"DATABASE_ID_OR_URL"}}'
+# 2. query
+./executor.py --call '{"tool":"notion-query-data-sources","arguments":{"data":{"data_source_urls":["collection://DATA_SOURCE_ID"],"query":"SELECT * FROM \"collection://DATA_SOURCE_ID\" LIMIT 20"}}}'
+# 3. create row
+./executor.py --call '{"tool":"notion-create-pages","arguments":{"parent":{"data_source_id":"DATA_SOURCE_ID"},"pages":[{"properties":{"Name":"New task"}}]}}'
 ```
 
 ### Comment
 
 ```bash
-./executor.py --call '{"tool":"create_comment","arguments":{"page_id":"PAGE_ID","text":"Looks good — shipping."}}'
+./executor.py --call '{"tool":"notion-create-comment","arguments":{"page_id":"PAGE_ID","markdown":"Looks good."}}'
 ```
 
-### Raw endpoint
+## Markdown / docs
+
+Do **not** invent markdown. Read specs first:
 
 ```bash
-./executor.py --call '{"tool":"raw","arguments":{"method":"GET","path":"/v1/users/me"}}'
+./executor.py --call '{"tool":"notion-fetch","arguments":{"id":"notion://docs/enhanced-markdown-spec"}}'
+./executor.py --call '{"tool":"notion-fetch","arguments":{"id":"notion://docs/view-dsl-spec"}}'
 ```
 
-## Databases vs data sources
+Prefer fetch / create / update tools. No raw block trees.
 
-Modern Notion API separates:
+## Rules
 
-- **Database** — container (views live here)
-- **Data source** — schema + rows you query/create against
+1. **Never** hardcode OAuth tokens in files, commits, chat.
+2. Confirm destructive ops (`replace_content`, `allow_deleting_content`, trash) with user.
+3. Encode newlines as `\n` inside JSON strings.
+4. DB vs data source: fetch DB first; query/create on `data_source_id` / `collection://...`.
+5. Plan gate / rate limit → surface message; no retry loop.
+6. Unfamiliar tool → `--describe` before first call.
 
-Always:
+## Errors
 
-1. `get_database`, read `data_sources`
-2. `get_data_source` / `query_data_source` / create with `parent_data_source_id`
+| Symptom                         | Fix                                                       |
+| ------------------------------- | --------------------------------------------------------- |
+| Browser / authorize URL printed | Finish Notion OAuth in browser                            |
+| Auth fail after idle            | `rm -rf ~/.mcp-auth` then `./executor.py --list`          |
+| `object_not_found`              | Wrong ID or no access in this workspace                   |
+| `validation_error`              | Bad property shape; fetch schema first                    |
+| Tool not found                  | `--list`; names use `notion-` prefix                      |
+| mcp-remote / npx fail           | Need network + Node; retry `npx -y mcp-remote@latest ...` |
 
-Do **not** use deprecated `POST /v1/databases/{id}/query` patterns unless forced by old docs.
+## Refs
 
-## Markdown guidance
-
-Prefer `get_page_markdown` / `create_page.markdown` / `update_page_markdown` over assembling block trees.
-
-See [references/markdown.md](references/markdown.md) for enhanced markdown syntax (callouts, toggles, tables, mentions, colors).
-
-See [references/api.md](references/api.md) for filters, property shapes, pagination, and limits.
-
-## Important rules
-
-1. **Never hardcode tokens** into skill files, commits, or chat logs.
-2. **Confirm destructive ops** (`replace_content`, `allow_deleting_content`, trash/archive) with the user when content loss is possible.
-3. **Share pages with internal integrations** before expecting them to appear in search.
-4. **Encode newlines as `\n`** inside JSON string arguments.
-5. **Paginate**: follow `has_more` / `next_cursor` (max `page_size` 100).
-6. **Rate limits**: ~3 req/s average; on 429/529 wait for `Retry-After`.
-7. Property names in filters/writes must match the data source schema exactly.
-
-## Error handling
-
-| Symptom                         | Fix |
-|---------------------------------|-----|
-| `unauthorized`                  | Bad/expired token; recreate PAT or check integration secret |
-| `object_not_found`              | Wrong ID, or page not shared with internal integration |
-| `restricted_resource` / 403     | Missing capability or page access |
-| `validation_error`              | Bad property shape, missing required title, bad markdown command match |
-| `rate_limited` (429)            | Back off using `Retry-After` |
-| `list_users` fails on PAT       | Expected — use `whoami` |
-
-## Optional: hosted Notion MCP
-
-If you prefer OAuth MCP tools in another client:
-
-- URL: `https://mcp.notion.com/mcp` (streamable HTTP)
-- Tools: `notion-search`, `notion-fetch`, `notion-create-pages`, `notion-update-page`, etc.
-- Docs: https://developers.notion.com/guides/mcp/get-started-with-mcp
-
-This skill intentionally use REST executor so agents can run authenticated calls from shell without interactive OAuth.
-
-## References
-
-- [references/api.md](references/api.md) — endpoints, filters, properties, auth
-- [references/markdown.md](references/markdown.md) — enhanced markdown + update commands
-- Official index: https://developers.notion.com/llms.txt
+- Hosted MCP: https://mcp.notion.com/mcp
+- Notion MCP docs: https://developers.notion.com/guides/mcp/get-started-with-mcp
+- mcp-remote: https://www.npmjs.com/package/mcp-remote

@@ -32,7 +32,7 @@ API ref: https://docs.octen.ai/api-reference/search.md
 
 ## Authentication
 
-Same pattern as youtrack/notion. Precedence:
+Same pattern as youtrack. Precedence:
 
 1. Environment: `OCTEN_API_KEY` (or `OCTEN_KEY`)
 2. `octen-auth.json` in this skill directory (gitignored)
@@ -277,7 +277,7 @@ Same envelope (`code`, `msg`, `request_id`, `meta`) as Search. `data` contains:
 
 ## Security
 
-- `octen-auth.json` is gitignored (same as youtrack/notion credential files)
+- `octen-auth.json` is gitignored (same as youtrack credential files)
 - Key is sent only to `https://api.octen.ai/*` via HTTPS as `X-Api-Key`
 - Prefer `octen-auth.json` over shell exports so pi sessions pick it up without profile hacks
 
