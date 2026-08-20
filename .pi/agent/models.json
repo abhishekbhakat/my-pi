@@ -83,7 +83,7 @@
             "low": null,
             "medium": null,
             "high": null,
-            "xhigh": null,
+            "xhigh": "xhigh",
             "max": "max"
           }
         }
@@ -166,6 +166,23 @@
           "maxTokens": 128000,
           "compat": {
             "thinkingFormat": "zai"
+          }
+        },
+        {
+          "id": "meta/muse-spark-1.2-contributor",
+          "name": "Muse Spark 1.2 Contributor (Command Code)",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "contextWindow": 1048576,
+          "maxTokens": 128000,
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": null,
+            "medium": null,
+            "high": null,
+            "xhigh": "xhigh",
+            "max": null
           }
         }
       ]

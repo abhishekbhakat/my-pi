@@ -12,6 +12,7 @@
   "defaultModel": "grok-4.5",
   "enabledModels": [
     "openai-codex/gpt-5.6-sol",
+    "openai-codex/gpt-5.6-luna",
     "kimi-coding/k3-256k",
     "xai/grok-4.5",
     "xai/grok-4.6",
