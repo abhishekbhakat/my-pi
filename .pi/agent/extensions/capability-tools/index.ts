@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { registerCapabilityCommands } from "./commands";
 import { loadCapabilityDefs } from "./definitions";
@@ -72,8 +72,64 @@ export default function (pi: ExtensionAPI) {
 		}
 	}
 
-	pi.registerCommand("capabilities", {
-		description: "Manage capability helper tools (list, toggle, on, off)",
+	async function handleCapabilityCommand(args: string, ctx: ExtensionCommandContext): Promise<void> {
+		if (capabilities.length === 0) {
+			ctx.ui.notify("No capability tools found.", "warning");
+			return;
+		}
+
+		const subcommand = args.trim().toLowerCase().split(/\s+/)[0] || "";
+
+		// Bare /capability and /capabilities toggle, same as /intent.
+		if (!subcommand || subcommand === "toggle") {
+			const result = toggleCapabilities();
+			const state = result.enabled ? "enabled" : "disabled";
+			ctx.ui.notify(`Capability tools ${state}: ${result.names.join(", ")}`, "info");
+			return;
+		}
+
+		if (subcommand === "list") {
+			const active = pi.getActiveTools();
+			const lines = capabilities
+				.map((c) => {
+					const status = active.includes(c.toolName) ? "[active]" : "[inactive]";
+					return `${status} ${c.toolName} (${c.model})\n${c.description}`;
+				})
+				.join("\n\n");
+			ctx.ui.notify(`Capability tools:\n\n${lines}`, "info");
+			return;
+		}
+
+		if (subcommand === "on") {
+			const result = setCapabilities(true);
+			ctx.ui.notify(
+				result.changed
+					? `Capability tools enabled: ${result.names.join(", ")}`
+					: "Capability tools are already enabled.",
+				result.changed ? "info" : "warning",
+			);
+			return;
+		}
+
+		if (subcommand === "off") {
+			const result = setCapabilities(false);
+			ctx.ui.notify(
+				result.changed
+					? `Capability tools disabled: ${result.names.join(", ")}`
+					: "Capability tools are already disabled.",
+				result.changed ? "info" : "warning",
+			);
+			return;
+		}
+
+		ctx.ui.notify(
+			`Unknown subcommand: "${subcommand}". Bare /capability toggles. Subcommands: list, toggle, on, off`,
+			"warning",
+		);
+	}
+
+	const commandOptions = {
+		description: "Toggle capability helper tools (bare toggles; list, on, off)",
 		getArgumentCompletions: (prefix: string) => {
 			const subcommands = ["list", "toggle", "on", "off"];
 			return subcommands
@@ -81,49 +137,19 @@ export default function (pi: ExtensionAPI) {
 				.map((cmd) => ({
 					value: cmd,
 					label: cmd,
-					description: cmd === "list" ? "List capability tools" : cmd === "toggle" ? "Toggle on/off" : cmd === "on" ? "Enable" : "Disable",
+					description:
+						cmd === "list"
+							? "List capability tools"
+							: cmd === "toggle"
+								? "Toggle on/off"
+								: cmd === "on"
+									? "Enable"
+									: "Disable",
 				}));
 		},
-		handler: async (args, ctx) => {
-			if (capabilities.length === 0) {
-				ctx.ui.notify("No capability tools found.", "warning");
-				return;
-			}
+		handler: handleCapabilityCommand,
+	};
 
-			const subcommand = args.trim().toLowerCase().split(/\s+/)[0] || "list";
-
-			if (subcommand === "list") {
-				const active = pi.getActiveTools();
-				const lines = capabilities
-					.map((c) => {
-						const status = active.includes(c.toolName) ? "[active]" : "[inactive]";
-						return `${status} ${c.toolName} (${c.model})\n${c.description}`;
-					})
-					.join("\n\n");
-				ctx.ui.notify(`Capability tools:\n\n${lines}`, "info");
-			} else if (subcommand === "toggle") {
-				const result = toggleCapabilities();
-				const state = result.enabled ? "enabled" : "disabled";
-				ctx.ui.notify(`Capability tools ${state}: ${result.names.join(", ")}`, "info");
-			} else if (subcommand === "on") {
-				const result = setCapabilities(true);
-				ctx.ui.notify(
-					result.changed
-						? `Capability tools enabled: ${result.names.join(", ")}`
-						: "Capability tools are already enabled.",
-					result.changed ? "info" : "warning",
-				);
-			} else if (subcommand === "off") {
-				const result = setCapabilities(false);
-				ctx.ui.notify(
-					result.changed
-						? `Capability tools disabled: ${result.names.join(", ")}`
-						: "Capability tools are already disabled.",
-					result.changed ? "info" : "warning",
-				);
-			} else {
-				ctx.ui.notify(`Unknown subcommand: "${subcommand}". Use: list, toggle, on, off`, "warning");
-			}
-		},
-	});
+	pi.registerCommand("capability", commandOptions);
+	pi.registerCommand("capabilities", commandOptions);
 }

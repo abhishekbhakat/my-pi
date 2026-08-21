@@ -35,8 +35,9 @@ All agent config lives under this repository:
 Examples:
 
 - extensions: `.pi/agent/extensions/`
-- skills: `.pi/agent/skills/`
-- themes: `.pi/agent/themes/`
+- skills and themes: `.pi/agent/skills/`, `.pi/agent/themes/`
+- global instructions: `.pi/agent/AGENTS.md`
+- system replacement: `.pi/agent/SYSTEM.md`
 - settings/models: `.pi/agent/settings.json`, `.pi/agent/models.json`, etc.
 
 After changing source files, run `make install`. Install also merges repo `.pi/agent/auth.json` into `~/.pi/agent/auth.json` (repo keys override, live-only keys stay).
