@@ -18,6 +18,19 @@ Pad pipe tables so columns line up in monospace. Each row target character width
 - Markdown must match repo ASCII-justified table style
 - Clean ragged `|` tables before commit
 
+## Slash command (no LLM)
+
+```text
+/justify path/to/file.md
+/justify @.pi/agent/SYSTEM.md
+/justify -w 100 README.md docs/api.md
+/justify --stdout table.md
+/justify README.md -o out.md
+```
+
+Registered by extension `justify.ts`. Runs this script direct. Zero model call.
+Accepts Pi `@path` file refs (slash args skip the global `@` input transform).
+
 ## Script
 
 ```bash
