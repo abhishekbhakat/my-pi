@@ -1,0 +1,6 @@
+{
+  "enabled": true,
+  "thresholdPercent": 75,
+  "notify": true,
+  "retryDelayMs": 60000
+}
