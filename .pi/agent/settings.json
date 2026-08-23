@@ -20,7 +20,8 @@
     "commandcode/xai/grok-4.5",
     "commandcode/moonshotai/Kimi-K3",
     "commandcode/zai-org/GLM-5.3",
-    "opencode/x-preview-f-free"
+    "opencode/x-preview-f-free",
+    "google/gemini-3.7-flash"
   ],
   "packages": [
     "npm:pi-intercom"

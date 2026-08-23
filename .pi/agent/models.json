@@ -1,5 +1,20 @@
 {
   "providers": {
+    "google": {
+      "modelOverrides": {
+        "gemini-3.7-flash": {
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": null,
+            "medium": null,
+            "high": "HIGH",
+            "xhigh": null,
+            "max": null
+          }
+        }
+      }
+    },
     "runinfra": {
       "baseUrl": "https://api.runinfra.ai/v1",
       "api": "openai-completions",
