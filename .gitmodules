@@ -13,3 +13,6 @@
 [submodule ".pi/agent/skills/anthropic-skills"]
 	path = .pi/agent/skills/anthropic-skills
 	url = https://github.com/anthropics/skills.git
+[submodule ".pi/agent/skills/xurl"]
+	path = .pi/agent/skills/xurl
+	url = https://github.com/xdevplatform/xurl.git
