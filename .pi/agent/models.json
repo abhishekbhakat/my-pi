@@ -1,41 +1,8 @@
 {
   "providers": {
-    "google": {
+    "claude-code-cli": {
       "modelOverrides": {
-        "gemini-3.7-flash": {
-          "thinkingLevelMap": {
-            "off": null,
-            "minimal": null,
-            "low": null,
-            "medium": null,
-            "high": "HIGH",
-            "xhigh": null,
-            "max": null
-          }
-        }
-      }
-    },
-    "runinfra": {
-      "baseUrl": "https://api.runinfra.ai/v1",
-      "api": "openai-completions",
-      "headers": {
-        "X-Client-Request-Id": "!uuidgen"
-      },
-      "compat": {
-        "supportsStore": false,
-        "supportsDeveloperRole": false,
-        "maxTokensField": "max_tokens",
-        "requiresReasoningContentOnAssistantMessages": true,
-        "thinkingFormat": "deepseek"
-      },
-      "models": [
-        {
-          "id": "deepseek-v4-flash",
-          "name": "DeepSeek V4 Flash (RunInfra)",
-          "reasoning": true,
-          "input": ["text"],
-          "contextWindow": 1000000,
-          "maxTokens": 32768,
+        "sonnet": {
           "thinkingLevelMap": {
             "off": null,
             "minimal": null,
@@ -45,74 +12,19 @@
             "xhigh": null,
             "max": "max"
           }
-        }
-      ]
-    },
-    "modal-kimi": {
-      "baseUrl": "https://abhishek-avi-bak--ep-kimi-k3-server.us-west.modal.direct/v1",
-      "api": "openai-completions",
-      "compat": {
-        "supportsDeveloperRole": false,
-        "supportsReasoningEffort": false,
-        "maxTokensField": "max_tokens"
-      },
-      "models": [
-        {
-          "id": "moonshotai/Kimi-K3",
-          "name": "Kimi K3 (Modal)",
-          "reasoning": true,
-          "input": ["text"],
-          "contextWindow": 1048576,
-          "maxTokens": 1048576,
+        },
+        "opus": {
           "thinkingLevelMap": {
             "off": null,
             "minimal": null,
-            "low": null,
+            "low": "low",
             "medium": null,
-            "high": null,
+            "high": "high",
             "xhigh": null,
             "max": "max"
-          },
-          "compat": {
-            "thinkingFormat": "together"
-          }
-        }
-      ]
-    },
-    "kimi-coding": {
-      "modelOverrides": {
-        "k3-256k": {
-          "thinkingLevelMap": {
-            "low": null,
-            "high": null
-          }
-        }
-      }
-    },
-    "openai-codex": {
-      "modelOverrides": {
-        "gpt-5.6-luna": {
-          "thinkingLevelMap": {
-            "off": null,
-            "minimal": null,
-            "low": null,
-            "medium": null,
-            "high": null,
-            "xhigh": "xhigh",
-            "max": "max"
-          }
-        }
-      }
-    },
-    "xai": {
-      "modelOverrides": {
-        "grok-4.5": {
-          "thinkingLevelMap": {
-            "low": null,
-            "medium": null
           }
         },
-        "grok-4.6": {
+        "fable": {
           "thinkingLevelMap": {
             "off": null,
             "minimal": null,
@@ -120,113 +32,10 @@
             "medium": null,
             "high": "high",
             "xhigh": null,
-            "max": null
+            "max": "max"
           }
         }
       }
-    },
-    "opencode": {
-      "models": [
-        {
-          "id": "x-preview-f-free",
-          "name": "X Preview F Free (OpenCode)",
-          "api": "openai-completions",
-          "baseUrl": "https://opencode.ai/zen/v1",
-          "reasoning": true,
-          "input": ["text"],
-          "contextWindow": 200000,
-          "maxTokens": 32000,
-          "cost": {
-            "input": 0,
-            "output": 0,
-            "cacheRead": 0,
-            "cacheWrite": 0
-          },
-          "compat": {
-            "supportsStore": false,
-            "supportsDeveloperRole": false,
-            "maxTokensField": "max_tokens",
-            "requiresReasoningContentOnAssistantMessages": true
-          }
-        }
-      ]
-    },
-    "commandcode": {
-      "baseUrl": "https://api.commandcode.ai/provider/v1",
-      "api": "openai-completions",
-      "compat": {
-        "supportsStore": false,
-        "supportsDeveloperRole": false,
-        "maxTokensField": "max_tokens"
-      },
-      "models": [
-        {
-          "id": "xai/grok-4.5",
-          "name": "Grok 4.5 (Command Code)",
-          "reasoning": true,
-          "input": ["text", "image"],
-          "contextWindow": 500000,
-          "maxTokens": 128000,
-          "thinkingLevelMap": {
-            "off": null,
-            "minimal": null,
-            "low": null,
-            "medium": null,
-            "high": "high",
-            "xhigh": null,
-            "max": null
-          }
-        },
-        {
-          "id": "moonshotai/Kimi-K3",
-          "name": "Kimi K3 (Command Code)",
-          "reasoning": true,
-          "input": ["text"],
-          "contextWindow": 1000000,
-          "maxTokens": 128000,
-          "thinkingLevelMap": {
-            "off": null,
-            "minimal": null,
-            "low": null,
-            "medium": null,
-            "high": null,
-            "xhigh": null,
-            "max": "max"
-          },
-          "compat": {
-            "thinkingFormat": "together",
-            "supportsReasoningEffort": false
-          }
-        },
-        {
-          "id": "zai-org/GLM-5.3",
-          "name": "GLM 5.3 (Command Code)",
-          "reasoning": true,
-          "input": ["text"],
-          "contextWindow": 1000000,
-          "maxTokens": 128000,
-          "compat": {
-            "thinkingFormat": "zai"
-          }
-        },
-        {
-          "id": "meta/muse-spark-1.2-contributor",
-          "name": "Muse Spark 1.2 Contributor (Command Code)",
-          "reasoning": true,
-          "input": ["text", "image"],
-          "contextWindow": 1048576,
-          "maxTokens": 128000,
-          "thinkingLevelMap": {
-            "off": null,
-            "minimal": null,
-            "low": null,
-            "medium": null,
-            "high": null,
-            "xhigh": "xhigh",
-            "max": null
-          }
-        }
-      ]
     }
   }
 }

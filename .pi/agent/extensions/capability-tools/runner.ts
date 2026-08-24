@@ -1,4 +1,3 @@
-import { stream } from "@earendil-works/pi-ai";
 import type { AgentToolUpdateCallback } from "@earendil-works/pi-coding-agent";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { buildCapabilityContext, buildCapabilityPrompt } from "./context";
@@ -141,6 +140,14 @@ export async function executeCapability(
 		};
 	}
 
+	const provider = ctx.modelRegistry.getProvider(model.provider);
+	if (!provider) {
+		return {
+			content: [{ type: "text", text: `Provider not found for ${def.toolName}: ${model.provider}` }],
+			details: { status: "error", capability: def.toolName },
+		};
+	}
+
 	const auth = await ctx.modelRegistry.getApiKeyAndHeaders(model);
 	if (!auth.ok) {
 		return {
@@ -167,6 +174,7 @@ export async function executeCapability(
 	const fast = fastWireState();
 	const serviceTier = model.provider === "openai-codex" && fast?.enabled ? "priority" : undefined;
 	fast?.remember?.(model.provider, model.id);
+	const thinking = model.reasoning ? def.reasoningEffort : undefined;
 
 	onUpdate?.({
 		content: [{
@@ -183,7 +191,9 @@ export async function executeCapability(
 	});
 
 	try {
-		const eventStream = stream(
+		// Route through the composed provider so extension streamSimple handlers
+		// (e.g. claude-code-cli) receive SimpleStreamOptions.reasoning.
+		const eventStream = provider.streamSimple(
 			model,
 			{
 				systemPrompt: def.systemPrompt,
@@ -199,9 +209,10 @@ export async function executeCapability(
 				apiKey: auth.apiKey,
 				headers: auth.headers,
 				signal,
-				reasoningEffort: model.reasoning ? def.reasoningEffort : undefined,
+				reasoning: thinking as any,
+				reasoningEffort: thinking as any,
 				serviceTier,
-			},
+			} as any,
 		);
 
 		// Drain stream so result() can settle. UI shows a 2-line live preview

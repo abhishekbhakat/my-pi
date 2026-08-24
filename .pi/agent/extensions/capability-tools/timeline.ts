@@ -1,5 +1,4 @@
 import { createHash } from "node:crypto";
-import { complete } from "@earendil-works/pi-ai";
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import type { CapabilityDef } from "./types";
 
@@ -71,11 +70,17 @@ export async function collectActionTimeline(
 	const model = ctx.modelRegistry.find(modelRef.provider, modelRef.modelId);
 	if (!model) return "";
 
+	const provider = ctx.modelRegistry.getProvider(model.provider);
+	if (!provider) return "";
+
 	const auth = await ctx.modelRegistry.getApiKeyAndHeaders(model);
 	if (!auth.ok || (!auth.apiKey && !auth.headers)) return "";
 
+	const thinking = model.reasoning ? (def.timelineReasoningEffort ?? "high") : undefined;
+
 	try {
-		const response = await complete(
+		// Use composed provider streamSimple so extension providers get reasoning.
+		const response = await provider.streamSimple(
 			model,
 			{
 				systemPrompt: TIMELINE_SYSTEM_PROMPT,
@@ -100,9 +105,10 @@ export async function collectActionTimeline(
 				apiKey: auth.apiKey,
 				headers: auth.headers,
 				signal,
-				reasoningEffort: model.reasoning ? (def.timelineReasoningEffort ?? "medium") : undefined,
-			},
-		);
+				reasoning: thinking as any,
+				reasoningEffort: thinking as any,
+			} as any,
+		).result();
 
 		const timeline = truncateHead(extractText(response), def.maxTimelineChars);
 		if (timeline) setTimelineCache(cacheKey, timeline);

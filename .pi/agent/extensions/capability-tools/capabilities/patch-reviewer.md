@@ -3,7 +3,7 @@ name: patch-reviewer
 tool: patch_reviewer
 label: Patch Reviewer
 description: Review current changes for correctness risks, regressions, and missing tests.
-model: openai-codex/gpt-5.6-sol
+model: claude-code-cli/fable
 promptSnippet: Review current patch or scoped files and report bugs, regressions, and missing tests
 promptGuidelines: Use this after changes or before finalizing answer|Prefer findings over praise or rewrite suggestions
 includeConversation: false

@@ -3,27 +3,20 @@
   "theme": "tokyo-night",
   "quietStartup": true,
   "hideThinkingBlock": false,
-  "defaultThinkingLevel": "high",
+  "defaultThinkingLevel": "max",
   "steeringMode": "all",
   "followUpMode": "all",
   "enableInstallTelemetry": false,
   "defaultProjectTrust": "always",
-  "defaultProvider": "xai",
-  "defaultModel": "grok-4.5",
+  "defaultProvider": "claude-code-cli",
+  "defaultModel": "sonnet",
   "enabledModels": [
-    "openai-codex/gpt-5.6-sol",
-    "openai-codex/gpt-5.6-luna",
-    "kimi-coding/k3-256k",
-    "xai/grok-4.5",
-    "xai/grok-4.6",
-    "runinfra/deepseek-v4-flash",
-    "commandcode/xai/grok-4.5",
-    "commandcode/moonshotai/Kimi-K3",
-    "commandcode/zai-org/GLM-5.3",
-    "opencode/x-preview-f-free",
-    "google/gemini-3.7-flash"
+    "claude-code-cli/sonnet",
+    "claude-code-cli/opus",
+    "claude-code-cli/fable"
   ],
   "packages": [
-    "npm:pi-intercom"
+    "npm:pi-intercom",
+    "npm:claude-code-pi"
   ]
 }
