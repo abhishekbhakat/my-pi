@@ -3,20 +3,17 @@
   "theme": "tokyo-night",
   "quietStartup": true,
   "hideThinkingBlock": false,
-  "defaultThinkingLevel": "max",
+  "defaultThinkingLevel": "high",
   "steeringMode": "all",
   "followUpMode": "all",
   "enableInstallTelemetry": false,
   "defaultProjectTrust": "always",
-  "defaultProvider": "claude-code-cli",
-  "defaultModel": "sonnet",
+  "defaultProvider": "commandcode",
+  "defaultModel": "stealth/ox-alpha",
   "enabledModels": [
-    "claude-code-cli/sonnet",
-    "claude-code-cli/opus",
-    "claude-code-cli/fable"
+    "commandcode/stealth/ox-alpha"
   ],
   "packages": [
-    "npm:pi-intercom",
-    "npm:claude-code-pi"
+    "npm:pi-intercom"
   ]
 }

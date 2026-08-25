@@ -57,6 +57,49 @@ make sync ARGS="-p"
 
 Sync skips runtime files (`bin/`, `sessions/`, `node_modules`, `package-lock.json`). `auth.json` is merge-only both ways.
 
+## Docker
+
+Docker assets live under `scripts/docker/`. Build context is still the repo root (so `.dockerignore` at root applies).
+
+If `.pi/agent/auth.json` exists in the repo tree, `make install` inside the container merges it into `~/.pi/agent/auth.json` (same as host install). That file stays gitignored; it is only in the image when present on the build machine. You can still override at run time with `COMMANDCODE_API_KEY` or `AUTH_FILE`.
+
+```text
+scripts/docker/
+  Dockerfile
+  entrypoint.sh
+  smoke.mjs
+  merge-auth.mjs
+  install-packages.mjs
+```
+
+Smoke test (no secrets):
+
+```bash
+make docker-test
+```
+
+Interactive pi (needs a key or auth file):
+
+```bash
+make docker-run COMMANDCODE_API_KEY=cc_...
+# or
+make docker-run AUTH_FILE=$HOME/.pi/agent/auth.json
+```
+
+List models:
+
+```bash
+make docker-models COMMANDCODE_API_KEY=cc_...
+# or
+make docker-models AUTH_FILE=$HOME/.pi/agent/auth.json
+```
+
+Build only:
+
+```bash
+make docker-build
+```
+
 ## Rules
 
 See [AGENTS.md](AGENTS.md). Short version: edit this repo, run `make install`, then `/reload` in pi.

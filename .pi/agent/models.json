@@ -1,41 +1,32 @@
 {
   "providers": {
-    "claude-code-cli": {
-      "modelOverrides": {
-        "sonnet": {
-          "thinkingLevelMap": {
-            "off": null,
-            "minimal": null,
-            "low": null,
-            "medium": "medium",
-            "high": "high",
-            "xhigh": null,
-            "max": "max"
-          }
-        },
-        "opus": {
+    "commandcode": {
+      "baseUrl": "https://api.commandcode.ai/provider/v1",
+      "api": "openai-completions",
+      "compat": {
+        "supportsStore": false,
+        "supportsDeveloperRole": false,
+        "maxTokensField": "max_tokens"
+      },
+      "models": [
+        {
+          "id": "stealth/ox-alpha",
+          "name": "Ox Alpha (Command Code)",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "contextWindow": 1048576,
+          "maxTokens": 131072,
           "thinkingLevelMap": {
             "off": null,
             "minimal": null,
             "low": "low",
-            "medium": null,
+            "medium": "medium",
             "high": "high",
             "xhigh": null,
-            "max": "max"
-          }
-        },
-        "fable": {
-          "thinkingLevelMap": {
-            "off": null,
-            "minimal": null,
-            "low": null,
-            "medium": null,
-            "high": "high",
-            "xhigh": null,
-            "max": "max"
+            "max": null
           }
         }
-      }
+      ]
     }
   }
 }

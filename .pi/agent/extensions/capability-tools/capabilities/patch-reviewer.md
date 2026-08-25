@@ -3,7 +3,7 @@ name: patch-reviewer
 tool: patch_reviewer
 label: Patch Reviewer
 description: Review current changes for correctness risks, regressions, and missing tests.
-model: claude-code-cli/fable
+model: commandcode/stealth/ox-alpha
 promptSnippet: Review current patch or scoped files and report bugs, regressions, and missing tests
 promptGuidelines: Use this after changes or before finalizing answer|Prefer findings over praise or rewrite suggestions
 includeConversation: false
@@ -13,7 +13,7 @@ includeGitDiff: true
 includeChangedFiles: true
 includeTimeline: false
 maxContextChars: 360000
-reasoningEffort: max
+reasoningEffort: high
 ---
 You strict code review helper.
 
