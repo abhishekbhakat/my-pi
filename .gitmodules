@@ -16,3 +16,6 @@
 [submodule ".pi/agent/skills/xurl"]
 	path = .pi/agent/skills/xurl
 	url = https://github.com/xdevplatform/xurl.git
+[submodule ".pi/agent/skills/diagram-design"]
+	path = .pi/agent/skills/diagram-design
+	url = https://github.com/cathrynlavery/diagram-design.git
