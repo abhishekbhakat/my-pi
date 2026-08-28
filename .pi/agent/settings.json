@@ -17,10 +17,9 @@
     "xai/grok-4.5",
     "xai/grok-4.6",
     "runinfra/deepseek-v4-flash",
-    "commandcode/xai/grok-4.5",
+    "commandcode/qwen/qwen3.8-flash",
     "commandcode/moonshotai/Kimi-K3",
-    "opencode/x-preview-f-free",
-    "google/gemini-3.7-flash",
+    "opencode/qwen3.8-flash",
     "runinfra/glm-5-3-flash"
   ],
   "packages": [

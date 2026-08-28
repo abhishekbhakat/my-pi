@@ -1,20 +1,5 @@
 {
   "providers": {
-    "google": {
-      "modelOverrides": {
-        "gemini-3.7-flash": {
-          "thinkingLevelMap": {
-            "off": null,
-            "minimal": null,
-            "low": null,
-            "medium": null,
-            "high": "HIGH",
-            "xhigh": null,
-            "max": null
-          }
-        }
-      }
-    },
     "runinfra": {
       "baseUrl": "https://api.runinfra.ai/v1",
       "api": "openai-completions",
@@ -148,25 +133,19 @@
     "opencode": {
       "models": [
         {
-          "id": "x-preview-f-free",
-          "name": "X Preview F Free (OpenCode)",
-          "api": "openai-completions",
-          "baseUrl": "https://opencode.ai/zen/v1",
+          "id": "qwen3.8-flash",
+          "name": "Qwen3.8 Flash (OpenCode)",
+          "api": "anthropic-messages",
+          "baseUrl": "https://opencode.ai/zen/go",
           "reasoning": true,
-          "input": ["text"],
-          "contextWindow": 200000,
-          "maxTokens": 32000,
+          "input": ["text", "image"],
+          "contextWindow": 1000000,
+          "maxTokens": 131072,
           "cost": {
-            "input": 0,
-            "output": 0,
-            "cacheRead": 0,
-            "cacheWrite": 0
-          },
-          "compat": {
-            "supportsStore": false,
-            "supportsDeveloperRole": false,
-            "maxTokensField": "max_tokens",
-            "requiresReasoningContentOnAssistantMessages": true
+            "input": 0.15,
+            "output": 0.47,
+            "cacheRead": 0.016,
+            "cacheWrite": 0.2
           }
         }
       ]
@@ -181,21 +160,12 @@
       },
       "models": [
         {
-          "id": "xai/grok-4.5",
-          "name": "Grok 4.5 (Command Code)",
+          "id": "qwen/qwen3.8-flash",
+          "name": "Qwen3.8 Flash (Command Code)",
           "reasoning": true,
           "input": ["text", "image"],
-          "contextWindow": 500000,
-          "maxTokens": 128000,
-          "thinkingLevelMap": {
-            "off": null,
-            "minimal": null,
-            "low": null,
-            "medium": null,
-            "high": "high",
-            "xhigh": null,
-            "max": null
-          }
+          "contextWindow": 1000000,
+          "maxTokens": 131072
         },
         {
           "id": "moonshotai/Kimi-K3",

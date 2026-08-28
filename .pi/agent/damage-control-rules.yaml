@@ -211,13 +211,13 @@ bashToolPatterns:
     reason: SQL DELETE with specific ID
     ask: true
   - pattern: '(?<!uv\srun\s)\bpip\b'
-    reason: Python package management must use 'uv pip' instead of pip
+    reason: System Python/pip is blocked. Use 'uv pip install <pkg>'
   - pattern: '(?<!uv\srun\s)\bpip3\b'
-    reason: Python package management must use 'uv pip' instead of pip3
+    reason: System Python/pip3 is blocked. Use 'uv pip install <pkg>'
   - pattern: '^python\b(?!\s+-m\s+pip)'
-    reason: Python execution must use 'uv run python' instead of python directly
+    reason: System Python is blocked. Use 'uv run python ...'
   - pattern: '^python3\b(?!\s+-m\s+pip)'
-    reason: Python execution must use 'uv run python' instead of python3 directly
+    reason: System Python is blocked. Use 'uv run python ...'
 
 zeroAccessPaths: []
 
