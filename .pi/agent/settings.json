@@ -19,8 +19,10 @@
     "runinfra/deepseek-v4-flash",
     "commandcode/qwen/qwen3.8-flash",
     "commandcode/moonshotai/Kimi-K3",
-    "opencode/qwen3.8-flash",
-    "runinfra/glm-5-3-flash"
+    "runinfra/glm-5-3-flash",
+    "commandcode/z-ai/glm-5.3-flash"
   ],
-  "packages": []
+  "packages": [
+    "npm:pi-intercom"
+  ]
 }
