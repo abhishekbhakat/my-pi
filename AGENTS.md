@@ -40,7 +40,7 @@ Examples:
 - system replacement: `.pi/agent/SYSTEM.md`
 - settings/models: `.pi/agent/settings.json`, `.pi/agent/models.json`, etc.
 
-After changing source files, run `make install`. Install also merges repo `.pi/agent/auth.json` into `~/.pi/agent/auth.json` (repo keys override, live-only keys stay).
+After changing source files, run `make install`. Install also merges repo `.pi/agent/auth.json` into `~/.pi/agent/auth.json` for `api_key` entries only (repo keys override, live-only keys stay). OAuth entries (`type: oauth`) never install from repo into live home.
 
 ## Sync live config back into the repo
 
@@ -63,7 +63,7 @@ make sync             # overwrite protected config in the repo
 make sync ARGS="-p"   # also delete repo files missing from live (mirror/prune)
 ```
 
-Sync copies extensions, skills, themes, and root config files. **Default is additive** (update/add only) so repo-only work is never wiped when live lags. Pass `-p` only when you intentionally want a live mirror. It skips runtime files (`bin/`, `sessions/`, `node_modules`, `package-lock.json`). `auth.json` is merge-only both ways: incoming provider keys override, destination-only keys stay, nothing is deleted. Keep `auth.json` gitignored.
+Sync copies extensions, skills, themes, and root config files. **Default is additive** (update/add only) so repo-only work is never wiped when live lags. Pass `-p` only when you intentionally want a live mirror. It skips runtime files (`bin/`, `sessions/`, `node_modules`, `package-lock.json`). `auth.json` merge: `api_key` both ways (incoming override, dest-only stay); oauth (`type: oauth`) one way only — live home into repo on sync. Nothing deleted. Keep `auth.json` gitignored.
 
 ## After install
 

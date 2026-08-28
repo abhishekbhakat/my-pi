@@ -8,6 +8,7 @@
 .pi/agent/skills/slack/slack-auth.json
 .pi/agent/skills/slack/slack-token.json
 .pi/agent/skills/octen-search/octen-auth.json
+.pi/agent/skills/tinyfish/tinyfish-auth.json
 .pi/agent/auth.json
 .pi/agent/extensions/intent-router/config.json
 .pi/agents/youtrack.md

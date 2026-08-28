@@ -31,7 +31,7 @@ help:
 		'  node scripts/pi.mjs sync' \
 		'' \
 		'Notes' \
-		'  auth.json is merge-only both ways: incoming keys override, dest-only keys stay.' \
+		'  auth.json: api_key merge both ways; oauth home -> repo on sync only.' \
 		'  After install, run /reload or /restart inside pi.'
 
 install:

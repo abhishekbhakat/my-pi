@@ -45,6 +45,26 @@
             "xhigh": null,
             "max": "max"
           }
+        },
+        {
+          "id": "glm-5-3-flash",
+          "name": "GLM 5.3 Flash (RunInfra)",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 1048576,
+          "maxTokens": 131072,
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": "low",
+            "medium": null,
+            "high": "high",
+            "xhigh": null,
+            "max": null
+          },
+          "compat": {
+            "thinkingFormat": "zai"
+          }
         }
       ]
     },
@@ -205,6 +225,26 @@
           "input": ["text"],
           "contextWindow": 1000000,
           "maxTokens": 128000,
+          "compat": {
+            "thinkingFormat": "zai"
+          }
+        },
+        {
+          "id": "zai-org/GLM-5.3-Flash",
+          "name": "GLM 5.3 Flash (Command Code)",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 1048576,
+          "maxTokens": 131072,
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": "low",
+            "medium": null,
+            "high": "high",
+            "xhigh": null,
+            "max": "max"
+          },
           "compat": {
             "thinkingFormat": "zai"
           }

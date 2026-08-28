@@ -8,8 +8,8 @@
   "followUpMode": "all",
   "enableInstallTelemetry": false,
   "defaultProjectTrust": "always",
-  "defaultProvider": "xai",
-  "defaultModel": "grok-4.5",
+  "defaultProvider": "runinfra",
+  "defaultModel": "glm-5-3-flash",
   "enabledModels": [
     "openai-codex/gpt-5.6-sol",
     "openai-codex/gpt-5.6-luna",
@@ -19,9 +19,9 @@
     "runinfra/deepseek-v4-flash",
     "commandcode/xai/grok-4.5",
     "commandcode/moonshotai/Kimi-K3",
-    "commandcode/zai-org/GLM-5.3",
     "opencode/x-preview-f-free",
-    "google/gemini-3.7-flash"
+    "google/gemini-3.7-flash",
+    "runinfra/glm-5-3-flash"
   ],
   "packages": [
     "npm:pi-intercom"

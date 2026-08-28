@@ -39,7 +39,7 @@ make help                     # list targets
 
 After install, run `/reload` or `/restart` inside pi so the running session picks up the change.
 
-`auth.json` is merge-only: repo keys override, live-only keys stay. Keep it gitignored.
+`auth.json`: `api_key` merge-only (repo keys override, live-only keys stay). OAuth (`type: oauth`) never installs repo → home. Keep it gitignored.
 
 ## Sync
 
@@ -55,7 +55,7 @@ Default is additive (update and add only), so repo-only work is not wiped when l
 make sync ARGS="-p"
 ```
 
-Sync skips runtime files (`bin/`, `sessions/`, `node_modules`, `package-lock.json`). `auth.json` is merge-only both ways.
+Sync skips runtime files (`bin/`, `sessions/`, `node_modules`, `package-lock.json`). `auth.json`: `api_key` merge both ways; oauth home → repo only.
 
 ## Rules
 

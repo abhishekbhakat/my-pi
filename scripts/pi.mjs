@@ -68,24 +68,39 @@ function writeAtomic(dest, contents, mode) {
   if (mode && process.platform !== "win32") fs.chmodSync(dest, mode);
 }
 
-function mergeAuth(destPath, overlayPath) {
+function isOauthEntry(value) {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value) && value.type === "oauth");
+}
+
+function mergeAuth(destPath, overlayPath, options = {}) {
+  const skipOauth = Boolean(options.skipOauth);
   if (!exists(overlayPath)) {
     console.log("  Skipping auth.json merge; overlay not found.");
     return;
   }
   const dest = readJsonObject(destPath, {});
   const overlay = readJsonObject(overlayPath);
-  const merged = { ...dest, ...overlay };
+  const applied = {};
+  const skippedOauth = [];
+  for (const [key, value] of Object.entries(overlay)) {
+    if (skipOauth && isOauthEntry(value)) {
+      skippedOauth.push(key);
+      continue;
+    }
+    applied[key] = value;
+  }
+  const merged = { ...dest, ...applied };
   const destKeys = Object.keys(dest);
-  const overlayKeys = Object.keys(overlay);
-  const added = overlayKeys.filter((key) => !Object.hasOwn(dest, key)).sort();
-  const overridden = overlayKeys.filter((key) => Object.hasOwn(dest, key)).sort();
-  const kept = destKeys.filter((key) => !Object.hasOwn(overlay, key)).sort();
+  const appliedKeys = Object.keys(applied);
+  const added = appliedKeys.filter((key) => !Object.hasOwn(dest, key)).sort();
+  const overridden = appliedKeys.filter((key) => Object.hasOwn(dest, key)).sort();
+  const kept = destKeys.filter((key) => !Object.hasOwn(applied, key)).sort();
   writeAtomic(destPath, `${JSON.stringify(merged, null, 2)}\n`, 0o600);
   console.log(`  Merged auth.json -> ${destPath}`);
   if (added.length) console.log(`  Added: ${added.join(", ")}`);
   if (overridden.length) console.log(`  Overrode: ${overridden.join(", ")}`);
   if (kept.length) console.log(`  Kept: ${kept.join(", ")}`);
+  if (skippedOauth.length) console.log(`  Skipped oauth (home-only install): ${skippedOauth.sort().join(", ")}`);
   if (!added.length && !overridden.length) console.log("  No incoming provider keys to apply.");
 }
 
@@ -290,7 +305,8 @@ function install(flags) {
     copied += 1;
   }
   console.log("\n[auth.json]");
-  mergeAuth(path.join(HOME_AGENT, "auth.json"), path.join(REPO_AGENT, "auth.json"));
+  // api_key both ways; oauth only home -> repo (sync). Install never push oauth live.
+  mergeAuth(path.join(HOME_AGENT, "auth.json"), path.join(REPO_AGENT, "auth.json"), { skipOauth: true });
   if (flags.host) {
     console.log("\n[models proxy]");
     patchModelsProxy(path.join(HOME_AGENT, "models.json"), normalizeProxyOrigin(flags.host));
@@ -379,7 +395,7 @@ function sync(flags) {
   console.log(` Protected skipped: ${stats.skipped}`);
   console.log("=============================\n");
   console.log("Skipped: bin/, sessions/, node_modules, package-lock.json, git submodules");
-  console.log("auth.json is merged (live keys override, repo-only keys kept). Never deleted.");
+  console.log("auth.json: api_key merge both ways; oauth home -> repo only. Never deleted.");
   console.log("Text files normalized to LF (CRLF ignored).");
   console.log("Default is additive (no deletes). Use -p only to mirror-delete.");
   console.log("Review git status, then commit if the repo should keep these changes.");
@@ -400,7 +416,8 @@ sync     Copy live ~/.pi/agent -> repo .pi/agent
 -p       Prune repo files missing from live on sync
 -y       Accepted, unused (protected files always overwritten)
 
-auth.json is merge-only both ways: incoming keys override, dest-only keys stay.`);
+auth.json: api_key merge both ways (incoming override, dest-only stay).
+  oauth (type=oauth) flows home -> repo on sync only; install never overwrites live oauth.`);
 }
 
 const [command, ...rest] = process.argv.slice(2);
