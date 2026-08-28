@@ -8,8 +8,8 @@
   "followUpMode": "all",
   "enableInstallTelemetry": false,
   "defaultProjectTrust": "always",
-  "defaultProvider": "runinfra",
-  "defaultModel": "glm-5-3-flash",
+  "defaultProvider": "commandcode",
+  "defaultModel": "qwen/qwen3.8-flash",
   "enabledModels": [
     "openai-codex/gpt-5.6-sol",
     "openai-codex/gpt-5.6-luna",

@@ -1,68 +1,105 @@
 ---
 name: tinyfish
 description: >-
-  Set up TinyFish (web-driving agent MCP + skills) for every coding agent on
-  this machine, and verify the install. Trigger on "set up TinyFish",
-  "install TinyFish", "tinyfish connect", "tinyfish doctor", or user ask to
-  register TinyFish MCP for pi or other agents.
-keywords: [tinyfish, mcp, connect, doctor, web agent, browser agent]
+  TinyFish CLI for live web data in terminal: web search with ranked results,
+  URL content extraction to clean markdown. Use whenever user need web results,
+  current facts, news, prices, dates, anything past training cutoff, or ask to
+  fetch/read a URL. pi have no built-in MCP, so CLI is only TinyFish path.
+  Never wait for MCP tools to appear. Triggers: "use tinyfish", "search the
+  web", "google", "look up online", "fetch this URL", "latest news", "what is
+  the current".
+keywords: [tinyfish, search, web search, fetch, url, browser agent, web agent, live data, mcp, connect, doctor]
 ---
 
 # TinyFish
 
-TinyFish registers an MCP server into every installed coding agent
-(pi, Claude Code, Codex, ...) and installs its skills. CLI ships via npx.
+TinyFish = web-driving service. In pi, use CLI via `npx`. pi ships no built-in
+MCP client (`docs/usage.md:308`). TinyFish never appears as tool set here, no
+matter install or `/reload`.
 
-## Authentication
+Verified 2026-08-28, CLI 0.34.0. If `connect --help` later list `pi` as
+harness, revisit: MCP path may exist.
 
-Key precedence:
+## Credentials
 
-1. Environment: `TINYFISH_API_KEY`
-2. `tinyfish-auth.json` in this skill directory (gitignored)
+Precedence:
+
+1. `TINYFISH_API_KEY` env.
+2. `tinyfish-auth.json` beside this file (gitignored, install-copies it).
 
 ```json
-{
-  "api_key": "sk-tinyfish-..."
-}
+{ "api_key": "sk-tinyfish-..." }
 ```
 
-Get key: user supplies it. Never echo key into chat, commits, or logs.
-If key missing, ask user once; do not retry blind.
-
-## Setup flow
-
-1. Read key (env or `tinyfish-auth.json`).
-2. Warn user before connect: command may pause up to 10 minutes waiting on
-   browser sign-in only user can finish. Use 600s timeout.
-3. Connect (registers MCP for all detected agents, installs skills):
+Use `export`. Bash and zsh tested: `VAR=x && cmd` set VAR in shell, child still
+blind, never exported.
 
 ```bash
-npx -y @tiny-fish/cli@latest connect --all \
-  --api-key "$TINYFISH_API_KEY" \
-  --skip-launch \
-  --url "https://agent.tinyfish.ai/mcp"
+# BROKEN. npx run with no key. doctor fail on "CLI credential".
+TINYFISH_API_KEY=$(...) && npx -y @tiny-fish/cli@latest doctor
+
+# WORK, preferred. Survives later calls in this shell.
+export TINYFISH_API_KEY=$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.env.HOME+"/.pi/agent/skills/tinyfish/tinyfish-auth.json","utf8")).api_key)')
+npx -y @tiny-fish/cli@latest doctor --pretty
+
+# WORK, per-command prefix. Key gone after one call.
+TINYFISH_API_KEY=$(...) npx -y @tiny-fish/cli@latest doctor --pretty
 ```
 
-4. Verify:
+Key missing: ask user once. No blind retry. Do not run `tinyfish auth set` or
+`auth login`. They write second plaintext key outside repo control, gitignore
+and `make install` stop governing it. `tinyfish-auth.json` stays single source.
+
+## Commands
+
+Search, ranked results with snippets:
+
+```bash
+npx -y @tiny-fish/cli@latest search query "<question or keywords>" --pretty
+```
+
+Flags: `--include-domains`, `--exclude-domains`, `--location`, `--language`,
+`--page`.
+
+Clean content from URL(s):
+
+```bash
+npx -y @tiny-fish/cli@latest fetch content get <url> [<url>...] --pretty
+```
+
+Drop `--pretty` to parse JSON. `results[].text` hold markdown body.
+
+More subcommands exist: `agent`, `browser`, `profile`, `vault`, `wallet`. Read
+`--help` before claiming capability absent.
+
+## Verify a setup claim
+
+`doctor` check CLI plus credential only. Green harness line mean nothing here:
 
 ```bash
 npx -y @tiny-fish/cli@latest doctor --pretty
 ```
 
-5. If doctor lists failures, run repairs in listed order. Repairs with
-   `unattended_safe: false` belong to user: show command, do not run it.
-   Re-run doctor after repairs until clean.
+Expected on this machine: `✓ CLI`, `✓ MCP endpoint reachable`, `✓ CLI
+credential`, `✓ Authenticated call`, every harness line `harness not installed`.
+Last group fine. Not breakage.
 
-6. Proof: use TinyFish tools to fetch today's top Hacker News story.
-   Tools appear only in a session started after install. If missing in
-   this session, say so; do not reinstall.
-
-7. Report: which agents connected, which need user browser sign-in,
-   anything unfinished.
+Real proof = live call. Run one `search query`. Quote returned title plus one
+number from snippet. `✓ Authenticated call — listRuns succeeded` prove key
+works, say nothing about search quality.
 
 ## Agent rules
 
-1. Never quote API key back to user or into any output.
-2. Never rerun connect when tools missing post-install; new session needed.
-3. `--skip-launch` always; agent does not launch other apps.
-4. If connect/doctor unavailable (no npx, offline), report and stop.
+1. Never echo key into chat, commits, logs, or tool output. Read into variable,
+   pass through. Do not `cat` the JSON.
+2. `doctor` credential fail after correct call: suspect export form first, key
+   second.
+3. Live `search query` return results → TinyFish work. Stop. Do not run
+   `connect`, reinstall, or ask user to restart pi waiting for MCP tools pi
+   cannot load.
+
+## Other harnesses
+
+`connect --all` register MCP server for claude-code, codex, cursor, grok,
+hermes, openclaw, opencode. Not pi. Run only when user ask to wire those. Read
+`connect --help` first. Machine without any of them installed: writes nothing.
