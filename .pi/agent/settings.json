@@ -22,7 +22,5 @@
     "opencode/qwen3.8-flash",
     "runinfra/glm-5-3-flash"
   ],
-  "packages": [
-    "npm:pi-intercom"
-  ]
+  "packages": []
 }

@@ -19,3 +19,6 @@
 [submodule ".pi/agent/skills/diagram-design"]
 	path = .pi/agent/skills/diagram-design
 	url = https://github.com/cathrynlavery/diagram-design.git
+[submodule ".pi/agent/skills/herdr"]
+	path = .pi/agent/skills/herdr
+	url = https://github.com/herdrdev/herdr.git
