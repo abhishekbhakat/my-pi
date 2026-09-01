@@ -25,7 +25,14 @@ function bindContext(runtime: WebUiRuntime, ctx: WebUiBindContext, themeName?: s
 	runtime.currentContext = ctx;
 	runtime.currentSessionManager = ctx.sessionManager;
 	runtime.cwd = ctx.cwd;
-	runtime.abortCurrent = () => ctx.abort();
+	// Resolve abort through runtime so closures never keep a disposed event ctx.
+	runtime.abortCurrent = () => {
+		try {
+			runtime.currentContext?.abort();
+		} catch {
+			// Stale after session replace/reload.
+		}
+	};
 	if (themeName) runtime.themeName = themeName;
 }
 

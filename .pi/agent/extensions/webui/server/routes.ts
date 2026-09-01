@@ -16,14 +16,24 @@ function getContext(runtime: WebUiRuntime): ExtensionContext | ExtensionCommandC
 }
 
 function runtimeResponse(runtime: WebUiRuntime) {
-	const sessionManager = runtime.currentSessionManager;
-	return {
-		isStreaming: runtime.isStreaming,
-		sessionFile: sessionManager?.getSessionFile(),
-		sessionId: sessionManager?.getSessionId(),
-		sessionName: sessionManager?.getSessionName(),
-		model: runtime.currentModel,
-	};
+	try {
+		const sessionManager = runtime.currentSessionManager;
+		return {
+			isStreaming: runtime.isStreaming,
+			sessionFile: sessionManager?.getSessionFile(),
+			sessionId: sessionManager?.getSessionId(),
+			sessionName: sessionManager?.getSessionName(),
+			model: runtime.currentModel,
+		};
+	} catch {
+		return {
+			isStreaming: runtime.isStreaming,
+			sessionFile: undefined,
+			sessionId: undefined,
+			sessionName: undefined,
+			model: runtime.currentModel,
+		};
+	}
 }
 
 /** Live-only routes. Catalog lives on the SSM daemon (17300). */
@@ -45,16 +55,33 @@ export async function routeRequest(
 
 	const theme = runtime.themeName ?? themeName;
 
+	const withLiveCtx = <T>(fn: (live: ExtensionContext | ExtensionCommandContext) => T): T | undefined => {
+		try {
+			return fn(ctx);
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			if (message.includes("stale after session")) {
+				json(response, 503, { error: "session context is being replaced" });
+				return undefined;
+			}
+			throw error;
+		}
+	};
+
 	if (request.method === "GET" && url.pathname === "/") {
-		text(response, 200, renderWebUiPage(buildSessionData(pi, ctx, runtime), theme), "text/html; charset=utf-8");
+		const html = withLiveCtx((live) => renderWebUiPage(buildSessionData(pi, live, runtime), theme));
+		if (html === undefined) return;
+		text(response, 200, html, "text/html; charset=utf-8");
 		return;
 	}
 
 	if (request.method === "GET" && url.pathname === "/__webui/api/session") {
-		json(response, 200, {
-			sessionData: buildSessionData(pi, ctx, runtime),
+		const body = withLiveCtx((live) => ({
+			sessionData: buildSessionData(pi, live, runtime),
 			runtime: runtimeResponse(runtime),
-		});
+		}));
+		if (body === undefined) return;
+		json(response, 200, body);
 		return;
 	}
 
@@ -63,7 +90,9 @@ export async function routeRequest(
 		sendSseHeaders(response);
 		response.write(": connected\n\n");
 		runtime.clients.set(clientId, { id: clientId, response });
-		sendSnapshot(pi, runtime, ctx, clientId);
+		withLiveCtx((live) => {
+			sendSnapshot(pi, runtime, live, clientId);
+		});
 		request.on("close", () => {
 			runtime.clients.delete(clientId);
 		});
@@ -85,7 +114,7 @@ export async function routeRequest(
 
 	if (request.method === "POST" && url.pathname === "/__webui/api/abort") {
 		runtime.abortCurrent?.();
-		broadcastRuntime(runtime, ctx);
+		broadcastRuntime(runtime);
 		json(response, 200, { ok: true });
 		return;
 	}

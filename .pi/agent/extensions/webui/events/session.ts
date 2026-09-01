@@ -17,6 +17,23 @@ function themeFor(cwd: string): string | undefined {
 const HEARTBEAT_MS = 10_000;
 let heartbeat: ReturnType<typeof setInterval> | undefined;
 
+function bindAbort(runtime: WebUiRuntime): void {
+	// Always resolve through runtime so timers/routes never keep a disposed ctx.
+	runtime.abortCurrent = () => {
+		try {
+			runtime.currentContext?.abort();
+		} catch {
+			// Stale after newSession/fork/switch/reload.
+		}
+	};
+}
+
+function clearSessionRefs(runtime: WebUiRuntime): void {
+	runtime.currentContext = undefined;
+	runtime.currentSessionManager = undefined;
+	runtime.abortCurrent = undefined;
+}
+
 async function attachLive(
 	pi: ExtensionAPI,
 	runtime: WebUiRuntime,
@@ -25,24 +42,33 @@ async function attachLive(
 ): Promise<void> {
 	await ensureSsmDaemon();
 	const { port } = await ensureWebUiServer(pi, runtime, ctx, theme);
+	const sm = runtime.currentSessionManager ?? ctx.sessionManager;
 	const payload = {
 		port,
 		pid: process.pid,
-		id: ctx.sessionManager.getSessionId(),
-		path: ctx.sessionManager.getSessionFile(),
-		cwd: ctx.cwd,
+		id: sm.getSessionId(),
+		path: sm.getSessionFile(),
+		cwd: runtime.cwd ?? ctx.cwd,
 	};
 	const ok = await registerLive(payload);
 	if (!ok) throw new Error("could not register this pi with ssm-daemon");
 	if (heartbeat) clearInterval(heartbeat);
+	// Heartbeat must not close over event ctx — /delete and friends replace the
+	// session and mark that ctx stale; reading runtime keeps ticks safe.
 	heartbeat = setInterval(() => {
-		void registerLive({
-			...payload,
-			id: ctx.sessionManager.getSessionId(),
-			path: ctx.sessionManager.getSessionFile(),
-			cwd: ctx.cwd,
-			port: runtime.port ?? payload.port,
-		}).catch(() => undefined);
+		try {
+			const live = runtime.currentSessionManager;
+			if (!live) return;
+			void registerLive({
+				pid: process.pid,
+				id: live.getSessionId(),
+				path: live.getSessionFile(),
+				cwd: runtime.cwd ?? payload.cwd,
+				port: runtime.port ?? payload.port,
+			}).catch(() => undefined);
+		} catch {
+			// Skip tick while session is mid-replace or manager already disposed.
+		}
 	}, HEARTBEAT_MS);
 	heartbeat.unref?.();
 }
@@ -52,7 +78,7 @@ export function registerSessionEvents(pi: ExtensionAPI, runtime: WebUiRuntime): 
 		runtime.currentContext = ctx;
 		runtime.currentSessionManager = ctx.sessionManager;
 		runtime.cwd = ctx.cwd;
-		runtime.abortCurrent = () => ctx.abort();
+		bindAbort(runtime);
 		const theme = themeFor(ctx.cwd);
 		if (theme) runtime.themeName = theme;
 		broadcastSession(pi, runtime, ctx);
@@ -72,7 +98,7 @@ export function registerSessionEvents(pi: ExtensionAPI, runtime: WebUiRuntime): 
 		runtime.currentModel = ctx.model
 			? { provider: ctx.model.provider, id: ctx.model.id, name: ctx.model.name }
 			: undefined;
-		runtime.abortCurrent = () => ctx.abort();
+		bindAbort(runtime);
 		broadcastRuntime(runtime, ctx);
 	});
 
@@ -80,7 +106,7 @@ export function registerSessionEvents(pi: ExtensionAPI, runtime: WebUiRuntime): 
 		runtime.currentContext = ctx;
 		runtime.currentSessionManager = ctx.sessionManager;
 		runtime.isStreaming = true;
-		runtime.abortCurrent = () => ctx.abort();
+		bindAbort(runtime);
 		broadcast(runtime, "agent", { state: "start" });
 		broadcastRuntime(runtime, ctx);
 	});
@@ -126,6 +152,8 @@ export function registerSessionEvents(pi: ExtensionAPI, runtime: WebUiRuntime): 
 	});
 
 	pi.on("session_shutdown", async (event) => {
+		// Drop disposed ctx before any async work so heartbeat/HTTP cannot touch it.
+		clearSessionRefs(runtime);
 		const keep = event.reason === "new" || event.reason === "resume" || event.reason === "fork";
 		if (keep) return;
 		if (heartbeat) {

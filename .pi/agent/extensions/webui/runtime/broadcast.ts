@@ -4,14 +4,25 @@ import type { WebUiRuntime } from "./types";
 import { writeSse } from "../utils/http";
 
 function runtimeSnapshot(ctx?: ExtensionContext, runtime?: WebUiRuntime) {
-	const sessionManager = ctx?.sessionManager ?? runtime?.currentSessionManager;
-	return {
-		isStreaming: runtime?.isStreaming ?? false,
-		sessionFile: sessionManager?.getSessionFile(),
-		sessionId: sessionManager?.getSessionId(),
-		sessionName: sessionManager?.getSessionName(),
-		model: runtime?.currentModel,
-	};
+	try {
+		const sessionManager = ctx?.sessionManager ?? runtime?.currentSessionManager;
+		return {
+			isStreaming: runtime?.isStreaming ?? false,
+			sessionFile: sessionManager?.getSessionFile(),
+			sessionId: sessionManager?.getSessionId(),
+			sessionName: sessionManager?.getSessionName(),
+			model: runtime?.currentModel,
+		};
+	} catch {
+		// Stale ctx/session manager during replace — still report stream flag/model.
+		return {
+			isStreaming: runtime?.isStreaming ?? false,
+			sessionFile: undefined,
+			sessionId: undefined,
+			sessionName: undefined,
+			model: runtime?.currentModel,
+		};
+	}
 }
 
 export function broadcast(runtime: WebUiRuntime, event: string, payload: unknown): void {

@@ -17,10 +17,8 @@
     "xai/grok-4.5",
     "xai/grok-4.6",
     "runinfra/deepseek-v4-flash",
-    "commandcode/qwen/qwen3.8-flash",
-    "commandcode/moonshotai/Kimi-K3",
     "runinfra/glm-5-3-flash",
-    "commandcode/z-ai/glm-5.3-flash"
+    "runinfra/Qwen/Qwen3.8-Flash-Next-FP8"
   ],
   "packages": [
     "npm:pi-intercom"
