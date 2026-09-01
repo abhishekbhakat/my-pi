@@ -15,7 +15,7 @@ export interface DaemonHealth {
 async function fetchHealth(): Promise<DaemonHealth | undefined> {
 	try {
 		const res = await fetch(`${SSM_ORIGIN}/api/health`, {
-			signal: AbortSignal.timeout(2000),
+			signal: AbortSignal.timeout(1000),
 		});
 		if (!res.ok) return undefined;
 		return (await res.json()) as DaemonHealth;

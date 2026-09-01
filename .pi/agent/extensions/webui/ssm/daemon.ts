@@ -193,7 +193,12 @@ function start(): void {
 	const stop = () => {
 		clearPid();
 		server.close(() => process.exit(0));
-		setTimeout(() => process.exit(0), 500).unref();
+		// Not unref'd: open proxied streams (EventSource) would otherwise keep the
+		// process alive and hold port 17300, so the next spawn dies EADDRINUSE.
+		setTimeout(() => {
+			server.closeAllConnections?.();
+			process.exit(0);
+		}, 250);
 	};
 	process.on("SIGTERM", stop);
 	process.on("SIGINT", stop);
