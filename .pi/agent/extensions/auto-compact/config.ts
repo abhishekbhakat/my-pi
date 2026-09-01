@@ -14,6 +14,22 @@ export const MAX_THRESHOLD = 95;
 export const DEFAULT_THRESHOLD = 75;
 export const DEFAULT_RETRY_DELAY_MS = 60_000;
 
+/** Thinking levels accepted by the compaction summarizer. */
+export const THINKING_LEVELS = ["off", "minimal", "low", "medium", "high", "xhigh", "max"] as const;
+export type ThinkingLevelName = (typeof THINKING_LEVELS)[number];
+
+/** Default thinking level for the fixed compaction model. */
+export const DEFAULT_COMPACT_THINKING: ThinkingLevelName = "max";
+
+export type ModelRef = { provider: string; modelId: string };
+
+/** Parse "provider/modelId" (modelId may contain further slashes). */
+export function parseModelRef(ref: string): ModelRef | undefined {
+	const i = ref.indexOf("/");
+	if (i <= 0 || i === ref.length - 1) return undefined;
+	return { provider: ref.slice(0, i), modelId: ref.slice(i + 1) };
+}
+
 export type AutoCompactConfig = {
 	/** Master switch. Default true. */
 	enabled: boolean;
@@ -23,6 +39,14 @@ export type AutoCompactConfig = {
 	notify: boolean;
 	/** Cooldown after a failed compact before retrying. Default 60000. */
 	retryDelayMs: number;
+	/**
+	 * Fixed model ("provider/modelId") for compaction summaries.
+	 * Empty = stock compaction with the session model.
+	 * Never used for overflow recovery; failures fall back to stock.
+	 */
+	compactModel: string;
+	/** Thinking level for the fixed compaction model. Default "max". */
+	compactThinking: ThinkingLevelName;
 };
 
 export const DEFAULT_CONFIG: AutoCompactConfig = {
@@ -30,6 +54,8 @@ export const DEFAULT_CONFIG: AutoCompactConfig = {
 	thresholdPercent: DEFAULT_THRESHOLD,
 	notify: true,
 	retryDelayMs: DEFAULT_RETRY_DELAY_MS,
+	compactModel: "",
+	compactThinking: DEFAULT_COMPACT_THINKING,
 };
 
 export function configPath(): string {
@@ -44,6 +70,18 @@ function clampThreshold(value: number): number {
 function clampRetryDelay(value: number): number {
 	if (!Number.isFinite(value) || value < 0) return DEFAULT_RETRY_DELAY_MS;
 	return Math.round(value);
+}
+
+function cleanCompactModel(value: string | undefined): string {
+	if (typeof value !== "string") return "";
+	const ref = value.trim();
+	return parseModelRef(ref) ? ref : "";
+}
+
+function cleanCompactThinking(value: string | undefined): ThinkingLevelName {
+	return (THINKING_LEVELS as readonly string[]).includes(value ?? "")
+		? (value as ThinkingLevelName)
+		: DEFAULT_COMPACT_THINKING;
 }
 
 export function readConfig(): AutoCompactConfig {
@@ -62,6 +100,8 @@ export function readConfig(): AutoCompactConfig {
 				typeof parsed.retryDelayMs === "number"
 					? clampRetryDelay(parsed.retryDelayMs)
 					: DEFAULT_CONFIG.retryDelayMs,
+			compactModel: cleanCompactModel(parsed.compactModel),
+			compactThinking: cleanCompactThinking(parsed.compactThinking),
 		};
 	} catch (error) {
 		console.error(`Warning: Could not parse ${path}: ${error}`);
@@ -75,6 +115,8 @@ export function writeConfig(config: AutoCompactConfig): void {
 		thresholdPercent: clampThreshold(config.thresholdPercent),
 		notify: config.notify,
 		retryDelayMs: clampRetryDelay(config.retryDelayMs),
+		compactModel: cleanCompactModel(config.compactModel),
+		compactThinking: cleanCompactThinking(config.compactThinking),
 	};
 	writeFileSync(configPath(), `${JSON.stringify(next, null, 2)}\n`, "utf-8");
 }

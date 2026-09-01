@@ -32,6 +32,7 @@ import {
 	type AutoCompactConfig,
 } from "./config";
 import { createCompactorState, forceCompact, maybeCompact, resetCompactorState } from "./compactor";
+import { summarizeWithFixedModel } from "./summarizer";
 
 function assistantHasToolCalls(message: unknown): boolean {
 	if (!message || typeof message !== "object") return false;
@@ -62,6 +63,8 @@ export default function autoCompactExtension(pi: ExtensionAPI) {
 	let watchdog: ReturnType<typeof setInterval> | null = null;
 	/** Latest ctx for watchdog ticks (commands/settled refresh it). */
 	let latestCtx: ExtensionContext | undefined;
+	/** Warn once per session when compactModel cannot be resolved. */
+	let compactModelWarned = false;
 
 	function effectiveConfig(): AutoCompactConfig {
 		return {
@@ -107,6 +110,7 @@ export default function autoCompactExtension(pi: ExtensionAPI) {
 		);
 		const scope =
 			sessionEnabled !== undefined || sessionThreshold !== undefined ? "session" : "saved";
+		const compactModel = eff.compactModel ? `, compact model ${eff.compactModel} (${eff.compactThinking})` : "";
 		const cool =
 			state.failedAt != null
 				? `, cooldown ${Math.max(0, eff.retryDelayMs - (Date.now() - state.failedAt))}ms`
@@ -115,7 +119,7 @@ export default function autoCompactExtension(pi: ExtensionAPI) {
 		const idle = ctx.isIdle() ? "idle" : "busy";
 		return (
 			`auto-compact: ${eff.enabled ? "on" : "off"} @ ${eff.thresholdPercent}% ` +
-			`(${scope}), usage ${usageLine}, ${idle}${flight}${cool}; last: ${state.lastReason}`
+			`(${scope}), usage ${usageLine}, ${idle}${compactModel}${flight}${cool}; last: ${state.lastReason}`
 		);
 	}
 
@@ -209,13 +213,69 @@ export default function autoCompactExtension(pi: ExtensionAPI) {
 		state.lastReason = "session_compact";
 	});
 
+	// Fixed-model summarization for manual and threshold compactions.
+	// Overflow recovery is skipped inside summarizeWithFixedModel. Any
+	// non-ok outcome returns undefined so the stock compaction runs.
+	pi.on("session_before_compact", async (event, ctx) => {
+		// Boundary: any unexpected error in the fixed-model path falls back to
+		// stock compaction. Never let this hook reject the compaction flow.
+		try {
+			const outcome = await summarizeWithFixedModel(event, ctx, effectiveConfig());
+			if (outcome.kind === "ok") {
+				return { compaction: outcome.result };
+			}
+			if (!ctx.hasUI) return;
+			if (outcome.kind === "model-missing" && !compactModelWarned) {
+				compactModelWarned = true;
+				ctx.ui.notify(
+					`auto-compact: compact model "${config.compactModel}" not found; using session model`,
+					"warning",
+				);
+				return;
+			}
+			if (outcome.kind === "fallback") {
+				ctx.ui.notify(
+					`auto-compact: fixed-model compaction failed (${outcome.message}); falling back to session model`,
+					"warning",
+				);
+			}
+		} catch (error) {
+			if (!ctx.hasUI) return;
+			const message = error instanceof Error ? error.message : String(error);
+			ctx.ui.notify(
+				`auto-compact: fixed-model compaction error (${message}); falling back to session model`,
+				"warning",
+			);
+		}
+		return undefined;
+	});
+
 	pi.on("session_start", (_event, ctx) => {
 		config = readConfig();
 		sessionEnabled = undefined;
 		sessionThreshold = undefined;
+		compactModelWarned = false;
 		resetCompactorState(state);
 		rememberCtx(ctx);
 		startWatchdog();
+		// Misconfiguration check: loud at session start, not at first compact.
+		if (config.compactModel) {
+			const i = config.compactModel.indexOf("/");
+			const model = ctx.modelRegistry.find(config.compactModel.slice(0, i), config.compactModel.slice(i + 1));
+			if (!model && ctx.hasUI) {
+				compactModelWarned = true;
+				ctx.ui.notify(
+					`auto-compact: compact model "${config.compactModel}" not found; compactions will use the session model`,
+					"warning",
+				);
+			}
+			if (model && model.api !== "openai-codex-responses" && config.compactThinking !== "off" && ctx.hasUI) {
+				ctx.ui.notify(
+					`auto-compact: compact thinking "${config.compactThinking}" is not sent to ${model.api} models; it is ignored`,
+					"warning",
+				);
+			}
+		}
 		// Reload while already over threshold: try now and a few deferred times
 		// (usage/idle can lag right after reload).
 		scheduleStartChecks(ctx);

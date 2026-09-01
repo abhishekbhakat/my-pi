@@ -160,6 +160,53 @@
         }
       ]
     },
+    "celeris": {
+      "baseUrl": "https://inference.celeris.ai/celeris-1-magnus/v1",
+      "api": "openai-completions",
+      "compat": {
+        "supportsStore": false,
+        "supportsDeveloperRole": false,
+        "maxTokensField": "max_tokens"
+      },
+      "models": [
+        {
+          "id": "celeris-1-magnus",
+          "name": "Celeris 1 Magnus",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 131072,
+          "maxTokens": 16384,
+          "cost": {
+            "input": 0.2,
+            "output": 0.7,
+            "cacheRead": 0.02,
+            "cacheWrite": 0.2
+          },
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": "low",
+            "medium": "medium",
+            "high": null,
+            "xhigh": "xhigh",
+            "max": null
+          },
+          "compat": {
+            "thinkingFormat": "chat-template",
+            "chatTemplateKwargs": {
+              "enable_thinking": {
+                "$var": "thinking.enabled",
+                "omitWhenOff": true
+              },
+              "reasoning_effort": {
+                "$var": "thinking.effort",
+                "omitWhenOff": true
+              }
+            }
+          }
+        }
+      ]
+    },
     "commandcode": {
       "baseUrl": "https://api.commandcode.ai/provider/v1",
       "api": "openai-completions",

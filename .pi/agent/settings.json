@@ -3,13 +3,13 @@
   "theme": "tokyo-night",
   "quietStartup": true,
   "hideThinkingBlock": false,
-  "defaultThinkingLevel": "high",
+  "defaultThinkingLevel": "low",
   "steeringMode": "all",
   "followUpMode": "all",
   "enableInstallTelemetry": false,
   "defaultProjectTrust": "always",
-  "defaultProvider": "runinfra",
-  "defaultModel": "glm-5-3-flash",
+  "defaultProvider": "celeris",
+  "defaultModel": "celeris-1-magnus",
   "enabledModels": [
     "openai-codex/gpt-5.6-sol",
     "openai-codex/gpt-5.6-luna",
@@ -18,7 +18,8 @@
     "xai/grok-4.6",
     "runinfra/deepseek-v4-flash",
     "runinfra/glm-5-3-flash",
-    "runinfra/Qwen/Qwen3.8-Flash-Next-FP8"
+    "runinfra/Qwen/Qwen3.8-Flash-Next-FP8",
+    "celeris/celeris-1-magnus"
   ],
   "packages": [
     "npm:pi-intercom"
