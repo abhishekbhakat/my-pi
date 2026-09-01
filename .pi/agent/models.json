@@ -19,7 +19,7 @@
           "name": "DeepSeek V4 Flash (RunInfra)",
           "reasoning": true,
           "input": ["text"],
-          "contextWindow": 1000000,
+          "contextWindow": 262144,
           "maxTokens": 32768,
           "thinkingLevelMap": {
             "off": null,
@@ -36,7 +36,7 @@
           "name": "GLM 5.3 Flash (RunInfra)",
           "reasoning": true,
           "input": ["text"],
-          "contextWindow": 1048576,
+          "contextWindow": 262144,
           "maxTokens": 131072,
           "thinkingLevelMap": {
             "off": null,
@@ -56,7 +56,7 @@
           "name": "Qwen3.8 Flash Next FP8 (RunInfra)",
           "reasoning": true,
           "input": ["text", "image"],
-          "contextWindow": 1000000,
+          "contextWindow": 262144,
           "maxTokens": 131072
         }
       ]
@@ -123,7 +123,8 @@
           "thinkingLevelMap": {
             "low": null,
             "medium": null
-          }
+          },
+          "contextWindow": 262144
         },
         "grok-4.6": {
           "thinkingLevelMap": {
@@ -134,7 +135,8 @@
             "high": "high",
             "xhigh": null,
             "max": null
-          }
+          },
+          "contextWindow": 262144
         }
       }
     },
