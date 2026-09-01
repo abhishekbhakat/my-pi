@@ -304,6 +304,18 @@ function install(flags) {
     console.log(`  Copied ${file}`);
     copied += 1;
   }
+  console.log("\n[bin]");
+  const binDir = path.join(HOME_AGENT, "bin");
+  fs.mkdirSync(binDir, { recursive: true });
+  for (const name of ["tf", "ssm-server"]) {
+    const src = path.join(REPO_ROOT, "scripts", name === "ssm-server" ? "ssm-server.mjs" : name);
+    if (!exists(src)) continue;
+    const dst = path.join(binDir, name);
+    fs.copyFileSync(src, dst);
+    fs.chmodSync(dst, 0o755);
+    console.log(`  Copied ${name} -> ${dst}`);
+    copied += 1;
+  }
   console.log("\n[auth.json]");
   // api_key both ways; oauth only home -> repo (sync). Install never push oauth live.
   mergeAuth(path.join(HOME_AGENT, "auth.json"), path.join(REPO_AGENT, "auth.json"), { skipOauth: true });

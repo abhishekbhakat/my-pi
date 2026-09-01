@@ -28,6 +28,8 @@ export interface WebUiRuntime {
 	port?: number;
 	baseUrl?: string;
 	cwd?: string;
+	/** Active pi theme name for HTML pages. */
+	themeName?: string;
 	isStreaming: boolean;
 	currentContext?: ExtensionContext | ExtensionCommandContext;
 	currentSessionManager?: SessionManagerLike;

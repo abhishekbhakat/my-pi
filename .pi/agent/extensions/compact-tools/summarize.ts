@@ -146,6 +146,13 @@ export function summarize(
 		const fileLabel = files === 1 ? "file" : "files";
 		return `${GREEN}${matches} ${matchLabel}${RESET} ${DIM}in${RESET} ${CYAN}${files} ${fileLabel}${RESET}`;
 	}
+	if (name === "tree") {
+		const match = text.match(/(\d+) directories?, (\d+) files?/);
+		if (match) {
+			return `${GREEN}${match[1]}${RESET}${DIM} dirs${RESET} ${GREEN}${match[2]}${RESET}${DIM} files${RESET}`;
+		}
+		return `${DIM}${nonEmptyLineCount(text)} entries${RESET}`;
+	}
 	const count = nonEmptyLineCount(text);
 	const noun = name === "find" ? "files" : name === "ls" ? "entries" : "results";
 	return `${DIM}${count} ${noun}${RESET}`;

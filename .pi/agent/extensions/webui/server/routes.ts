@@ -26,6 +26,7 @@ function runtimeResponse(runtime: WebUiRuntime) {
 	};
 }
 
+/** Live-only routes. Catalog lives on the SSM daemon (17300). */
 export async function routeRequest(
 	pi: ExtensionAPI,
 	runtime: WebUiRuntime,
@@ -34,15 +35,18 @@ export async function routeRequest(
 	themeName?: string,
 ): Promise<void> {
 	const url = new URL(request.url ?? "/", "http://127.0.0.1");
-	const ctx = getContext(runtime);
+	if (themeName) runtime.themeName = themeName;
 
+	const ctx = getContext(runtime);
 	if (!ctx) {
 		json(response, 503, { error: "webui is waiting for a live pi session context" });
 		return;
 	}
 
+	const theme = runtime.themeName ?? themeName;
+
 	if (request.method === "GET" && url.pathname === "/") {
-		text(response, 200, renderWebUiPage(buildSessionData(pi, ctx, runtime), themeName), "text/html; charset=utf-8");
+		text(response, 200, renderWebUiPage(buildSessionData(pi, ctx, runtime), theme), "text/html; charset=utf-8");
 		return;
 	}
 
@@ -73,7 +77,6 @@ export async function routeRequest(
 			json(response, 400, { error: "message is required" });
 			return;
 		}
-
 		const deliverAs = body.deliverAs ?? (runtime.isStreaming ? "followUp" : undefined);
 		pi.sendUserMessage(message, deliverAs ? { deliverAs } : undefined);
 		json(response, 200, { ok: true });

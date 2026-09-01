@@ -15,7 +15,7 @@ export const INDENT = `${GUTTER}   `;
 export const ELAPSED_KEY = "compactToolsElapsedMs";
 export const HOME = homedir();
 
-export const TOOL_NAMES = ["read", "write", "edit", "bash", "grep", "find", "ls"] as const;
+export const TOOL_NAMES = ["read", "write", "edit", "bash", "grep", "find", "ls", "tree"] as const;
 export type ToolName = (typeof TOOL_NAMES)[number];
 
 /** File extensions whose inline TUI image preview is suppressed (card only). */

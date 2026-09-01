@@ -1,8 +1,11 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { Container } from "@earendil-works/pi-tui";
 import { Type } from "@sinclair/typebox";
 import { readdir, stat } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { resolve, join, relative, basename } from "node:path";
+import { buildToolBlock, WidthAwareLines } from "../compact-tools/cards";
+import { ELAPSED_KEY } from "../compact-tools/constants";
 
 /**
  * Dependency / cache / generated dirs skipped unless includeCacheDirs is true.
@@ -246,9 +249,98 @@ async function collectAllPaths(
 }
 
 export default function treeToolExtension(pi: ExtensionAPI) {
+	const startedAtByCallId = new Map<string, number>();
+	const timerByCallId = new Map<string, ReturnType<typeof setInterval>>();
+
+	pi.on("tool_execution_start", async (event) => {
+		if (event.toolName !== "tree") return;
+		if (!startedAtByCallId.has(event.toolCallId)) {
+			startedAtByCallId.set(event.toolCallId, Date.now());
+		}
+	});
+
+	pi.on("tool_execution_end", async (event) => {
+		if (event.toolName !== "tree") return;
+		startedAtByCallId.delete(event.toolCallId);
+		const timer = timerByCallId.get(event.toolCallId);
+		if (timer) clearInterval(timer);
+		timerByCallId.delete(event.toolCallId);
+	});
+
+	pi.on("tool_result", async (event) => {
+		if (event.toolName !== "tree") return;
+		const started = startedAtByCallId.get(event.toolCallId);
+		if (started === undefined) return;
+		return {
+			details: {
+				...(event.details ?? {}),
+				[ELAPSED_KEY]: Math.max(0, Date.now() - started),
+			},
+		};
+	});
+
+	pi.on("session_shutdown", async () => {
+		for (const timer of timerByCallId.values()) clearInterval(timer);
+		timerByCallId.clear();
+		startedAtByCallId.clear();
+	});
+
 	pi.registerTool({
 		name: "tree",
 		label: "Tree",
+		renderShell: "self",
+		renderCall(args, theme, context) {
+			if (!context?.isPartial) return new Container();
+			const id = context.toolCallId;
+			let started = startedAtByCallId.get(id);
+			if (started === undefined) {
+				started = Date.now();
+				startedAtByCallId.set(id, started);
+			}
+			if (!timerByCallId.has(id)) {
+				const timer = setInterval(() => context.invalidate(), 1000);
+				timer.unref?.();
+				timerByCallId.set(id, timer);
+			}
+			return new WidthAwareLines(
+				() =>
+					buildToolBlock("tree", (args ?? {}) as Record<string, unknown>, {}, {
+						isPartial: true,
+						elapsedMs: Date.now() - started!,
+					}),
+				(text) => theme.bg("toolPendingBg", text),
+			);
+		},
+		renderResult(result, options, theme, context) {
+			if (options?.isPartial) return new Container();
+			const isError = context?.isError ?? result?.isError ?? false;
+			const id = context?.toolCallId;
+			if (id) {
+				const timer = timerByCallId.get(id);
+				if (timer) clearInterval(timer);
+				timerByCallId.delete(id);
+			}
+			const persisted = Number(result?.details?.[ELAPSED_KEY]);
+			const started = id ? startedAtByCallId.get(id) : undefined;
+			const elapsedMs = Number.isFinite(persisted)
+				? persisted
+				: started === undefined
+					? 0
+					: Math.max(0, Date.now() - started);
+			const lines = buildToolBlock(
+				"tree",
+				(context?.args ?? {}) as Record<string, unknown>,
+				result,
+				{
+					isError,
+					expanded: options?.expanded ?? false,
+					elapsedMs,
+				},
+			);
+			return new WidthAwareLines(lines, (text) =>
+				theme.bg(isError ? "toolErrorBg" : "toolSuccessBg", text),
+			);
+		},
 		description:
 			"Display directory structure in a tree-like format. Respects .gitignore by default. Skips dependency, cache, and generated-output dirs (node_modules, __pycache__, .venv, vendor, .next, .gradle, etc.) unless includeCacheDirs is true. When includeCacheDirs is true, .gitignore is also bypassed for those dirs only.",
 		promptSnippet: "Show directory structure, respecting .gitignore; cache/vendor dirs off by default",

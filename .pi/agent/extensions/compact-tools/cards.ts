@@ -20,6 +20,7 @@ function style(name: ToolName): { icon: string; color: string } {
 	if (name === "grep") return { icon: "/", color: CYAN };
 	if (name === "find") return { icon: "*", color: CYAN };
 	if (name === "ls") return { icon: ":", color: CYAN };
+	if (name === "tree") return { icon: "\u251C", color: CYAN };
 	return { icon: ">", color: CYAN }; // read
 }
 

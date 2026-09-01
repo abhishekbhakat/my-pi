@@ -1,7 +1,51 @@
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { SettingsManager } from "@earendil-works/pi-coding-agent";
 import { broadcast, broadcastRuntime, broadcastSession } from "../runtime/broadcast";
-import { shutdownWebUiServer } from "../server/http-server";
+import { ensureWebUiServer, shutdownWebUiServer } from "../server/http-server";
+import { ensureSsmDaemon } from "../ssm/ensure-daemon";
+import { registerLive, unregisterLive } from "../ssm/live-client";
 import type { WebUiRuntime } from "../runtime/types";
+
+function themeFor(cwd: string): string | undefined {
+	try {
+		return SettingsManager.create(cwd).getTheme();
+	} catch {
+		return undefined;
+	}
+}
+
+const HEARTBEAT_MS = 10_000;
+let heartbeat: ReturnType<typeof setInterval> | undefined;
+
+async function attachLive(
+	pi: ExtensionAPI,
+	runtime: WebUiRuntime,
+	ctx: ExtensionContext,
+	theme?: string,
+): Promise<void> {
+	await ensureSsmDaemon();
+	const { port } = await ensureWebUiServer(pi, runtime, ctx, theme);
+	const payload = {
+		port,
+		pid: process.pid,
+		id: ctx.sessionManager.getSessionId(),
+		path: ctx.sessionManager.getSessionFile(),
+		cwd: ctx.cwd,
+	};
+	const ok = await registerLive(payload);
+	if (!ok) throw new Error("could not register this pi with ssm-daemon");
+	if (heartbeat) clearInterval(heartbeat);
+	heartbeat = setInterval(() => {
+		void registerLive({
+			...payload,
+			id: ctx.sessionManager.getSessionId(),
+			path: ctx.sessionManager.getSessionFile(),
+			cwd: ctx.cwd,
+			port: runtime.port ?? payload.port,
+		}).catch(() => undefined);
+	}, HEARTBEAT_MS);
+	heartbeat.unref?.();
+}
 
 export function registerSessionEvents(pi: ExtensionAPI, runtime: WebUiRuntime): void {
 	pi.on("session_start", async (_event, ctx) => {
@@ -9,7 +53,16 @@ export function registerSessionEvents(pi: ExtensionAPI, runtime: WebUiRuntime): 
 		runtime.currentSessionManager = ctx.sessionManager;
 		runtime.cwd = ctx.cwd;
 		runtime.abortCurrent = () => ctx.abort();
+		const theme = themeFor(ctx.cwd);
+		if (theme) runtime.themeName = theme;
 		broadcastSession(pi, runtime, ctx);
+
+		try {
+			await attachLive(pi, runtime, ctx, theme);
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			ctx.ui.notify(`SSM daemon: ${message}`, "warning");
+		}
 	});
 
 	pi.on("before_agent_start", async (event, ctx) => {
@@ -72,7 +125,14 @@ export function registerSessionEvents(pi: ExtensionAPI, runtime: WebUiRuntime): 
 		broadcastRuntime(runtime, ctx);
 	});
 
-	pi.on("session_shutdown", async () => {
+	pi.on("session_shutdown", async (event) => {
+		const keep = event.reason === "new" || event.reason === "resume" || event.reason === "fork";
+		if (keep) return;
+		if (heartbeat) {
+			clearInterval(heartbeat);
+			heartbeat = undefined;
+		}
+		await unregisterLive(process.pid);
 		await shutdownWebUiServer(runtime);
 	});
 }

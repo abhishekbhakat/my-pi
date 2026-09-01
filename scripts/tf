@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# tf: TinyFish CLI wrapper with auth baked in.
+# Reads key once from tinyfish-auth.json, exports, execs global CLI.
+# Never echoes the key. TINYFISH_API_KEY already set: use as-is.
+set -euo pipefail
+
+AUTH="${TINYFISH_AUTH:-$HOME/.pi/agent/skills/tinyfish/tinyfish-auth.json}"
+
+if [[ -z "${TINYFISH_API_KEY:-}" ]]; then
+  if [[ ! -f "$AUTH" ]]; then
+    echo "tf: no credential file at $AUTH" >&2
+    exit 1
+  fi
+  TINYFISH_API_KEY="$(node -e '
+    const fs = require("fs");
+    try {
+      const key = JSON.parse(fs.readFileSync(process.argv[1], "utf8")).api_key;
+      if (!key) throw new Error("empty api_key");
+      process.stdout.write(key);
+    } catch (e) {
+      console.error("tf: cannot read key: " + e.message);
+      process.exit(1);
+    }
+  ' "$AUTH")"
+  export TINYFISH_API_KEY
+fi
+
+exec tinyfish "$@"

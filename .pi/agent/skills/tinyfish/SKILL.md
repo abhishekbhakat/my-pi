@@ -22,40 +22,41 @@ harness, revisit: MCP path may exist.
 
 ## Credentials
 
-Precedence:
-
-1. `TINYFISH_API_KEY` env.
-2. `tinyfish-auth.json` beside this file (gitignored, install-copies it).
+Single source: `tinyfish-auth.json` beside this file (gitignored,
+install-copies it).
 
 ```json
 { "api_key": "sk-tinyfish-..." }
 ```
 
-Use `export`. Bash and zsh tested: `VAR=x && cmd` set VAR in shell, child still
-blind, never exported.
+Use the `tf` wrapper (`~/.pi/agent/bin/tf`, first on PATH). It reads the key
+from the JSON, exports it, and execs the globally installed CLI. No export
+dance, no npx re-resolution:
 
 ```bash
-# BROKEN. npx run with no key. doctor fail on "CLI credential".
-TINYFISH_API_KEY=$(...) && npx -y @tiny-fish/cli@latest doctor
-
-# WORK, preferred. Survives later calls in this shell.
-export TINYFISH_API_KEY=$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.env.HOME+"/.pi/agent/skills/tinyfish/tinyfish-auth.json","utf8")).api_key)')
-npx -y @tiny-fish/cli@latest doctor --pretty
-
-# WORK, per-command prefix. Key gone after one call.
-TINYFISH_API_KEY=$(...) npx -y @tiny-fish/cli@latest doctor --pretty
+tf doctor --pretty
+tf search query "..." --pretty
 ```
+
+CLI also installed globally (`npm i -g @tiny-fish/cli@0.34.0`, pinned). If a
+command or flag mismatches, check version drift, bump pin:
+`npm i -g @tiny-fish/cli@latest`. Bare `tinyfish` without `tf` fail on
+credential: CLI reads env only, JSON is wrapper-side.
 
 Key missing: ask user once. No blind retry. Do not run `tinyfish auth set` or
 `auth login`. They write second plaintext key outside repo control, gitignore
 and `make install` stop governing it. `tinyfish-auth.json` stays single source.
+
+Fallback if `tf` or global CLI absent: old flow, `npx -y @tiny-fish/cli@latest`
+with `export TINYFISH_API_KEY=$(node -e '...')` from JSON. Bash and zsh tested:
+`VAR=x && cmd` set VAR in shell, child still blind, never exported.
 
 ## Commands
 
 Search, ranked results with snippets:
 
 ```bash
-npx -y @tiny-fish/cli@latest search query "<question or keywords>" --pretty
+tf search query "<question or keywords>" --pretty
 ```
 
 Flags: `--include-domains`, `--exclude-domains`, `--location`, `--language`,
@@ -64,7 +65,7 @@ Flags: `--include-domains`, `--exclude-domains`, `--location`, `--language`,
 Clean content from URL(s):
 
 ```bash
-npx -y @tiny-fish/cli@latest fetch content get <url> [<url>...] --pretty
+tf fetch content get <url> [<url>...] --pretty
 ```
 
 Drop `--pretty` to parse JSON. `results[].text` hold markdown body.
@@ -77,7 +78,7 @@ More subcommands exist: `agent`, `browser`, `profile`, `vault`, `wallet`. Read
 `doctor` check CLI plus credential only. Green harness line mean nothing here:
 
 ```bash
-npx -y @tiny-fish/cli@latest doctor --pretty
+tf doctor --pretty
 ```
 
 Expected on this machine: `✓ CLI`, `✓ MCP endpoint reachable`, `✓ CLI
