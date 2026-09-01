@@ -74,6 +74,12 @@ export async function handleSsmRoutes(
 		return true;
 	}
 
+	if (request.method === "POST" && url.pathname === "/api/invalidate") {
+		invalidateCatalog();
+		json(response, 200, { ok: true });
+		return true;
+	}
+
 	if (request.method === "POST" && url.pathname === "/api/refresh") {
 		invalidateCatalog();
 		json(response, 200, await catalogPayload(opts, true));
@@ -107,19 +113,23 @@ export async function handleSsmRoutes(
 			json(response, 400, { error: "path is required" });
 			return true;
 		}
-		const catalog = await getCatalog();
+		// Force fresh catalog so terminal deletes are not ghosts.
+		const catalog = await getCatalog(true);
 		const session = findSession(path, catalog);
-		if (!session) {
+		// Allow ghost rows (file already removed) when path still looks like a session file.
+		if (!session && !(path.endsWith(".jsonl") && path.includes("/sessions/"))) {
 			json(response, 404, { error: "session not in catalog" });
 			return true;
 		}
-		if (session.live) {
+		const targetPath = session?.path ?? path;
+		const targetId = session?.id ?? "";
+		if (sessionIsLive(targetPath, targetId, opts.lives)) {
 			json(response, 409, { error: "cannot delete a running session" });
 			return true;
 		}
 		try {
-			await deleteSessionFile(session.path);
-			unarchiveSession(session.path);
+			deleteSessionFile(targetPath);
+			unarchiveSession(targetPath);
 		} catch (error) {
 			json(response, 500, {
 				error: error instanceof Error ? error.message : String(error),
@@ -127,7 +137,11 @@ export async function handleSsmRoutes(
 			return true;
 		}
 		invalidateCatalog();
-		json(response, 200, { ok: true, catalog: await catalogPayload(opts, true) });
+		json(response, 200, {
+			ok: true,
+			alreadyGone: !session,
+			catalog: await catalogPayload(opts, true),
+		});
 		return true;
 	}
 

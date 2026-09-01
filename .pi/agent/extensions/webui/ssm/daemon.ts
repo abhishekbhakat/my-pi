@@ -122,9 +122,13 @@ function pickLive(url: URL, request: IncomingMessage): LiveBackend | undefined {
 		for (const backend of lives.values()) {
 			if (backend.id === want || backend.path === want) return backend;
 		}
+		// Unknown id — do not fall back to a random other session.
+		return undefined;
 	}
 	const all = [...lives.values()];
-	return all[all.length - 1];
+	// Bare /live is only unambiguous when exactly one pi is live.
+	if (all.length === 1) return all[0];
+	return undefined;
 }
 
 async function route(request: IncomingMessage, response: ServerResponse): Promise<void> {

@@ -47,7 +47,7 @@ a { color: #7eaaff; }
 </style>
 </head><body>
 <p>No live pi session attached.</p>
-<p>Start pi in a project, then open <a href="/live">live UI</a> again.</p>
-<p><a href="/ssm">Session manager</a> still works (disk catalog).</p>
+<p>Run <code>/webui</code> inside a pi session, or open a running row from <a href="/ssm">Session manager</a>.</p>
+<p>Live URLs need a session id: <code>/live?id=&lt;sessionId&gt;</code>.</p>
 </body></html>`;
 }

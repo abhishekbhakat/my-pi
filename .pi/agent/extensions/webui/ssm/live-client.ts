@@ -34,3 +34,15 @@ export async function unregisterLive(pid: number): Promise<void> {
 		// daemon may already be gone
 	}
 }
+
+/** Tell the daemon its cached catalog may be stale (session started/changed). */
+export async function invalidateSsmCatalog(): Promise<void> {
+	try {
+		await fetch(`${SSM_ORIGIN}/api/invalidate`, {
+			method: "POST",
+			signal: AbortSignal.timeout(800),
+		});
+	} catch {
+		// daemon may already be gone; TTL covers it
+	}
+}

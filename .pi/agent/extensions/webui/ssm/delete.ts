@@ -14,15 +14,32 @@ function hasTrash(): boolean {
 	}
 }
 
+function isGone(error: unknown): boolean {
+	return Boolean(
+		error &&
+			typeof error === "object" &&
+			"code" in error &&
+			(error as { code?: string }).code === "ENOENT",
+	);
+}
+
+/** Remove session file. Missing path (ENOENT) is success. */
 export function deleteSessionFile(path: string): void {
-	if (!existsSync(path)) throw new Error(`not found: ${path}`);
 	if (hasTrash()) {
 		try {
 			execFileSync("trash", [path], { timeout: 5000 });
 			return;
-		} catch {
+		} catch (error) {
+			// trash exits non-zero when missing; still try unlink for real errors.
+			if (!existsSync(path)) return;
 			// fall through to unlink
+			void error;
 		}
 	}
-	unlinkSync(path);
+	try {
+		unlinkSync(path);
+	} catch (error) {
+		if (isGone(error)) return;
+		throw error;
+	}
 }

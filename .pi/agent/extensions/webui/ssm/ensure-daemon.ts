@@ -97,7 +97,7 @@ async function waitHealth(tries = 40): Promise<DaemonHealth | undefined> {
 
 /**
  * Ensure a fresh ssm-daemon on 17300: stop whatever is running, start anew.
- * Plain `/ssm` uses this — every invocation respawns the daemon with current code.
+ * Used by `/ssm-restart` and by ensure when dead or version-mismatched.
  */
 export async function restartSsmDaemon(): Promise<DaemonHealth> {
 	stopDaemon();

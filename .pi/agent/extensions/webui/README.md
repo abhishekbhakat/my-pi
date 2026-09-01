@@ -3,9 +3,9 @@
 SSM is a **detached manager** on a fixed port. It does not belong to a pi session pid.
 
 ```text
-http://127.0.0.1:17300/ssm           catalog (daemon, survives pi quit)
-http://127.0.0.1:17300/view?path=…   read-only session
-http://127.0.0.1:17300/              live UI (proxied to the pi that registered)
+http://127.0.0.1:17300/ssm              catalog (daemon, survives pi quit)
+http://127.0.0.1:17300/view?path=…      read-only session
+http://127.0.0.1:17300/live?id=<id>     live UI for that session (proxied)
 ```
 
 ## Commands
@@ -13,7 +13,8 @@ http://127.0.0.1:17300/              live UI (proxied to the pi that registered)
 | Command | Action |
 | ------- | ------ |
 | `/ssm` | Ensure daemon, open catalog |
-| `/webui` | Register this session as live, open `/` |
+| `/ssm-restart` | Stop + start daemon on 17300, re-register this session (notify only) |
+| `/webui` | Register this session as live, open `/live?id=<sessionId>` |
 
 ## Daemon
 
@@ -23,7 +24,7 @@ http://127.0.0.1:17300/              live UI (proxied to the pi that registered)
 - Catalog + archive + view from disk
 - Live `/` and `/__webui/*` reverse-proxy to the last registered pi (ephemeral loopback port)
 - No pi attached → stub page on `/`; `/ssm` still works
-- Stop: `~/.pi/agent/bin/ssm-server --stop`
+- Restart from pi: `/ssm-restart` (or `~/.pi/agent/bin/ssm-server --stop` then start again)
 
 Extension no longer binds 17300. It starts an internal live server on a random localhost port and POSTs `/api/live`.
 
@@ -45,6 +46,6 @@ Extension no longer binds 17300. It starts an internal live server on a random l
 make install
 ```
 
-If 17300 is an old in-process webui: quit that pi, or `ssm-server --stop` after install.
+If 17300 is an old in-process webui: quit that pi, `make install`, then `/ssm-restart`.
 
 Then `/reload`. Bookmark `http://127.0.0.1:17300/ssm`.

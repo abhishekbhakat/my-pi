@@ -11,7 +11,7 @@ import { getCoreExportHtmlDir } from "../utils/path";
 
 export function registerWebUiCommand(pi: ExtensionAPI, runtime: WebUiRuntime): void {
 	pi.registerCommand("webui", {
-		description: "Open live session UI (http://127.0.0.1:17300/)",
+		description: "Open this session's live UI on the SSM daemon",
 		handler: async (_args, ctx) => {
 			try {
 				getCoreExportHtmlDir();
@@ -19,17 +19,20 @@ export function registerWebUiCommand(pi: ExtensionAPI, runtime: WebUiRuntime): v
 				await ensureSsmDaemon();
 
 				const themeName = SettingsManager.create(ctx.cwd).getTheme();
+				const sessionId = ctx.sessionManager.getSessionId();
 				const { port } = await ensureWebUiServer(pi, runtime, ctx, themeName);
 				await registerLive({
 					port,
 					pid: process.pid,
-					id: ctx.sessionManager.getSessionId(),
+					id: sessionId,
 					path: ctx.sessionManager.getSessionFile(),
 					cwd: ctx.cwd,
 				});
 
-				ctx.ui.notify(`Web UI: ${SSM_ORIGIN}/live`, "info");
-				await openBrowser(pi, `${SSM_ORIGIN}/live`);
+				// Must include ?id= so daemon pickLive binds this session, not "last registered".
+				const url = `${SSM_ORIGIN}/live?id=${encodeURIComponent(sessionId)}`;
+				ctx.ui.notify(`Web UI: ${url}`, "info");
+				await openBrowser(pi, url);
 			} catch (error) {
 				const message = error instanceof Error ? error.message : String(error);
 				ctx.ui.notify(`Web UI failed: ${message}`, "error");

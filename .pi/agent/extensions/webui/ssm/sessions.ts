@@ -38,7 +38,11 @@ export interface CatalogSnapshot {
 	sessions: SessionSummary[];
 }
 
+/** Cache lives this long; sessions change outside the daemon (pi /new, /delete). */
+const CACHE_TTL_MS = 5_000;
+
 let cache: CatalogSnapshot | undefined;
+let cacheLoadedAt = 0;
 let loadPromise: Promise<CatalogSnapshot> | undefined;
 
 function truncate(text: string, max: number): string {
@@ -114,7 +118,9 @@ function buildFolders(sessions: SessionSummary[]): FolderSummary[] {
 	return folders;
 }
 
-async function loadFresh(): Promise<CatalogSnapshot> {
+let loadGen = 0;
+
+async function loadFresh(gen: number): Promise<CatalogSnapshot> {
 	const infos = await SessionManager.listAll();
 	const validPaths = new Set(infos.map((s) => s.path));
 	pruneMissing(validPaths);
@@ -130,22 +136,30 @@ async function loadFresh(): Promise<CatalogSnapshot> {
 		folders,
 		sessions,
 	};
-	cache = snapshot;
+	// Skip commit if invalidate/newer load superseded this scan.
+	if (gen === loadGen) {
+		cache = snapshot;
+		cacheLoadedAt = Date.now();
+	}
 	return snapshot;
 }
 
-/** Return cached catalog, loading once if empty. */
+/** Return cached catalog (within TTL), loading fresh otherwise. */
 export async function getCatalog(force = false): Promise<CatalogSnapshot> {
-	if (!force && cache) return cache;
+	if (!force && cache && Date.now() - cacheLoadedAt < CACHE_TTL_MS) return cache;
 	if (!force && loadPromise) return loadPromise;
-	loadPromise = loadFresh().finally(() => {
-		loadPromise = undefined;
+	const gen = ++loadGen;
+	const pending = loadFresh(gen).finally(() => {
+		if (loadPromise === pending) loadPromise = undefined;
 	});
-	return loadPromise;
+	loadPromise = pending;
+	return pending;
 }
 
 export function invalidateCatalog(): void {
 	cache = undefined;
+	cacheLoadedAt = 0;
+	loadGen++;
 }
 
 export function findSession(path: string, snapshot?: CatalogSnapshot): SessionSummary | undefined {

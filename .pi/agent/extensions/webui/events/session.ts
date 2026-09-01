@@ -3,7 +3,7 @@ import { SettingsManager } from "@earendil-works/pi-coding-agent";
 import { broadcast, broadcastRuntime, broadcastSession } from "../runtime/broadcast";
 import { ensureWebUiServer, shutdownWebUiServer } from "../server/http-server";
 import { ensureSsmDaemon } from "../ssm/ensure-daemon";
-import { registerLive, unregisterLive } from "../ssm/live-client";
+import { registerLive, unregisterLive, invalidateSsmCatalog } from "../ssm/live-client";
 import type { WebUiRuntime } from "../runtime/types";
 
 function themeFor(cwd: string): string | undefined {
@@ -52,6 +52,8 @@ async function attachLive(
 	};
 	const ok = await registerLive(payload);
 	if (!ok) throw new Error("could not register this pi with ssm-daemon");
+	// New/resumed/deleted-and-restarted session: daemon catalog cache must go.
+	void invalidateSsmCatalog();
 	if (heartbeat) clearInterval(heartbeat);
 	// Heartbeat must not close over event ctx — /delete and friends replace the
 	// session and mark that ctx stale; reading runtime keeps ticks safe.
@@ -154,6 +156,8 @@ export function registerSessionEvents(pi: ExtensionAPI, runtime: WebUiRuntime): 
 	pi.on("session_shutdown", async (event) => {
 		// Drop disposed ctx before any async work so heartbeat/HTTP cannot touch it.
 		clearSessionRefs(runtime);
+		// Catalog may still list this session until force refresh / TTL.
+		void invalidateSsmCatalog();
 		const keep = event.reason === "new" || event.reason === "resume" || event.reason === "fork";
 		if (keep) return;
 		if (heartbeat) {
