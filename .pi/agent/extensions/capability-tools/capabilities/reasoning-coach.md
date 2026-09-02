@@ -3,7 +3,7 @@ name: reasoning-coach
 tool: reasoning_coach
 label: Reasoning Coach
 description: Use strong reasoning model as lightweight planning partner for ambiguity, tradeoffs, constraints, next steps, and risk checks.
-model: opencode/claude-fable-5-1
+model: tukenku/myt/claude-fable-5-1
 promptSnippet: Get concise strategic read on plan, tradeoffs, missing assumptions, and risks
 promptGuidelines: Use this early when requirements, constraints, or tradeoffs are not obvious|Use this for multi-step work before committing to approach|Prefer this when better judgment matter more than more code reading
 includeConversation: true

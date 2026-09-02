@@ -18,9 +18,13 @@
     "xai/grok-4.6",
     "runinfra/deepseek-v4-flash",
     "runinfra/glm-5-3-flash",
-    "celeris/celeris-1-magnus"
+    "celeris/celeris-1-magnus",
+    "claude-code-cli/fable",
+    "tukenku/myt/claude-fable-5-1",
+    "groq/qwen/qwen3.8-27b"
   ],
   "packages": [
-    "npm:pi-intercom"
+    "npm:pi-intercom",
+    "npm:claude-code-pi"
   ]
 }

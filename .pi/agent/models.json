@@ -135,10 +135,30 @@
     "opencode": {
       "models": [
         {
-          "id": "claude-fable-5-1",
-          "name": "Claude Fable 5.1 (OpenCode)",
+          "id": "qwen3.8-flash",
+          "name": "Qwen3.8 Flash (OpenCode)",
           "api": "anthropic-messages",
-          "baseUrl": "https://opencode.ai/zen",
+          "baseUrl": "https://opencode.ai/zen/go",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "contextWindow": 1000000,
+          "maxTokens": 131072,
+          "cost": {
+            "input": 0.15,
+            "output": 0.47,
+            "cacheRead": 0.016,
+            "cacheWrite": 0.2
+          }
+        }
+      ]
+    },
+    "tukenku": {
+      "baseUrl": "https://tukenku.com",
+      "api": "anthropic-messages",
+      "models": [
+        {
+          "id": "myt/claude-fable-5-1",
+          "name": "Claude Fable 5.1 (Tukenku)",
           "reasoning": true,
           "input": ["text"],
           "contextWindow": 1000000,
@@ -153,29 +173,10 @@
             "max": "max"
           },
           "cost": {
-            "input": 10,
-            "output": 50,
-            "cacheRead": 0.25,
+            "input": 2.86,
+            "output": 8.57,
+            "cacheRead": 0.5714,
             "cacheWrite": 12.5
-          },
-          "compat": {
-            "forceAdaptiveThinking": true
-          }
-        },
-        {
-          "id": "qwen3.8-flash",
-          "name": "Qwen3.8 Flash (OpenCode)",
-          "api": "anthropic-messages",
-          "baseUrl": "https://opencode.ai/zen/go",
-          "reasoning": true,
-          "input": ["text", "image"],
-          "contextWindow": 1000000,
-          "maxTokens": 131072,
-          "cost": {
-            "input": 0.15,
-            "output": 0.47,
-            "cacheRead": 0.016,
-            "cacheWrite": 0.2
           }
         }
       ]
@@ -223,6 +224,32 @@
                 "omitWhenOff": true
               }
             }
+          }
+        }
+      ]
+    },
+    "groq": {
+      "baseUrl": "https://api.groq.com/openai/v1",
+      "api": "openai-completions",
+      "compat": {
+        "supportsDeveloperRole": false
+      },
+      "models": [
+        {
+          "id": "qwen/qwen3.8-27b",
+          "name": "Qwen3.8 27B (Groq)",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 131042,
+          "maxTokens": 16384,
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": "low",
+            "medium": null,
+            "high": "high",
+            "xhigh": null,
+            "max": null
           }
         }
       ]
