@@ -3,13 +3,13 @@
   "theme": "tokyo-night",
   "quietStartup": true,
   "hideThinkingBlock": false,
-  "defaultThinkingLevel": "low",
+  "defaultThinkingLevel": "high",
   "steeringMode": "all",
   "followUpMode": "all",
   "enableInstallTelemetry": false,
   "defaultProjectTrust": "always",
-  "defaultProvider": "celeris",
-  "defaultModel": "celeris-1-magnus",
+  "defaultProvider": "xai",
+  "defaultModel": "grok-4.5",
   "enabledModels": [
     "openai-codex/gpt-5.6-sol",
     "openai-codex/gpt-5.6-luna",
@@ -18,7 +18,6 @@
     "xai/grok-4.6",
     "runinfra/deepseek-v4-flash",
     "runinfra/glm-5-3-flash",
-    "runinfra/Qwen/Qwen3.8-Flash-Next-FP8",
     "celeris/celeris-1-magnus"
   ],
   "packages": [

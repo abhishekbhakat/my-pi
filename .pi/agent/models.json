@@ -50,14 +50,6 @@
           "compat": {
             "thinkingFormat": "zai"
           }
-        },
-        {
-          "id": "Qwen/Qwen3.8-Flash-Next-FP8",
-          "name": "Qwen3.8 Flash Next FP8 (RunInfra)",
-          "reasoning": true,
-          "input": ["text", "image"],
-          "contextWindow": 262144,
-          "maxTokens": 131072
         }
       ]
     },
@@ -142,6 +134,34 @@
     },
     "opencode": {
       "models": [
+        {
+          "id": "claude-fable-5-1",
+          "name": "Claude Fable 5.1 (OpenCode)",
+          "api": "anthropic-messages",
+          "baseUrl": "https://opencode.ai/zen",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 1000000,
+          "maxTokens": 128000,
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": null,
+            "medium": null,
+            "high": null,
+            "xhigh": null,
+            "max": "max"
+          },
+          "cost": {
+            "input": 10,
+            "output": 50,
+            "cacheRead": 0.25,
+            "cacheWrite": 12.5
+          },
+          "compat": {
+            "forceAdaptiveThinking": true
+          }
+        },
         {
           "id": "qwen3.8-flash",
           "name": "Qwen3.8 Flash (OpenCode)",

@@ -160,12 +160,12 @@ If reader read only first line and last line, they must know (a) what to do next
 | ----------------- | ------------------------------------------------------ |
 | `reasoning_coach` | Ambiguity, tradeoffs, constraints, risk                |
 | `code_scout`      | Edit-point mapping in unfamiliar code                  |
-| `patch_reviewer`  | After changes, before final answer                     |
+| `patch_reviewer`  | After changes, before final answer. Ask user first     |
 | `commit_message`  | User want commit message. Call this; do not invent one |
 
 Give them task and, when useful, short list of relevant paths.
 
-Default flow: `code_scout` if area unclear. `reasoning_coach` when task have ambiguity, several viable approaches, strict constraints, or high regression risk. Then execute. Then `patch_reviewer`.
+Default flow: `code_scout` if area unclear. `reasoning_coach` when task have ambiguity, several viable approaches, strict constraints, or high regression risk. Then execute. Then ask user for confirmation before launching `patch_reviewer`. Never launch it without explicit yes.
 
 ## Project Conventions
 

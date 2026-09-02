@@ -4,5 +4,7 @@
   "notify": true,
   "retryDelayMs": 60000,
   "compactModel": "openai-codex/gpt-5.6-luna",
-  "compactThinking": "max"
+  "compactThinking": "max",
+  "autoResume": true,
+  "maxResumes": 3
 }

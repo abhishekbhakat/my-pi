@@ -21,6 +21,13 @@ export type ThinkingLevelName = (typeof THINKING_LEVELS)[number];
 /** Default thinking level for the fixed compaction model. */
 export const DEFAULT_COMPACT_THINKING: ThinkingLevelName = "max";
 
+/** Resume an interrupted task after a threshold auto-compact. Default true. */
+export const DEFAULT_AUTO_RESUME = true;
+/** Max auto-resumes per session before stopping (loop bound). Default 3. */
+export const DEFAULT_MAX_RESUMES = 3;
+export const MIN_MAX_RESUMES = 0;
+export const MAX_MAX_RESUMES = 10;
+
 export type ModelRef = { provider: string; modelId: string };
 
 /** Parse "provider/modelId" (modelId may contain further slashes). */
@@ -47,6 +54,19 @@ export type AutoCompactConfig = {
 	compactModel: string;
 	/** Thinking level for the fixed compaction model. Default "max". */
 	compactThinking: ThinkingLevelName;
+	/**
+	 * Resume a task the native threshold auto-compact interrupted mid-turn
+	 * (last assistant message was still requesting tools). Overflow retries
+	 * via the SDK and manual /compact is user-controlled, so neither resumes.
+	 * Default true.
+	 */
+	autoResume: boolean;
+	/**
+	 * Max auto-resumes per session before stopping. Bounds the compact-resume
+	 * loop so a tool loop that keeps crossing the threshold cannot run
+	 * unattended forever. Resets on a new session. Default 3.
+	 */
+	maxResumes: number;
 };
 
 export const DEFAULT_CONFIG: AutoCompactConfig = {
@@ -56,6 +76,8 @@ export const DEFAULT_CONFIG: AutoCompactConfig = {
 	retryDelayMs: DEFAULT_RETRY_DELAY_MS,
 	compactModel: "",
 	compactThinking: DEFAULT_COMPACT_THINKING,
+	autoResume: DEFAULT_AUTO_RESUME,
+	maxResumes: DEFAULT_MAX_RESUMES,
 };
 
 export function configPath(): string {
@@ -84,6 +106,11 @@ function cleanCompactThinking(value: string | undefined): ThinkingLevelName {
 		: DEFAULT_COMPACT_THINKING;
 }
 
+function cleanMaxResumes(value: number | undefined): number {
+	if (typeof value !== "number" || !Number.isFinite(value)) return DEFAULT_MAX_RESUMES;
+	return Math.min(MAX_MAX_RESUMES, Math.max(MIN_MAX_RESUMES, Math.round(value)));
+}
+
 export function readConfig(): AutoCompactConfig {
 	const path = configPath();
 	if (!existsSync(path)) return { ...DEFAULT_CONFIG };
@@ -102,6 +129,8 @@ export function readConfig(): AutoCompactConfig {
 					: DEFAULT_CONFIG.retryDelayMs,
 			compactModel: cleanCompactModel(parsed.compactModel),
 			compactThinking: cleanCompactThinking(parsed.compactThinking),
+			autoResume: typeof parsed.autoResume === "boolean" ? parsed.autoResume : DEFAULT_CONFIG.autoResume,
+			maxResumes: cleanMaxResumes(parsed.maxResumes),
 		};
 	} catch (error) {
 		console.error(`Warning: Could not parse ${path}: ${error}`);
@@ -117,6 +146,8 @@ export function writeConfig(config: AutoCompactConfig): void {
 		retryDelayMs: clampRetryDelay(config.retryDelayMs),
 		compactModel: cleanCompactModel(config.compactModel),
 		compactThinking: cleanCompactThinking(config.compactThinking),
+		autoResume: config.autoResume,
+		maxResumes: cleanMaxResumes(config.maxResumes),
 	};
 	writeFileSync(configPath(), `${JSON.stringify(next, null, 2)}\n`, "utf-8");
 }
