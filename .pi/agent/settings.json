@@ -8,8 +8,8 @@
   "followUpMode": "all",
   "enableInstallTelemetry": false,
   "defaultProjectTrust": "always",
-  "defaultProvider": "xai",
-  "defaultModel": "grok-4.5",
+  "defaultProvider": "google",
+  "defaultModel": "gemini-3.8-flash",
   "enabledModels": [
     "openai-codex/gpt-5.6-sol",
     "openai-codex/gpt-5.6-luna",
@@ -21,7 +21,8 @@
     "celeris/celeris-1-magnus",
     "claude-code-cli/fable",
     "tukenku/myt/claude-fable-5-1",
-    "groq/qwen/qwen3.8-27b"
+    "groq/qwen/qwen3.8-27b",
+    "google/gemini-3.8-flash"
   ],
   "packages": [
     "npm:pi-intercom",

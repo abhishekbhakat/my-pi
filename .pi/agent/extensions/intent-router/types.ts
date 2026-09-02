@@ -65,7 +65,7 @@ export const ROUTE_KEYS: RouteKey[] = [
 	"instruction.terminal.adv",
 ];
 
-export const DEFAULT_GEMINI_MODEL = "gemini-3.7-flash";
+export const DEFAULT_GEMINI_MODEL = "gemini-3.8-flash";
 export const DEFAULT_CLASSIFIER_BASE_URL = "https://openrouter.ai/api/v1";
 export const PROBE_PROMPT = "What is a git commit?";
 
