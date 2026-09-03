@@ -3,7 +3,7 @@ name: reasoning-coach
 tool: reasoning_coach
 label: Reasoning Coach
 description: Use strong reasoning model as lightweight planning partner for ambiguity, tradeoffs, constraints, next steps, and risk checks.
-model: tukenku/myt/claude-fable-5-1
+model: claude-code-cli/fable
 promptSnippet: Get concise strategic read on plan, tradeoffs, missing assumptions, and risks
 promptGuidelines: Use this early when requirements, constraints, or tradeoffs are not obvious|Use this for multi-step work before committing to approach|Prefer this when better judgment matter more than more code reading
 includeConversation: true
@@ -12,7 +12,7 @@ includeGitStatus: true
 includeGitDiff: false
 includeChangedFiles: true
 includeTimeline: true
-timelineModel: runinfra/deepseek-v4-flash
+timelineModel: google/gemini-3.8-flash
 maxContextChars: 500000
 reasoningEffort: max
 ---

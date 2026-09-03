@@ -15,6 +15,20 @@ Do not edit `~/.pi` by hand. Install is the only write path into the live agent.
 AGENTS.md               rules for agents working in this repo
 ```
 
+## Context window caps
+
+You cap seven models at 262144 in `.pi/agent/models.json` to reserve headroom for tool and reasoning overhead:
+
+- `runinfra/deepseek-v4-flash`
+- `runinfra/glm-5-3-flash`
+- `google/gemini-3.8-flash`
+- `xai/grok-4.5` (modelOverrides)
+- `xai/grok-4.6` (modelOverrides)
+- `opencode/muse-spark-1.3-contributor-free`
+- `commandcode/meta/muse-spark-1.3-contributor`
+
+You keep full windows elsewhere, such as `commandcode/z-ai/glm-5.3-flash` at 1048576. Edit the values in `models.json`, then run `make install` and `/reload` in pi.
+
 ## Install
 
 Copy the repo into the live agent:

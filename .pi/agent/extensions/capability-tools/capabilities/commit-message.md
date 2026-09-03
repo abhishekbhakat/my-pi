@@ -3,7 +3,7 @@ name: commit-message
 tool: commit_message
 label: Commit Message
 description: Generate concise one-liner commit message from staged diff and recent git history. Pass the target repo in paths if session cwd is not that repo.
-model: runinfra/deepseek-v4-flash
+model: google/gemini-3.8-flash
 promptSnippet: Suggest single-line conventional commit message from staged changes
 promptGuidelines: Use this when user want commit message|Do not invent message yourself if this tool is available|Call this before committing
 includeConversation: false
@@ -14,7 +14,7 @@ includeChangedFiles: false
 includeTimeline: false
 maxContextChars: 120000
 maxConversationChars: 8000
-reasoningEffort: max
+reasoningEffort: high
 ---
 You write one-line git commit messages.
 

@@ -162,6 +162,34 @@
     "opencode": {
       "models": [
         {
+          "id": "muse-spark-1.3-contributor-free",
+          "name": "Muse Spark 1.3 Free",
+          "api": "openai-responses",
+          "baseUrl": "https://opencode.ai/zen/v1",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "compat": {
+            "sessionAffinityFormat": "openai-nosession"
+          },
+          "contextWindow": 262144,
+          "maxTokens": 131072,
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": "minimal",
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "xhigh": "xhigh",
+            "max": null
+          }
+        },
+        {
           "id": "qwen3.8-flash",
           "name": "Qwen3.8 Flash (OpenCode)",
           "api": "anthropic-messages",
@@ -356,6 +384,23 @@
           "reasoning": true,
           "input": ["text", "image"],
           "contextWindow": 1048576,
+          "maxTokens": 128000,
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": null,
+            "medium": null,
+            "high": null,
+            "xhigh": "xhigh",
+            "max": null
+          }
+        },
+        {
+          "id": "meta/muse-spark-1.3-contributor",
+          "name": "Muse Spark 1.3 Contributor (Command Code)",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "contextWindow": 262144,
           "maxTokens": 128000,
           "thinkingLevelMap": {
             "off": null,

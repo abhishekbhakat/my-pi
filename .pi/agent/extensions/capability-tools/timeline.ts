@@ -1,5 +1,4 @@
 import { createHash } from "node:crypto";
-import { complete } from "@earendil-works/pi-ai";
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import type { CapabilityDef } from "./types";
 
@@ -75,7 +74,7 @@ export async function collectActionTimeline(
 	if (!auth.ok || (!auth.apiKey && !auth.headers)) return "";
 
 	try {
-		const response = await complete(
+		const response = await ctx.modelRegistry.complete(
 			model,
 			{
 				systemPrompt: TIMELINE_SYSTEM_PROMPT,

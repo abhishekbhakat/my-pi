@@ -1,4 +1,4 @@
-import { stream } from "@earendil-works/pi-ai";
+import { stream as piAiStream } from "@earendil-works/pi-ai";
 import type { AgentToolUpdateCallback } from "@earendil-works/pi-coding-agent";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { buildCapabilityContext, buildCapabilityPrompt } from "./context";
@@ -183,26 +183,30 @@ export async function executeCapability(
 	});
 
 	try {
-		const eventStream = stream(
-			model,
-			{
-				systemPrompt: def.systemPrompt,
-				messages: [
-					{
-						role: "user",
-						content: [{ type: "text", text: prompt }],
-						timestamp: Date.now(),
-					},
-				],
-			},
-			{
-				apiKey: auth.apiKey,
-				headers: auth.headers,
-				signal,
-				reasoningEffort: model.reasoning ? def.reasoningEffort : undefined,
-				serviceTier,
-			},
-		);
+		// Route through composed provider so custom extension APIs
+		// (e.g. claude-code-cli-runner) resolve. Fall back to pi-ai
+		// direct stream only when provider missing.
+		const provider = ctx.modelRegistry.getProvider(model.provider);
+		const requestContext = {
+			systemPrompt: def.systemPrompt,
+			messages: [
+				{
+					role: "user",
+					content: [{ type: "text", text: prompt }],
+					timestamp: Date.now(),
+				},
+			],
+		};
+		const requestOptions = {
+			apiKey: auth.apiKey,
+			headers: auth.headers,
+			signal,
+			reasoningEffort: model.reasoning ? def.reasoningEffort : undefined,
+			serviceTier,
+		};
+		const eventStream = provider
+			? provider.stream(model, requestContext, requestOptions)
+			: piAiStream(model, requestContext, requestOptions);
 
 		// Drain stream so result() can settle. UI shows a 2-line live preview
 		// from text, or thinking while the model is still reasoning.
