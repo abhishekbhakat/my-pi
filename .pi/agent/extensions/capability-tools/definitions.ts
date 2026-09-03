@@ -26,7 +26,7 @@ const DEFAULTS = {
 	includeGitDiff: false,
 	includeChangedFiles: true,
 	includeTimeline: false,
-	timelineModel: "google/gemini-3.8-flash",
+	timelineModel: "openrouter/google/gemini-3.8-flash",
 	timelineReasoningEffort: "low",
 	maxContextChars: 360000,
 	maxConversationChars: 40000,

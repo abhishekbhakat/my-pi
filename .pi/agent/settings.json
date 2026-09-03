@@ -8,8 +8,8 @@
   "followUpMode": "all",
   "enableInstallTelemetry": false,
   "defaultProjectTrust": "always",
-  "defaultProvider": "opencode",
-  "defaultModel": "muse-spark-1.3-contributor-free",
+  "defaultProvider": "xai",
+  "defaultModel": "grok-4.5",
   "enabledModels": [
     "openai-codex/gpt-5.6-sol",
     "openai-codex/gpt-5.6-luna",
@@ -19,15 +19,16 @@
     "runinfra/deepseek-v4-flash",
     "runinfra/glm-5-3-flash",
     "celeris/celeris-1-magnus",
-    "claude-code-cli/fable",
+    "claude-code-cli/claude-fable-5-1",
     "tukenku/myt/claude-fable-5-1",
     "groq/qwen/qwen3.8-27b",
     "google/gemini-3.8-flash",
     "opencode/muse-spark-1.3-contributor-free",
-    "commandcode/meta/muse-spark-1.3-contributor"
+    "commandcode/meta/muse-spark-1.3-contributor",
+    "openrouter/google/gemini-3.8-flash",
+    "openrouter/meta/muse-spark-1.3-contributor"
   ],
   "packages": [
-    "npm:pi-intercom",
     "npm:claude-code-pi"
   ]
 }
