@@ -18,6 +18,7 @@
     "xai/grok-4.6",
     "runinfra/deepseek-v4-flash",
     "runinfra/glm-5-3-flash",
+    "inferx/glm-5.3-flash",
     "celeris/celeris-1-magnus",
     "claude-code-cli/claude-fable-5-1",
     "tukenku/myt/claude-fable-5-1",

@@ -45,7 +45,7 @@
             "medium": null,
             "high": "high",
             "xhigh": null,
-            "max": null
+            "max": "max"
           },
           "compat": {
             "thinkingFormat": "zai"
@@ -341,6 +341,37 @@
                 "omitWhenOff": true
               }
             }
+          }
+        }
+      ]
+    },
+    "inferx": {
+      "baseUrl": "https://model.inferx.net/endpoints/v1",
+      "api": "openai-completions",
+      "compat": {
+        "supportsStore": false,
+        "supportsDeveloperRole": false,
+        "maxTokensField": "max_tokens"
+      },
+      "models": [
+        {
+          "id": "glm-5.3-flash",
+          "name": "GLM 5.3 Flash (InferX)",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 1048576,
+          "maxTokens": 131072,
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": "low",
+            "medium": null,
+            "high": "high",
+            "xhigh": null,
+            "max": "max"
+          },
+          "compat": {
+            "thinkingFormat": "zai"
           }
         }
       ]
