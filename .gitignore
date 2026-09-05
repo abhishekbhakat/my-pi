@@ -23,3 +23,6 @@ Thumbs.db
 
 # IDE
 .vscode/
+
+# Plan skill state
+.agents/PLAN*.md
