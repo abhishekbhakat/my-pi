@@ -123,13 +123,13 @@
     },
     "openai-codex": {
       "modelOverrides": {
-        "gpt-5.6-luna": {
+        "gpt-6-astra": {
           "thinkingLevelMap": {
             "off": null,
             "minimal": null,
             "low": null,
             "medium": null,
-            "high": null,
+            "high": "high",
             "xhigh": "xhigh",
             "max": "max"
           }
@@ -298,6 +298,34 @@
         }
       ]
     },
+    "openlux": {
+      "baseUrl": "https://api.openlux.ai/v1",
+      "api": "openai-completions",
+      "compat": {
+        "supportsStore": false,
+        "supportsDeveloperRole": false,
+        "maxTokensField": "max_tokens"
+      },
+      "models": [
+        {
+          "id": "claude-fable-5-1",
+          "name": "Claude Fable 5.1 (OpenLux)",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "contextWindow": 1000000,
+          "maxTokens": 128000,
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": null,
+            "medium": null,
+            "high": null,
+            "xhigh": null,
+            "max": "max"
+          }
+        }
+      ]
+    },
     "celeris": {
       "baseUrl": "https://inference.celeris.ai/celeris-1-magnus/v1",
       "api": "openai-completions",
@@ -359,7 +387,7 @@
           "name": "GLM 5.3 Flash (InferX)",
           "reasoning": true,
           "input": ["text"],
-          "contextWindow": 1048576,
+          "contextWindow": 262144,
           "maxTokens": 131072,
           "thinkingLevelMap": {
             "off": null,

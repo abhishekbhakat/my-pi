@@ -108,16 +108,6 @@ function rmTree(dir) {
   fs.rmSync(dir, { recursive: true, force: true });
 }
 
-function copyDirReplace(src, dst) {
-  if (!exists(src)) return false;
-  rmTree(dst);
-  fs.cpSync(src, dst, { recursive: true });
-  for (const file of walkFiles(dst)) {
-    if (path.basename(file) === "package-lock.json") fs.rmSync(file, { force: true });
-  }
-  return true;
-}
-
 function* walkFiles(root) {
   if (!exists(root)) return;
   const stack = [root];
@@ -138,6 +128,73 @@ function* walkFiles(root) {
       }
     }
   }
+}
+
+function pruneEmptyDirs(root) {
+  if (!exists(root)) return;
+  const stack = [root];
+  const seen = [];
+  while (stack.length) {
+    const current = stack.pop();
+    let entries;
+    try {
+      entries = fs.readdirSync(current, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      if (!entry.isDirectory() || SKIP_DIRS.has(entry.name)) continue;
+      stack.push(path.join(current, entry.name));
+    }
+    seen.push(current);
+  }
+  for (let i = seen.length - 1; i >= 0; i -= 1) {
+    const dir = seen[i];
+    if (dir === root) continue;
+    try {
+      if (fs.readdirSync(dir).length === 0) fs.rmdirSync(dir);
+    } catch {
+      // ignore race / non-empty
+    }
+  }
+}
+
+/** Mirror src -> dst file-by-file. Skips node_modules/.git. Preserves those dirs on dst. */
+function copyDirReplace(src, dst) {
+  if (!exists(src)) return null;
+  const started = Date.now();
+  fs.mkdirSync(dst, { recursive: true });
+  const srcRels = new Set();
+  let files = 0;
+  let unchanged = 0;
+  for (const file of walkFiles(src)) {
+    const rel = relPosix(src, file);
+    srcRels.add(rel);
+    const out = path.join(dst, ...rel.split("/"));
+    const bytes = fs.readFileSync(file);
+    if (exists(out)) {
+      try {
+        if (Buffer.compare(bytes, fs.readFileSync(out)) === 0) {
+          unchanged += 1;
+          continue;
+        }
+      } catch {
+        // fall through to copy
+      }
+    }
+    fs.mkdirSync(path.dirname(out), { recursive: true });
+    fs.writeFileSync(out, bytes);
+    files += 1;
+  }
+  let removed = 0;
+  for (const file of walkFiles(dst)) {
+    const rel = relPosix(dst, file);
+    if (srcRels.has(rel)) continue;
+    fs.rmSync(file, { force: true });
+    removed += 1;
+  }
+  pruneEmptyDirs(dst);
+  return { files, unchanged, removed, ms: Date.now() - started };
 }
 
 function relPosix(from, to) {
@@ -186,8 +243,21 @@ function writeIfChanged(src, dst, stats) {
   return true;
 }
 
-function run(cmd, args, cwd) {
-  return spawnSync(cmd, args, { cwd, stdio: "ignore", shell: process.platform === "win32" });
+function run(cmd, args, cwd, options = {}) {
+  const stdio = options.stdio ?? "ignore";
+  const label = options.label;
+  if (label) {
+    console.log(`  $ ${cmd} ${args.join(" ")}`);
+    console.log(`  cwd: ${cwd}`);
+  }
+  const started = Date.now();
+  const result = spawnSync(cmd, args, { cwd, stdio, shell: process.platform === "win32" });
+  if (label) {
+    const ms = Date.now() - started;
+    if (result.error) console.log(`  ${label} error after ${ms}ms: ${result.error.message}`);
+    else console.log(`  ${label} exited ${result.status} in ${ms}ms`);
+  }
+  return result;
 }
 
 function parseArgs(argv) {
@@ -276,22 +346,35 @@ function install(flags) {
     if (label === "skills") applySparseCheckouts(path.join(REPO_AGENT, "skills"));
     if (label === "extensions") {
       console.log("[extensions]");
-      if (copyDirReplace(path.join(REPO_AGENT, name), path.join(HOME_AGENT, name))) {
-        console.log("  Files copied.");
+      const extStats = copyDirReplace(path.join(REPO_AGENT, name), path.join(HOME_AGENT, name));
+      if (extStats) {
+        console.log(`  Mirrored ${extStats.files} files (${extStats.unchanged} unchanged), removed ${extStats.removed} orphans in ${extStats.ms}ms`);
+        console.log("  Skipped: node_modules, .git (preserved on live if present)");
         copied += 1;
       }
       console.log("");
       const extDir = path.join(HOME_AGENT, "extensions");
       if (exists(path.join(extDir, "package.json"))) {
         console.log("[extensions npm]");
-        const result = run("npm", ["install"], extDir);
-        console.log(result.status === 0 ? "  npm install complete.\n" : "  WARNING: npm install failed.\n");
+        const lock = path.join(extDir, "package-lock.json");
+        const nm = path.join(extDir, "node_modules");
+        console.log(`  package-lock.json: ${exists(lock) ? "yes" : "missing (full resolve)"}`);
+        console.log(`  node_modules: ${exists(nm) ? "preserved" : "absent (cold install)"}`);
+        console.log("  starting npm install (output below)...");
+        const result = run("npm", ["install", "--omit=dev", "--no-fund", "--no-audit"], extDir, {
+          stdio: "inherit",
+          label: "npm install",
+        });
+        if (result.status === 0) console.log("  npm install complete.\n");
+        else console.log(`  WARNING: npm install failed (status ${result.status ?? "unknown"}).\n`);
       }
       continue;
     }
     console.log(`[${label}]`);
-    if (copyDirReplace(path.join(REPO_AGENT, name), path.join(HOME_AGENT, name))) {
-      console.log("  Files copied.");
+    const stats = copyDirReplace(path.join(REPO_AGENT, name), path.join(HOME_AGENT, name));
+    if (stats) {
+      console.log(`  Mirrored ${stats.files} files (${stats.unchanged} unchanged), removed ${stats.removed} orphans in ${stats.ms}ms`);
+      console.log("  Skipped: node_modules, .git");
       copied += 1;
     }
     console.log("");
