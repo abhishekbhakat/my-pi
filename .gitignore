@@ -17,6 +17,9 @@
 .pi/.cocoindex_code/
 .cocoindex_code/
 
+# zvec-grep (zg) local workspace index
+.zvec-grep/
+
 # OS
 .DS_Store
 Thumbs.db
