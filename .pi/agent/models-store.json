@@ -98,7 +98,7 @@
         }
       }
     ],
-    "checkedAt": 1788632908985,
+    "checkedAt": 1788778509142,
     "lastModified": 1788511363000,
     "etag": "W/\"624e5130eed0dad1159e9074528caa34\""
   },
@@ -393,7 +393,7 @@
         }
       }
     ],
-    "checkedAt": 1788632908920,
+    "checkedAt": 1788778509183,
     "lastModified": 1788552640000,
     "etag": "W/\"d1bab54af7a1a3ffdc37c8c22afc1b4d\""
   },
@@ -1857,9 +1857,9 @@
           "text"
         ],
         "cost": {
-          "input": 0.0875,
-          "output": 0.175,
-          "cacheRead": 0.0175,
+          "input": 0.088606,
+          "output": 0.177212,
+          "cacheRead": 0.017721,
           "cacheWrite": 0
         },
         "contextWindow": 1024000,
@@ -1890,13 +1890,13 @@
           "text"
         ],
         "cost": {
-          "input": 0.065,
-          "output": 0.18,
-          "cacheRead": 0.016,
+          "input": 0.14,
+          "output": 0.28,
+          "cacheRead": 0.028,
           "cacheWrite": 0
         },
         "contextWindow": 1048576,
-        "maxTokens": 943718,
+        "maxTokens": 131072,
         "compat": {
           "supportsDeveloperRole": false,
           "thinkingFormat": "openrouter",
@@ -1990,9 +1990,9 @@
           "text"
         ],
         "cost": {
-          "input": 0.9918,
-          "output": 1.9836,
-          "cacheRead": 0.08265,
+          "input": 0.95526,
+          "output": 1.91052,
+          "cacheRead": 0.079605,
           "cacheWrite": 0
         },
         "contextWindow": 1024000,
@@ -2023,9 +2023,9 @@
           "text"
         ],
         "cost": {
-          "input": 0.57948,
-          "output": 1.73844,
-          "cacheRead": 0.019316,
+          "input": 1.0494,
+          "output": 3.1482,
+          "cacheRead": 0.03498,
           "cacheWrite": 0
         },
         "contextWindow": 1024000,
@@ -6779,6 +6779,134 @@
         }
       },
       {
+        "id": "openai/gpt-6-astra",
+        "name": "OpenAI: GPT-6 Astra",
+        "api": "openai-completions",
+        "baseUrl": "https://openrouter.ai/api/v1",
+        "provider": "openrouter",
+        "reasoning": true,
+        "thinkingLevelMap": {
+          "off": null,
+          "minimal": null,
+          "low": "low",
+          "medium": "medium",
+          "high": "high",
+          "xhigh": "xhigh",
+          "max": "max"
+        },
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 10,
+          "output": 50,
+          "cacheRead": 1,
+          "cacheWrite": 12.5
+        },
+        "contextWindow": 1050000,
+        "maxTokens": 128000,
+        "compat": {
+          "thinkingFormat": "openrouter"
+        }
+      },
+      {
+        "id": "openai/gpt-6-astra-pro",
+        "name": "OpenAI: GPT-6 Astra Pro",
+        "api": "openai-completions",
+        "baseUrl": "https://openrouter.ai/api/v1",
+        "provider": "openrouter",
+        "reasoning": true,
+        "thinkingLevelMap": {
+          "off": null,
+          "minimal": null,
+          "low": "low",
+          "medium": "medium",
+          "high": "high",
+          "xhigh": "xhigh",
+          "max": "max"
+        },
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 10,
+          "output": 50,
+          "cacheRead": 1,
+          "cacheWrite": 12.5
+        },
+        "contextWindow": 1050000,
+        "maxTokens": 128000,
+        "compat": {
+          "thinkingFormat": "openrouter"
+        }
+      },
+      {
+        "id": "openai/gpt-6-astra-pro:batch",
+        "name": "OpenAI: GPT-6 Astra Pro (batch)",
+        "api": "openai-completions",
+        "baseUrl": "https://openrouter.ai/api/v1",
+        "provider": "openrouter",
+        "reasoning": true,
+        "thinkingLevelMap": {
+          "off": null,
+          "minimal": null,
+          "low": "low",
+          "medium": "medium",
+          "high": "high",
+          "xhigh": "xhigh",
+          "max": "max"
+        },
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 5,
+          "output": 25,
+          "cacheRead": 0.5,
+          "cacheWrite": 6.25
+        },
+        "contextWindow": 1050000,
+        "maxTokens": 128000,
+        "compat": {
+          "thinkingFormat": "openrouter"
+        }
+      },
+      {
+        "id": "openai/gpt-6-astra:batch",
+        "name": "OpenAI: GPT-6 Astra (batch)",
+        "api": "openai-completions",
+        "baseUrl": "https://openrouter.ai/api/v1",
+        "provider": "openrouter",
+        "reasoning": true,
+        "thinkingLevelMap": {
+          "off": null,
+          "minimal": null,
+          "low": "low",
+          "medium": "medium",
+          "high": "high",
+          "xhigh": "xhigh",
+          "max": "max"
+        },
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 5,
+          "output": 25,
+          "cacheRead": 0.5,
+          "cacheWrite": 6.25
+        },
+        "contextWindow": 1050000,
+        "maxTokens": 128000,
+        "compat": {
+          "thinkingFormat": "openrouter"
+        }
+      },
+      {
         "id": "openai/gpt-audio",
         "name": "OpenAI: GPT Audio",
         "api": "openai-completions",
@@ -7544,13 +7672,13 @@
           "text"
         ],
         "cost": {
-          "input": 0.0875,
-          "output": 0.35,
-          "cacheRead": 0.0175,
+          "input": 0.09,
+          "output": 0.55,
+          "cacheRead": 0,
           "cacheWrite": 0
         },
         "contextWindow": 262144,
-        "maxTokens": 235929,
+        "maxTokens": 16384,
         "compat": {
           "supportsDeveloperRole": false,
           "thinkingFormat": "openrouter"
@@ -7903,8 +8031,8 @@
           "cacheRead": 0,
           "cacheWrite": 0
         },
-        "contextWindow": 131072,
-        "maxTokens": 32768,
+        "contextWindow": 262144,
+        "maxTokens": 235929,
         "compat": {
           "supportsDeveloperRole": false,
           "thinkingFormat": "openrouter"
@@ -8147,12 +8275,12 @@
           "image"
         ],
         "cost": {
-          "input": 0.08,
-          "output": 0.75,
-          "cacheRead": 0,
+          "input": 0.3125,
+          "output": 1.25,
+          "cacheRead": 0.15625,
           "cacheWrite": 0
         },
-        "contextWindow": 262144,
+        "contextWindow": 256000,
         "maxTokens": 16384,
         "compat": {
           "supportsDeveloperRole": false,
@@ -8171,13 +8299,13 @@
           "image"
         ],
         "cost": {
-          "input": 0.55,
-          "output": 3.5,
-          "cacheRead": 0.225,
+          "input": 0.39,
+          "output": 2.34,
+          "cacheRead": 0,
           "cacheWrite": 0
         },
         "contextWindow": 262144,
-        "maxTokens": 235929,
+        "maxTokens": 65536,
         "compat": {
           "supportsDeveloperRole": false,
           "thinkingFormat": "openrouter"
@@ -8615,8 +8743,8 @@
         }
       },
       {
-        "id": "qwen/qwen3.8-max",
-        "name": "Qwen: Qwen3.8 Max",
+        "id": "qwen/qwen3.8-max-0902",
+        "name": "Qwen: Qwen3.8 Max (0902)",
         "api": "openai-completions",
         "baseUrl": "https://openrouter.ai/api/v1",
         "provider": "openrouter",
@@ -8862,9 +8990,9 @@
           "text"
         ],
         "cost": {
-          "input": 0.0825,
-          "output": 0.33,
-          "cacheRead": 0.020625,
+          "input": 0.132,
+          "output": 0.528,
+          "cacheRead": 0.033,
           "cacheWrite": 0
         },
         "contextWindow": 262144,
@@ -8954,8 +9082,8 @@
           "cacheRead": 0,
           "cacheWrite": 0
         },
-        "contextWindow": 32768,
-        "maxTokens": 26214,
+        "contextWindow": 1024000,
+        "maxTokens": 819200,
         "compat": {
           "supportsDeveloperRole": false,
           "thinkingFormat": "openrouter"
@@ -9516,13 +9644,13 @@
           "text"
         ],
         "cost": {
-          "input": 0.55,
-          "output": 2.2,
-          "cacheRead": 0.11,
+          "input": 0.43,
+          "output": 1.75,
+          "cacheRead": 0.08,
           "cacheWrite": 0
         },
-        "contextWindow": 204800,
-        "maxTokens": 131072,
+        "contextWindow": 198000,
+        "maxTokens": 16384,
         "compat": {
           "supportsDeveloperRole": false,
           "thinkingFormat": "openrouter"
@@ -9700,38 +9828,6 @@
         }
       },
       {
-        "id": "z-ai/glm-5.2:free",
-        "name": "Z.ai: GLM 5.2 (free)",
-        "api": "openai-completions",
-        "baseUrl": "https://openrouter.ai/api/v1",
-        "provider": "openrouter",
-        "reasoning": true,
-        "thinkingLevelMap": {
-          "off": "none",
-          "minimal": null,
-          "low": null,
-          "medium": null,
-          "high": "high",
-          "xhigh": "xhigh",
-          "max": null
-        },
-        "input": [
-          "text"
-        ],
-        "cost": {
-          "input": 0,
-          "output": 0,
-          "cacheRead": 0,
-          "cacheWrite": 0
-        },
-        "contextWindow": 256000,
-        "maxTokens": 230400,
-        "compat": {
-          "supportsDeveloperRole": false,
-          "thinkingFormat": "openrouter"
-        }
-      },
-      {
         "id": "z-ai/glm-5.3",
         "name": "Z.ai: GLM 5.3",
         "api": "openai-completions",
@@ -9753,11 +9849,11 @@
         "cost": {
           "input": 1.4,
           "output": 4.4,
-          "cacheRead": 0.14,
+          "cacheRead": 0.26,
           "cacheWrite": 0
         },
         "contextWindow": 1048576,
-        "maxTokens": 262144,
+        "maxTokens": 943718,
         "compat": {
           "supportsDeveloperRole": false,
           "thinkingFormat": "openrouter"
@@ -10000,13 +10096,13 @@
           "text"
         ],
         "cost": {
-          "input": 0.04998,
-          "output": 0.09996,
-          "cacheRead": 0.009996,
+          "input": 0.05,
+          "output": 0.16,
+          "cacheRead": 0.013,
           "cacheWrite": 0
         },
         "contextWindow": 1048576,
-        "maxTokens": 131072,
+        "maxTokens": 393216,
         "compat": {
           "supportsDeveloperRole": false,
           "thinkingFormat": "openrouter",
@@ -10100,9 +10196,9 @@
           "image"
         ],
         "cost": {
-          "input": 2.5,
-          "output": 14,
-          "cacheRead": 0.29,
+          "input": 2.55,
+          "output": 12.75,
+          "cacheRead": 0.256,
           "cacheWrite": 0
         },
         "contextWindow": 1048576,
@@ -10232,13 +10328,13 @@
           "image"
         ],
         "cost": {
-          "input": 0.075,
-          "output": 0.25,
-          "cacheRead": 0.015,
+          "input": 0.07125,
+          "output": 0.2375,
+          "cacheRead": 0.01425,
           "cacheWrite": 0
         },
         "contextWindow": 1048576,
-        "maxTokens": 943718,
+        "maxTokens": 131072,
         "compat": {
           "supportsDeveloperRole": false,
           "thinkingFormat": "openrouter"
@@ -10264,22 +10360,22 @@
           "text"
         ],
         "cost": {
-          "input": 1.15,
-          "output": 3.5,
-          "cacheRead": 0.1,
+          "input": 1.12,
+          "output": 3.52,
+          "cacheRead": 0.208,
           "cacheWrite": 0
         },
-        "contextWindow": 262144,
-        "maxTokens": 235929,
+        "contextWindow": 1048576,
+        "maxTokens": 943718,
         "compat": {
           "supportsDeveloperRole": false,
           "thinkingFormat": "openrouter"
         }
       }
     ],
-    "checkedAt": 1788632908809,
-    "lastModified": 1788552643000,
-    "etag": "W/\"2b295ddd3a6b0a5e5a927529188b439e\""
+    "checkedAt": 1788778509161,
+    "lastModified": 1788776525000,
+    "etag": "W/\"cac56ec56b5291e9e917e3f6ffd58104\""
   },
   "kimi-coding": {
     "models": [
@@ -10396,7 +10492,7 @@
         "maxTokens": 32768
       }
     ],
-    "checkedAt": 1788632909174,
+    "checkedAt": 1788778509510,
     "lastModified": 1786705971000,
     "etag": "W/\"26180ce4b0215799b9e112ba4783cc2b\""
   },
@@ -10761,6 +10857,41 @@
         }
       },
       {
+        "id": "deepseek-v4-flash-vision-exp",
+        "name": "DeepSeek V4 Flash Vision Exp",
+        "api": "openai-completions",
+        "provider": "opencode",
+        "baseUrl": "https://opencode.ai/zen/v1",
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0.14,
+          "output": 0.28,
+          "cacheRead": 0.028,
+          "cacheWrite": 0
+        },
+        "compat": {
+          "supportsStore": false,
+          "supportsDeveloperRole": false,
+          "maxTokensField": "max_tokens",
+          "requiresReasoningContentOnAssistantMessages": true
+        },
+        "contextWindow": 1000000,
+        "maxTokens": 384000,
+        "thinkingLevelMap": {
+          "off": null,
+          "minimal": null,
+          "low": "low",
+          "medium": null,
+          "high": "high",
+          "xhigh": null,
+          "max": "max"
+        }
+      },
+      {
         "id": "deepseek-v4-pro",
         "name": "DeepSeek V4 Pro",
         "api": "openai-completions",
@@ -11035,6 +11166,73 @@
           "off": null,
           "minimal": null,
           "low": null,
+          "medium": null,
+          "high": "high",
+          "xhigh": null,
+          "max": "max"
+        }
+      },
+      {
+        "id": "glm-5.3",
+        "name": "GLM-5.3",
+        "api": "openai-completions",
+        "provider": "opencode",
+        "baseUrl": "https://opencode.ai/zen/v1",
+        "reasoning": true,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 1.4,
+          "output": 4.4,
+          "cacheRead": 0.26,
+          "cacheWrite": 0
+        },
+        "compat": {
+          "supportsStore": false,
+          "supportsDeveloperRole": false,
+          "maxTokensField": "max_tokens"
+        },
+        "contextWindow": 1000000,
+        "maxTokens": 131072,
+        "thinkingLevelMap": {
+          "off": null,
+          "minimal": null,
+          "low": "low",
+          "medium": null,
+          "high": "high",
+          "xhigh": null,
+          "max": "max"
+        }
+      },
+      {
+        "id": "glm-5.3-flash",
+        "name": "GLM-5.3-Flash",
+        "api": "openai-completions",
+        "provider": "opencode",
+        "baseUrl": "https://opencode.ai/zen/v1",
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0.15,
+          "output": 0.5,
+          "cacheRead": 0.03,
+          "cacheWrite": 0
+        },
+        "compat": {
+          "supportsStore": false,
+          "supportsDeveloperRole": false,
+          "maxTokensField": "max_tokens"
+        },
+        "contextWindow": 1000000,
+        "maxTokens": 131072,
+        "thinkingLevelMap": {
+          "off": null,
+          "minimal": null,
+          "low": "low",
           "medium": null,
           "high": "high",
           "xhigh": null,
@@ -11669,6 +11867,39 @@
         }
       },
       {
+        "id": "gpt-6-astra",
+        "name": "GPT-6 Astra",
+        "api": "openai-responses",
+        "provider": "opencode",
+        "baseUrl": "https://opencode.ai/zen/v1",
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 10,
+          "output": 50,
+          "cacheRead": 1,
+          "cacheWrite": 12.5
+        },
+        "compat": {
+          "sessionAffinityFormat": "openai-nosession",
+          "supportsOpenAIGrammarTools": true
+        },
+        "contextWindow": 1050000,
+        "maxTokens": 128000,
+        "thinkingLevelMap": {
+          "off": null,
+          "minimal": null,
+          "low": "low",
+          "medium": "medium",
+          "high": "high",
+          "xhigh": "xhigh",
+          "max": "max"
+        }
+      },
+      {
         "id": "grok-4.5",
         "name": "Grok 4.5",
         "api": "openai-responses",
@@ -12063,6 +12294,38 @@
         }
       },
       {
+        "id": "muse-spark-1.3",
+        "name": "Muse Spark 1.3",
+        "api": "openai-responses",
+        "provider": "opencode",
+        "baseUrl": "https://opencode.ai/zen/v1",
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 1.25,
+          "output": 4.25,
+          "cacheRead": 0.15,
+          "cacheWrite": 0
+        },
+        "compat": {
+          "sessionAffinityFormat": "openai-nosession"
+        },
+        "contextWindow": 1048576,
+        "maxTokens": 131072,
+        "thinkingLevelMap": {
+          "off": null,
+          "minimal": "minimal",
+          "low": "low",
+          "medium": "medium",
+          "high": "high",
+          "xhigh": "xhigh",
+          "max": "max"
+        }
+      },
+      {
         "id": "muse-spark-1.3-contributor-free",
         "name": "Muse Spark 1.3 Free",
         "api": "openai-responses",
@@ -12183,9 +12446,9 @@
         "maxTokens": 65536
       }
     ],
-    "checkedAt": 1788632908797,
-    "lastModified": 1788432047000,
-    "etag": "W/\"f0ae47e2bddd3c5cf3b08ad688536bd1\""
+    "checkedAt": 1788778509169,
+    "lastModified": 1788776523000,
+    "etag": "W/\"1d9d85ca687a5877340af69ffce00612\""
   },
   "google": {
     "models": [
@@ -12694,7 +12957,7 @@
         }
       }
     ],
-    "checkedAt": 1788632908820,
+    "checkedAt": 1788778509156,
     "lastModified": 1788432026000,
     "etag": "W/\"82d850ac898f9406a8bedcd62f25e6da\""
   },
@@ -14449,7 +14712,7 @@
         }
       }
     ],
-    "checkedAt": 1788632908810,
+    "checkedAt": 1788772250484,
     "lastModified": 1788552629000,
     "etag": "W/\"c1f6e94b634de8948b873721ec37b8d2\""
   },
@@ -14636,7 +14899,7 @@
         }
       }
     ],
-    "checkedAt": 1788632908820,
+    "checkedAt": 1788778509167,
     "lastModified": 1788333923000,
     "etag": "W/\"d95511fab5cd86b32c30a5265484dcfd\""
   },
@@ -15033,7 +15296,7 @@
         }
       }
     ],
-    "checkedAt": 1788632908819,
+    "checkedAt": 1788772250486,
     "lastModified": 1788432010000,
     "etag": "W/\"5fdc170fdb3eb24c0e164a059918e474\""
   }
