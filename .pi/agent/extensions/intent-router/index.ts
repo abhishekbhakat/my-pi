@@ -25,15 +25,14 @@ export default function (pi: ExtensionAPI) {
 	let previousModel: ModelRef | undefined;
 	let colorState: ColorState = "plain";
 
-	function statusLine(decision?: Decision, model?: string): string {
-		if (!fileConfig) return "intent off (no config)";
+	function statusLine(): string {
+		if (!fileConfig) return "intent (no config)";
 		if (!enabled) {
 			return lastProbeError && lastProbeError !== "forced off"
-				? `intent off (${lastProbeError})`
-				: "intent off";
+				? `intent (${lastProbeError})`
+				: "intent";
 		}
-		if (!decision) return lastProbeError ? `intent on (${lastProbeError})` : "intent on";
-		return `intent on ${formatDecision(decision)}${model ? ` → ${model}` : ""}`;
+		return "intent";
 	}
 
 	function paint(text: string): string {
@@ -47,7 +46,7 @@ export default function (pi: ExtensionAPI) {
 
 	function setIndicator(ctx: ExtensionContext, text?: string): void {
 		if (!ctx.hasUI) return;
-		const line = paint(text ?? statusLine(enabled ? last?.decision : undefined, enabled ? last?.model : undefined));
+		const line = paint(text ?? statusLine());
 		// Footer status only; a second widget line would duplicate the indicator.
 		ctx.ui.setStatus("intent-router", line);
 	}
@@ -141,7 +140,7 @@ export default function (pi: ExtensionAPI) {
 				last = { decision, model: current, prompt };
 				previousModel = undefined;
 				colorState = "restore";
-				setIndicator(ctx, statusLine(decision, current));
+				setIndicator(ctx);
 				ctx.ui.notify(`${formatDecision(decision)} → ${current}`, "info");
 				return;
 			}
@@ -151,7 +150,7 @@ export default function (pi: ExtensionAPI) {
 			const model = await setRouteModel(ctx, target);
 			last = { decision, model, prompt };
 			colorState = decision.key.endsWith(".adv") ? "adv" : "switch";
-			setIndicator(ctx, statusLine(decision, model));
+			setIndicator(ctx);
 			ctx.ui.notify(`${formatDecision(decision)} → ${model}`, "info");
 		} catch (error) {
 			previousModel = undefined;
@@ -237,7 +236,7 @@ export default function (pi: ExtensionAPI) {
 			}
 			ctx.ui.notify(
 				[
-					statusLine(last?.decision, last?.model),
+					statusLine(),
 					"Usage: /intent toggles. /intent on|off|probe|last|routes subcommands.",
 					fileConfig
 						? "Fresh chats start off unless config.enabled is true. /intent on probes and enables."

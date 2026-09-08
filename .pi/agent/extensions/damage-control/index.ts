@@ -1,5 +1,6 @@
 import type { ExtensionAPI, ToolCallEvent } from "@earendil-works/pi-coding-agent";
-import { isToolCallEventType } from "@earendil-works/pi-coding-agent";
+import { getAgentDir, isToolCallEventType } from "@earendil-works/pi-coding-agent";
+import { isYoloEnabled, registerYoloCommand } from "./yolo";
 import { parse as yamlParse } from "yaml";
 import * as shlex from "shlex";
 import * as fs from "fs";
@@ -239,6 +240,7 @@ function matchesCommandRule(parsed: ParsedCommand, pattern: string): boolean {
 }
 
 export default function (pi: ExtensionAPI) {
+	registerYoloCommand(pi);
 	let rules: Rules = {
 		bashToolPatterns: [],
 		zeroAccessPaths: [],
@@ -284,10 +286,10 @@ export default function (pi: ExtensionAPI) {
 
 	pi.on("session_start", async (_event, ctx) => {
 		const globalRulesPath = path.join(
-			os.homedir(),
-			".pi",
-			"agent",
-			"damage-control-rules.yaml",
+			getAgentDir(),
+			"extensions",
+			"damage-control",
+			"rules.yaml",
 		);
 		const localRulesPath = path.join(ctx.cwd, ".pi", "damage-control-rules.yaml");
 		let loadedRules: Partial<Rules> = {};
@@ -337,12 +339,19 @@ export default function (pi: ExtensionAPI) {
 			);
 		}
 
+		if (isYoloEnabled()) {
+			ctx.ui.setStatus("YOLO: damage-control disabled");
+			return;
+		}
 		ctx.ui.setStatus(
 			`🛡️ Damage-Control Active: ${rules.bashToolPatterns.length + rules.zeroAccessPaths.length + rules.readOnlyPaths.length + rules.noDeletePaths.length} Rules`,
 		);
 	});
 
 	pi.on("tool_call", async (event, ctx) => {
+		if (isYoloEnabled()) {
+			return { block: false };
+		}
 		let violationReason: string | null = null;
 		let violationCommand: string | null = null;
 		let shouldAsk = false;

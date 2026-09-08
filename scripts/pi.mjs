@@ -18,10 +18,10 @@ const TEXT_EXT = new Set([
 const TEXT_NAME = new Set([
   "LICENSE", "README", "Makefile", ".gitignore", ".gitattributes", ".npmrc", ".editorconfig",
 ]);
-const INSTALL_ROOT = ["settings.json", "models.json", "damage-control-rules.yaml", "SYSTEM.md"];
+const INSTALL_ROOT = ["settings.json", "models.json", "SYSTEM.md"];
 const SYNC_ROOT = [
   "settings.json", "models.json", "models-store.json",
-  "damage-control-rules.yaml", "SYSTEM.md",
+  "SYSTEM.md",
 ];
 
 function die(message) {
