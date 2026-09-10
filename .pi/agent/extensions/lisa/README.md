@@ -10,7 +10,7 @@ On resumes your last Lisa session. A switch moves you there, then Lisa starts. O
 
 ## State
 
-Lisa keeps state in lisa.db under the agent extensions dir. Lisa sets journal_mode=WAL on activation.
+Lisa keeps state in ~/.pi/.lisa/lisa.db. Lisa sets journal_mode=WAL on activation. First run migrates lisa.db and backups from the old agent extensions dir.
 
 Check mode with `sqlite3 <db> "PRAGMA journal_mode;"`. Expect wal.
 

@@ -2,6 +2,7 @@ import { formatSkillsForPrompt, getAgentDir } from "@earendil-works/pi-coding-ag
 import type { Skill } from "@earendil-works/pi-coding-agent";
 import { spawnSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -15,7 +16,21 @@ export interface LisaLock {
 const baseDir = dirname(fileURLToPath(import.meta.url));
 
 export function lisaDir(): string {
+	return join(homedir(), ".pi", ".lisa");
+}
+
+export function legacyDir(): string {
 	return join(getAgentDir(), "extensions", "lisa");
+}
+
+export function migrateLegacy(): void {
+	const legacyDb = join(legacyDir(), "lisa.db");
+	if (existsSync(dbPath()) || !existsSync(legacyDb)) return;
+	mkdirSync(lisaDir(), { recursive: true });
+	for (const name of ["lisa.db", "session-backup.jsonl", "lisa-backup.db"]) {
+		const src = join(legacyDir(), name);
+		if (existsSync(src)) copyFileSync(src, join(lisaDir(), name));
+	}
 }
 
 export function dbPath(): string {
@@ -76,17 +91,18 @@ function esc(value: string): string {
 }
 
 export function dbExec(sql: string): void {
-	const run = spawnSync("sqlite3", [dbPath(), `PRAGMA busy_timeout=5000; ${sql}`], { encoding: "utf-8" });
+	const run = spawnSync("sqlite3", ["-cmd", ".timeout 5000", dbPath(), sql], { encoding: "utf-8" });
 	if (run.status !== 0) throw new Error(`sqlite3 failed: ${(run.stderr || run.error || "").toString().trim()}`);
 }
 
 export function dbQuery(sql: string): string {
-	const run = spawnSync("sqlite3", [dbPath(), `PRAGMA busy_timeout=5000; ${sql}`], { encoding: "utf-8" });
+	const run = spawnSync("sqlite3", ["-cmd", ".timeout 5000", dbPath(), sql], { encoding: "utf-8" });
 	if (run.status !== 0) throw new Error(`sqlite3 query failed: ${(run.stderr || run.error || "").toString().trim()}`);
 	return (run.stdout || "").trim();
 }
 
 export function initDb(): void {
+	migrateLegacy();
 	mkdirSync(lisaDir(), { recursive: true });
 	dbExec(
 		[
@@ -97,7 +113,8 @@ export function initDb(): void {
 			"CREATE TABLE IF NOT EXISTS sessions(id TEXT PRIMARY KEY, label TEXT, last_seen INTEGER);",
 			"CREATE TABLE IF NOT EXISTS memories(key TEXT PRIMARY KEY, value TEXT, updated INTEGER);",
 			"CREATE TABLE IF NOT EXISTS handoffs(id INTEGER PRIMARY KEY, recipient TEXT NOT NULL, summary TEXT NOT NULL, created INTEGER, done INTEGER DEFAULT 0);",
-			"CREATE TABLE IF NOT EXISTS requests(id INTEGER PRIMARY KEY, title TEXT NOT NULL, status TEXT DEFAULT 'open', created INTEGER, updated INTEGER);",		].join(" "),
+			"CREATE TABLE IF NOT EXISTS requests(id INTEGER PRIMARY KEY, title TEXT NOT NULL, status TEXT DEFAULT 'open', created INTEGER, updated INTEGER);",
+		].join(" "),
 	);
 	if (dbQuery("PRAGMA journal_mode;").toLowerCase() !== "wal") throw new Error("WAL check failed");
 }
