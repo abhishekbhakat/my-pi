@@ -22,7 +22,7 @@
           "contextWindow": 262144,
           "maxTokens": 131072,
           "thinkingLevelMap": {
-            "off": null,
+            "off": "off",
             "minimal": null,
             "low": "low",
             "medium": null,
@@ -132,35 +132,6 @@
     "openrouter": {
       "models": [
         {
-          "id": "google/gemini-3.8-flash",
-          "name": "Gemini 3.8 Flash (OpenRouter)",
-          "api": "openai-completions",
-          "baseUrl": "https://openrouter.ai/api/v1",
-          "reasoning": true,
-          "input": ["text", "image"],
-          "contextWindow": 262144,
-          "maxTokens": 65536,
-          "cost": {
-            "input": 0.75,
-            "output": 3.75,
-            "cacheRead": 0.075,
-            "cacheWrite": 0
-          },
-          "thinkingLevelMap": {
-            "off": null,
-            "minimal": null,
-            "low": "low",
-            "medium": "medium",
-            "high": "high",
-            "xhigh": null,
-            "max": null
-          },
-          "compat": {
-            "supportsDeveloperRole": false,
-            "thinkingFormat": "openrouter"
-          }
-        },
-        {
           "id": "meta/muse-spark-1.3-contributor",
           "name": "Muse Spark 1.3 Contributor (OpenRouter)",
           "api": "openai-completions",
@@ -187,35 +158,6 @@
           "compat": {
             "supportsDeveloperRole": false,
             "thinkingFormat": "openrouter"
-          }
-        }
-      ]
-    },
-    "tukenku": {
-      "baseUrl": "https://tukenku.com",
-      "api": "anthropic-messages",
-      "models": [
-        {
-          "id": "myt/claude-fable-5-1",
-          "name": "Claude Fable 5.1 (Tukenku)",
-          "reasoning": true,
-          "input": ["text"],
-          "contextWindow": 1000000,
-          "maxTokens": 128000,
-          "thinkingLevelMap": {
-            "off": null,
-            "minimal": null,
-            "low": null,
-            "medium": null,
-            "high": null,
-            "xhigh": null,
-            "max": "max"
-          },
-          "cost": {
-            "input": 2.86,
-            "output": 8.57,
-            "cacheRead": 0.5714,
-            "cacheWrite": 12.5
           }
         }
       ]
@@ -265,7 +207,7 @@
           "contextWindow": 262144,
           "maxTokens": 131072,
           "thinkingLevelMap": {
-            "off": null,
+            "off": "off",
             "minimal": null,
             "low": "low",
             "medium": null,
@@ -379,7 +321,7 @@
           "contextWindow": 1048576,
           "maxTokens": 131072,
           "thinkingLevelMap": {
-            "off": null,
+            "off": "off",
             "minimal": null,
             "low": "low",
             "medium": null,
