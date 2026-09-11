@@ -1,6 +1,7 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { convertToLlm, serializeConversation, type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { formatCapabilityHistory, loadCapabilityHistory } from "./history";
 import { collectActionTimeline } from "./timeline";
 import type { CapabilityContextBundle, CapabilityContextSection, CapabilityDef, CapabilityToolInput } from "./types";
 
@@ -37,6 +38,7 @@ const SECTION_PRIORITY: Record<string, string[]> = {
 	],
 	code_scout: [
 		"Workspace",
+		"Prior Capability Turns",
 		"Path Context",
 		"Workspace Tree",
 		"Git Status",
@@ -46,6 +48,7 @@ const SECTION_PRIORITY: Record<string, string[]> = {
 	],
 	reasoning_coach: [
 		"Workspace",
+		"Prior Capability Turns",
 		"Recent Conversation",
 		"Action Timeline",
 		"Path Context",
@@ -65,6 +68,7 @@ const SECTION_PRIORITY: Record<string, string[]> = {
 	],
 	default: [
 		"Workspace",
+		"Prior Capability Turns",
 		"Git Diff",
 		"Path Context",
 		"Recent Conversation",
@@ -744,6 +748,11 @@ export async function buildCapabilityContext(
 		},
 	];
 
+	const sessionId = ctx.sessionManager.getSessionId();
+	const priorTurns = await loadCapabilityHistory(sessionId, def.toolName);
+	// Formatted later: history must not eat the path/diff budget, so it is
+	// added after primary sections are collected (see below).
+
 	const wantsTimeline = (input.includeTimeline ?? def.includeTimeline) === true;
 	const wantsConversation = (input.includeConversation ?? def.includeConversation) === true;
 	const conversation = wantsTimeline || wantsConversation
@@ -834,6 +843,21 @@ export async function buildCapabilityContext(
 		// code_scout and default: files first, then optional diff.
 		await fillPaths(remaining);
 		await fillDiff(remaining);
+	}
+
+	// History fills only what primary context left. Without this cap a long
+	// history chain can zero the staged diff budget before collection runs.
+	const MAX_HISTORY_SECTION_CHARS = 8_000;
+	const priorText = formatCapabilityHistory(priorTurns);
+	if (priorText) {
+		const room = Math.max(0, promptBudget - sectionsSize(sections));
+		const capped = room > 0 ? truncateHead(priorText, Math.min(room, MAX_HISTORY_SECTION_CHARS)) : "";
+		if (capped) {
+			sections.push({
+				title: "Prior Capability Turns",
+				content: `Last ${priorTurns.length} ${def.toolName} question/answer pair(s) in this Pi session.\n\n${capped}`,
+			});
+		}
 	}
 
 	const budgeted = enforceContextBudget(sections, pathBlocks, promptBudget, def.toolName);

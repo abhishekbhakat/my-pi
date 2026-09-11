@@ -2,6 +2,7 @@ import { stream as piAiStream } from "@earendil-works/pi-ai";
 import type { AgentToolUpdateCallback } from "@earendil-works/pi-coding-agent";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { buildCapabilityContext, buildCapabilityPrompt } from "./context";
+import { appendCapabilityHistory } from "./history";
 import type { CapabilityDef, CapabilityToolInput } from "./types";
 
 function splitModelRef(modelRef: string): { provider: string; modelId: string } | null {
@@ -269,6 +270,12 @@ export async function executeCapability(
 					promptChars: prompt.length,
 				},
 			};
+		}
+
+		const sessionId = ctx.sessionManager.getSessionId();
+		if (text) {
+			// A history write failure must not replace a good answer.
+			await appendCapabilityHistory(sessionId, def.toolName, input.task, text).catch(() => undefined);
 		}
 
 		return {

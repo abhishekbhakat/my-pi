@@ -30,8 +30,5 @@
     "google/gemini-3.8-flash",
     "openrouter/meta/muse-spark-1.3-contributor",
     "deepseek/deepseek-v4-flash"
-  ],
-  "packages": [
-    "npm:claude-code-pi"
   ]
 }
