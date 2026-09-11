@@ -61,13 +61,7 @@ export default function claudeCodePiExtension(pi: ExtensionAPI) {
 		lastCliStatus = await checkCliStatus();
 		if (!lastCliStatus.ok) {
 			ctx.ui.notify(`claude-code-pi: ${setupGuidance(lastCliStatus.detail ?? lastCliStatus.summary)}`, "warning");
-			return;
 		}
-		const piId = getActivePiSessionId();
-		ctx.ui.notify(
-			`claude-code-pi: ${registeredModels.length} model(s). Pi session ${piId ?? "?"} maps to a Claude Code session. /model → ${PROVIDER_ID}.`,
-			"info",
-		);
 	});
 
 	pi.on("session_shutdown", async () => {

@@ -64,7 +64,7 @@ function setStatus(ctx: ExtensionContext, on: boolean): void {
 	ctx.ui.setStatus(EXT_ID, on ? EXT_ID : undefined);
 }
 
-const SUPPRESSED_KEYS = ["fast-mode", "intent-router", "yolo"];
+const SUPPRESSED_KEYS = ["fast-mode", "yolo"];
 
 function suppressOthers(ctx: ExtensionContext): void {
 	if (!ctx.hasUI) return;

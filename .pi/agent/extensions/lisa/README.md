@@ -40,7 +40,7 @@ Prompt filtering sets policy. It gives you no sandbox. Cached /skill commands an
 
 ## Footer
 
-Lisa off hides the lisa segment. Lisa on shows lisa alone. Lisa clears fast and intent segments on activation and each turn. Lisa clears yolo the same way. Off opens a fresh session. Fresh start brings those segments back.
+Lisa off hides the lisa segment. Lisa on shows lisa alone. Lisa clears fast and yolo segments on activation and each turn. Off opens a fresh session. Fresh start brings those segments back.
 
 ## Files
 

@@ -17,6 +17,7 @@
   "defaultProvider": "xai",
   "defaultModel": "grok-4.6",
   "enabledModels": [
+    "openai-codex/gpt-5.6-sol",
     "openai-codex/gpt-6-astra",
     "kimi-coding/k3-256k",
     "kimi-coding/kimi-for-coding",

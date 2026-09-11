@@ -1,0 +1,48 @@
+{
+  "enabled": false,
+  "classifier": {
+    "backend": "openrouter",
+    "provider": "openrouter",
+    "id": "google/gemini-3.7-flash:nitro",
+    "thinkingLevel": "high",
+    "maxTokens": 1024,
+    "retries": 1,
+    "retryDelayMs": 250,
+    "baseUrl": "https://openrouter.ai/api/v1",
+    "apiKey": ""
+  },
+  "routes": {
+    "question": {
+      "provider": "",
+      "id": ""
+    },
+    "instruction.code.basic": {
+      "provider": "runinfra",
+      "id": "deepseek-v4-flash"
+    },
+    "instruction.code.adv": {
+      "provider": "",
+      "id": ""
+    },
+    "instruction.ops.basic": {
+      "provider": "runinfra",
+      "id": "deepseek-v4-flash"
+    },
+    "instruction.ops.adv": {
+      "provider": "",
+      "id": ""
+    },
+    "instruction.terminal.readonly": {
+      "provider": "runinfra",
+      "id": "deepseek-v4-flash"
+    },
+    "instruction.terminal.basic": {
+      "provider": "",
+      "id": ""
+    },
+    "instruction.terminal.adv": {
+      "provider": "",
+      "id": ""
+    }
+  }
+}

@@ -7,7 +7,7 @@ Do not edit `~/.pi` by hand. Install is the only write path into the live agent.
 ## Layout
 
 ```text
-.pi/agent/extensions/   extensions (intent-router, tools, widgets)
+.pi/agent/extensions/   extensions (tools, widgets)
 .pi/agent/skills/       skills
 .pi/agent/themes/       themes
 .pi/agent/settings.json
