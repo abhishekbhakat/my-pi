@@ -8,7 +8,8 @@
     "inferx/deepseek-v4.1-flash": "off",
     "inferx/glm-5.3-flash": "off",
     "xai/grok-4.5": "high",
-    "xai/grok-4.6": "low"
+    "xai/grok-4.6": "low",
+    "meta/muse-spark-1.3-contributor": "max"
   },
   "steeringMode": "all",
   "followUpMode": "all",
@@ -29,7 +30,7 @@
     "claude-code-cli/claude-fable-5-1",
     "groq/qwen/qwen3.8-27b",
     "google/gemini-3.8-flash",
-    "openrouter/meta/muse-spark-1.3-contributor",
+    "meta/muse-spark-1.3-contributor",
     "deepseek/deepseek-v4-flash"
   ]
 }

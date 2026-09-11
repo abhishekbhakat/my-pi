@@ -17,15 +17,13 @@ AGENTS.md               rules for agents working in this repo
 
 ## Context window caps
 
-You cap five models at 262144 in `.pi/agent/models.json` to reserve headroom for tool and reasoning overhead:
+You cap these models at 262144 in `.pi/agent/models.json` to reserve headroom for tool and reasoning overhead:
 
 - `runinfra/deepseek-v4-flash`
 - `runinfra/glm-5-3-flash`
 - `google/gemini-3.8-flash`
-- `opencode/muse-spark-1.3-contributor` (Go endpoint)
-- `commandcode/meta/muse-spark-1.3-contributor`
 
-You keep full windows elsewhere, such as `commandcode/z-ai/glm-5.3-flash` at 1048576. Edit the values in `models.json`, then run `make install` and `/reload` in pi.
+`meta/muse-spark-1.3-contributor` uses `https://api.meta.ai/v1` (`openai-responses`) at 500000. You keep full windows elsewhere, such as `commandcode/z-ai/glm-5.3-flash` at 1048576. Edit the values in `models.json`, then run `make install` and `/reload` in pi.
 
 ## Install
 
