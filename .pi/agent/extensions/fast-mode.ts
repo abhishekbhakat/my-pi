@@ -20,7 +20,7 @@ type WrapState = FastConfig & {
 	remember: (provider: string, id: string) => void;
 };
 
-const DEFAULT: FastConfig = { enabled: true, showStatus: true, debug: false };
+const DEFAULT: FastConfig = { enabled: false, showStatus: true, debug: false };
 
 function isCodexId(id: string): boolean {
 	return id.startsWith("gpt-5");
