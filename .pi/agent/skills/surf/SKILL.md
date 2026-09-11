@@ -99,10 +99,36 @@ surf aistudio "analyze" --timeout 600             # Custom timeout (default: 300
 
 **Model selection is best-effort:** Pass any AI Studio model id (e.g. `gemini-3.1-pro-preview`, `gemini-3-flash-preview`, `gemini-flash-lite-latest`). If model not found, AI Studio use whatever model last selected in UI.
 
+**Always pass `--model gemini-3.8-flash`. Never rely on surf's built-in default.** Every `surf aistudio` call must include `--model gemini-3.8-flash`. Surf's fallback default (`gemini-3.1-pro-preview`) must not be used. Selection is best-effort: if the id is absent, AI Studio keeps the last model selected in the UI. Report the actual model when unsure, do not assume the requested one applied.
+
+Correct:
+
+```bash
+surf aistudio "<prompt>" --model gemini-3.8-flash
+```
+
+Wrong (uses surf default):
+
+```bash
+surf aistudio "<prompt>"
+```
+
+**No thinking-level step.** Surf selects the model and inserts the prompt; there is no thinking-level control to set.
+
+**Wait 3 seconds after inserting the prompt before submitting.** AI Studio errors if Enter/submit fires right after the prompt is inserted. The editor needs time to settle. Surf's `aistudio` path must not submit immediately after typing.
+
+If driving the page manually with surf primitives:
+
+```bash
+surf type --text "<prompt>" --selector "<editor>" --method js
+sleep 3
+surf key Enter
+```
+
 ### AI Studio App Builder
 ```bash
 surf aistudio.build "build a portfolio site"
-surf aistudio.build "todo app" --model gemini-3.1-pro-preview   # Model override
+surf aistudio.build "todo app" --model gemini-3.8-flash         # Model override
 surf aistudio.build "crm dashboard" --output ./out              # Extract zip to directory
 surf aistudio.build "game" --keep-open --timeout 600            # Keep tab open, 10min timeout
 ```
