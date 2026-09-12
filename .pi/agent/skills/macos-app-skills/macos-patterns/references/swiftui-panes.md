@@ -28,6 +28,23 @@ VSplitView {
 
 Inspector `min: 260, ideal: 320, max: 480` plus sidebar width, plus a 240pt message column, leaves little for file lists. Those lists must shrink (`minWidth: 0`), not push the window.
 
+### Empty list panes center under the toolbar
+
+`detailView.frame(maxWidth: .infinity, maxHeight: .infinity)` plus a `VStack` of toolbar + `if empty { ContentUnavailableView } else { List }` centers the whole stack when the list is gone. `List` expands and pins the toolbar. Empty Tags / Stashes / Submodules float mid-window. Branches look fine because the `List` is always there.
+
+Pin the stack: `.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)`. Give `ContentUnavailableView` its own `maxHeight: .infinity` so the empty copy fills the leftover, not the header.
+
+### `frame(width:maxHeight:alignment:)` does not exist
+
+SwiftUI has `frame(width:height:alignment:)` and `frame(minWidth:idealWidth:maxWidth:minHeight:idealHeight:maxHeight:alignment:)`. Mixing a fixed `width:` with `maxHeight:` and `alignment:` is `error: extra argument 'width' in call`.
+
+Split:
+
+```swift
+.frame(width: 280)
+.frame(maxHeight: .infinity, alignment: .top)
+```
+
 ## Do not put document panes in NavigationSplitView detail
 
 On macOS, `NavigationSplitView` draws the **detail at window x = 0** and overlays the sidebar. Detail content starts under the sidebar. Hide the sidebar and the overlap disappears. That is not missing leading padding in the child view.
