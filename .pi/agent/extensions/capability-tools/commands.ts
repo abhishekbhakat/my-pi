@@ -1,3 +1,5 @@
+import { execFileSync } from "node:child_process";
+import { platform } from "node:os";
 import { copyToClipboard, type AgentToolUpdateCallback, type ExtensionAPI, type ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import { closeCapabilityPanel, setPanelEscape, showCapabilityPanel, updateCapabilityPanel } from "./panel";
 import { executeCapability } from "./runner";
@@ -20,6 +22,33 @@ function resultStatus(result: { details?: unknown }): string {
 	if (!result.details || typeof result.details !== "object") return "done";
 	const status = (result.details as { status?: unknown }).status;
 	return typeof status === "string" ? status : "done";
+}
+
+/**
+ * Native addon can resolve without filling the macOS pasteboard, and then
+ * copyToClipboard returns before pbcopy. Write pbcopy first on darwin.
+ */
+async function copyCommandText(text: string): Promise<boolean> {
+	let copied = false;
+	if (platform() === "darwin") {
+		try {
+			execFileSync("pbcopy", [], {
+				input: text,
+				timeout: 5000,
+				stdio: ["pipe", "ignore", "ignore"],
+			});
+			copied = true;
+		} catch {
+			copied = false;
+		}
+	}
+	try {
+		await copyToClipboard(text);
+		copied = true;
+	} catch {
+		// pbcopy already succeeded, or both failed
+	}
+	return copied;
 }
 
 async function runCapabilityCommand(
@@ -79,14 +108,7 @@ async function runCapabilityCommand(
 		}
 
 		let copied = false;
-		if (copyable) {
-			try {
-				await copyToClipboard(rawText);
-				copied = true;
-			} catch {
-				copied = false;
-			}
-		}
+		if (copyable) copied = await copyCommandText(rawText);
 
 		pi.events.emit("capability:complete", { toolName: def.toolName, label: def.label });
 
