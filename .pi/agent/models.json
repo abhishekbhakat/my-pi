@@ -129,34 +129,6 @@
         }
       }
     },
-    "meta": {
-      "baseUrl": "https://api.meta.ai/v1",
-      "api": "openai-responses",
-      "apiKey": "$MODEL_API_KEY",
-      "compat": {
-        "supportsStore": false,
-        "sessionAffinityFormat": "openai-nosession"
-      },
-      "models": [
-        {
-          "id": "muse-spark-1.3-contributor",
-          "name": "Muse Spark 1.3 Contributor (Meta)",
-          "reasoning": true,
-          "input": ["text", "image"],
-          "contextWindow": 500000,
-          "maxTokens": 131072,
-          "thinkingLevelMap": {
-            "off": null,
-            "minimal": null,
-            "low": null,
-            "medium": null,
-            "high": null,
-            "xhigh": null,
-            "max": "max"
-          }
-        }
-      ]
-    },
     "openlux": {
       "baseUrl": "https://api.openlux.ai/v1",
       "api": "openai-completions",
