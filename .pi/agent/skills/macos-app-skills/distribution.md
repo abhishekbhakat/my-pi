@@ -4,6 +4,11 @@ A Mac app ships one of two ways. Same source can feed both (two schemes / two co
 
 `make run` / `make install` are workflows on method 1. They are not a third method.
 
+| Method        | Daily on your Mac                         | `/Applications`                                      |
+| ------------- | ----------------------------------------- | ---------------------------------------------------- |
+| Offline       | `make run` / `make install`               | `make install` is the signed copy                    |
+| Mac App Store | `make run` + TestFlight                   | No `make install`. Store / TestFlight own that path  |
+
 | Job              | 1. Offline / direct                         | 2. Mac App Store                                 |
 | ---------------- | ------------------------------------------- | ------------------------------------------------ |
 | Who installs     | User (your `.dmg` / `.zip` / `.app`)        | App Store                                        |
@@ -43,3 +48,19 @@ Two schemes, two binaries:
 - Store scheme: Apple Distribution, sandbox, Sparkle unlinked.
 
 Store users never see Sparkle. GitHub users never go through App Review. Do not point a store build at a Sparkle feed.
+
+Shipping bundle ID is the same on both customer binaries so they see one app. Your Mac still cannot hold both as two apps. Local: `make run`. Store sandbox: TestFlight. GitHub DMG: another user account or a VM. Or use a `.dev` Debug ID (below).
+
+## Same Mac, store copy vs local build
+
+Collision is `CFBundleIdentifier`, not the filename. Two `MyApp.app` trees with the same ID still fight. Launch Services, prefs (`~/Library/Preferences/<id>.plist`), sandbox container (`~/Library/Containers/<id>`), Keychain, TCC, URL handlers, and Dock all key on that ID. A Mac App Store / TestFlight install of the same ID replaces the notarized `/Applications` copy. The next store update replaces you.
+
+Do not change the store bundle ID to dodge this. The App Store Connect record is the ID. Do not notarize the App Store `.pkg`.
+
+Three ways to coexist:
+
+1. One bundle ID, one install. Debug from `build/` via `make run`. Store copy stays in `/Applications`. Never `make install` while the store app is there. `open -b <id>` and Dock may still pick the last registered copy; `lsregister -u` on derived-data apps helps after a store install.
+2. Two bundle IDs. Debug: `PRODUCT_BUNDLE_IDENTIFIER` suffix `.dev`, display name `… Dev`. Store: shipping ID. They coexist. Defaults, Keychain, TCC, and containers do not share. MAS receipt / IAP do not apply to the `.dev` binary.
+3. Dual-channel as above. Same shipping ID for customers. Developer machine still `make run` or `.dev`. GitHub DMG on another account or VM.
+
+When the ship method is Mac App Store: default to `make run`. Ask before `make install`.

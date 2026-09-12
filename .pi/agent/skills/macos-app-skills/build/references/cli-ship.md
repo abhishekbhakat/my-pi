@@ -6,12 +6,16 @@ Read this before writing a Makefile, notarizing, installing to `/Applications`, 
 
 ## make run vs make install
 
-| Target          | What it does                                      | When                                      |
-| --------------- | ------------------------------------------------- | ----------------------------------------- |
-| `make run`      | Debug `xcodebuild`, `open` the `.app`             | Layout, UI, every splitter tweak          |
-| `make install`  | Release + notarize (~1 min) + copy `/Applications` | Signed install, Gatekeeper, Dock icon check |
+| Target          | What it does                                       | When                                         |
+| --------------- | -------------------------------------------------- | -------------------------------------------- |
+| `make run`      | Debug `xcodebuild`, `open` the `.app`              | Layout, UI, every splitter tweak             |
+| `make install`  | Release + notarize (~1 min) + copy `/Applications` | Method 1 only. Signed install, Gatekeeper    |
 
 Do not wait on Apple notarization for UI iteration. After `make install`, quit the running app. Closing the window is not enough. If Dock keeps a blank tile, `killall Dock`, then open `/Applications/YourApp.app`.
+
+`make install` writes `/Applications/$(PROJECT_NAME).app` under the shipping bundle ID. Mac App Store / TestFlight of the same `CFBundleIdentifier` replaces that copy. Launch Services, prefs, sandbox container, Keychain, TCC, URL handlers, Dock all collide. Filename is not the identity.
+
+When the ship method is Mac App Store: `make run` only. Ask before `make install`. Store QA = TestFlight. Optional Debug ID: `BUNDLE_ID.dev` + distinct display name. Optional method-1 Finder copy: `~/Applications/$(PROJECT_NAME)-dev.app`. Do not change the store bundle ID. See `../../distribution.md`.
 
 ## Makefile
 

@@ -239,6 +239,10 @@ Many Mac developers keep both:
 
 Same codebase, two schemes. Store users never see Sparkle. GitHub users never go through App Review.
 
+Shipping `CFBundleIdentifier` stays the store record. Do not change it to dodge Launch Services. TestFlight on Mac replaces the store app for that ID. Do not also `make install` Developer ID to `/Applications`. Daily loop next to a live store copy is `make run` (Debug under `build/`). Store QA is TestFlight. Coexistence patterns: `../distribution.md`.
+
+Sparkle on a Developer ID binary in `/Applications` can try to update the MAS copy of the same ID. Store binary must unlink Sparkle. Developer ID Sparkle binary must not live in `/Applications` next to MAS.
+
 ## Ordered checklist
 
 Money and account:

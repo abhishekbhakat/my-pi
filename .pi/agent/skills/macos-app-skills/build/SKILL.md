@@ -137,7 +137,11 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild build \
 
 ## Daily loop: make run vs make install
 
-Users who have an `.xcodeproj` will ask for `make install`. That notarizes (~1 min). For layout iteration, `make run` (Debug, no notary) is enough. Do not wait on Apple for every splitter tweak.
+Users who have an `.xcodeproj` will ask for `make install`. That notarizes (~1 min) and copies to `/Applications` under the shipping bundle ID. For layout iteration, `make run` (Debug, no notary) is enough. Do not wait on Apple for every splitter tweak.
+
+`make install` is method 1 (offline) only. If a Mac App Store / TestFlight build of that `CFBundleIdentifier` exists, `make install` overwrites it and the next store update overwrites you. Filename is not the identity. When the ship method is Mac App Store: default to `make run`. Ask before `make install`. Store QA is TestFlight. Details: `../distribution.md`.
+
+Optional Debug ID so local and store sit side by side: `BUNDLE_ID.dev` + distinct `CFBundleDisplayName`. Optional Finder copy for method 1 only: `~/Applications/$(PROJECT_NAME)-dev.app`. Do not change the store bundle ID.
 
 After replacing an installed app, quit the running process. Dock icon cache also needs a full quit, not only window close.
 
@@ -205,3 +209,5 @@ ls /Applications/ | grep -i xcode
 | `NSOpenPanel` from a nonisolated static  | Mark the helper `@MainActor`                                                                |
 
 Never invent `git` pretty-format atoms. Check `git help` before adding format strings.
+
+`%1f` and `%x1f` are U+001F (UNIT SEPARATOR). Splitting on `\u{1C}` (FILE SEPARATOR) returns `[]`. Branch pickers, tag lists, and sidebar counts go empty while `git rev-parse --abbrev-ref HEAD` still works, so the toolbar can show a branch while a `Picker` is a blank chevron. Share one named constant (`"\u{1F}"`) between the format string and the parser. `%(upstream:track)` is valid. Do not invent `%(upstream:trackshort)`.

@@ -7,7 +7,8 @@ description: >
   drag and drop, screen capture, system-audio capture, TCC permissions, Keychain, Accessibility typing,
   activation policy, Quick Look, launch at login, entitlements, HSplitView, VSplitView, pane overflow,
   window growing with content, content under the sidebar, titlebar overlay, fullSizeContentView,
-  window corner radius, inspector layout, or Tahoe toolbar glass. Also trigger when the user seems
+  window corner radius, inspector layout, Tahoe toolbar glass, Process PATH, Homebrew gpg/ssh,
+  or a blank SwiftUI Picker. Also trigger when the user seems
   to be applying web development patterns to macOS (e.g., using z-index thinking for windows,
   expecting simple clipboard APIs, or not understanding focus/activation). Use this skill
   proactively whenever building any native macOS app.
@@ -511,7 +512,7 @@ class MyView: NSView {
 
 For a document window (persistent workspace sidebar, `List`, `VSplitView`, diff panes): use `HSplitView`. On macOS, `NavigationSplitView` draws the detail at window x = 0 and overlays the sidebar. Leading-padding by sidebar width breaks when the user resizes the sidebar.
 
-Read `references/swiftui-panes.md` before writing or fixing split views, List/ScrollView overflow, titlebar overlay, window-corner clipping, nested splitters, or Tahoe toolbar glass.
+Read `references/swiftui-panes.md` before writing or fixing split views, List/ScrollView overflow, titlebar overlay, window-corner clipping, nested splitters, Tahoe toolbar glass, file trees, sibling headers, or diff/code panes.
 
 Settings / column browser only:
 
@@ -676,6 +677,27 @@ config.minimumFrameInterval = CMTime(value: 1, timescale: 1) // cheap video if t
 
 Start/stop the `SCStream` on the same lifecycle as the meeting recorder. Mix with `AVAudioEngine` mic tap in your own mixer; do not assume the stream includes the mic.
 
+## Process PATH for helper binaries
+
+A Dock/Finder launch PATH is `/usr/bin:/bin:/usr/sbin:/sbin`. Homebrew `gpg` and `ssh` live in `/opt/homebrew/bin`. `Process` for `git commit -S` then fails with `cannot run gpg`.
+
+Prepend in the `Process` environment before launch:
+
+```swift
+var env = ProcessInfo.processInfo.environment
+let prepend = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
+env["PATH"] = prepend + ":" + (env["PATH"] ?? "")
+process.environment = env
+```
+
+Keep the rest of the inherited PATH after that. Map git stderr `cannot run gpg` to a sentence that names GPG and PATH.
+
+## Picker is blank when no tag matches
+
+`Picker(selection: $branch) { ForEach(items) { Text(name).tag(name) } }` draws an empty chevron if `items` is empty or `branch` is not in the tag set. Assigning `$branch` in `onAppear` does not paint a label.
+
+Add a fallback `Text(branch).tag(branch)` when the list is empty. Apply defaults in `.task` after the store has rows, not only in `onAppear`.
+
 ## Common Mistakes Web Devs Make
 
 | What they try | Why it fails | What to do instead |
@@ -694,3 +716,6 @@ Start/stop the `SCStream` on the same lifecycle as the meeting recorder. Mix wit
 | `.windowResizability(.contentMinSize)` with a `List` | Window grows to the longest line | `.automatic` and clip |
 | Nested `HSplitView` inside `VSplitView` | No resize cursor on hover | `HStack` + 6pt handle, `NSCursor.resizeLeftRight.set()` |
 | `.toolbar` on the `HSplitView` detail column | Headers sit under the titlebar on Tahoe | Toolbar on the outer split; strip `.fullSizeContentView` |
+| `List` + `DisclosureGroup` for a file tree | First row clipped or skipped | `ScrollView` + indented `HStack` + chevron `Button` |
+| `Process` with default PATH | Dock PATH has no Homebrew; `cannot run gpg` | Prepend `/opt/homebrew/bin` and `/usr/local/bin` |
+| `Picker` + empty `ForEach` | Blank chevron; selection not in tag set | Fallback `Text(branch).tag(branch)`; set default in `.task` |

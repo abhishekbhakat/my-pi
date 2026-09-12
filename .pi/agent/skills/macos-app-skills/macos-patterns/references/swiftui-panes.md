@@ -1,6 +1,6 @@
 # SwiftUI document panes
 
-Read this before writing or fixing split views, List/ScrollView overflow, titlebar overlay, window-corner clipping, nested splitters, or Tahoe toolbar glass.
+Read this before writing or fixing split views, List/ScrollView overflow, titlebar overlay, window-corner clipping, nested splitters, Tahoe toolbar glass, file trees, sibling headers, or diff/code panes.
 
 `NavigationSplitView` + `.inspector` is for Settings-style column browsers. A document window with a persistent sidebar plus a `List` / `VSplitView` / diff pane uses `HSplitView`.
 
@@ -86,6 +86,23 @@ A one-shot `DispatchQueue.main.async` strip of `.fullSizeContentView` is not eno
 
 Opaque section headers (`.background(.bar)` + `.fixedSize(horizontal: false, vertical: true)`) do not fix overlay. They only stop the header compressing to zero in a `VStack` with a `ScrollView`.
 
+## List + DisclosureGroup clips the first row
+
+macOS `List` + `DisclosureGroup` clips or skips the first row. A staged/unstaged file tree looks empty at the top even when the model has files.
+
+This is a separate bug from titlebar overlay. Dropping `DisclosureGroup` does not fix overlay; overlay can be correct and the first tree row still missing.
+
+Build the tree with `ScrollView` + indented `HStack` rows and a chevron `Button`. Leave `List` and `DisclosureGroup` out of document file trees.
+
+## ScrollView maxHeight covers the sibling header
+
+In a `VStack` (Unstaged / Staged stacks), `ScrollView { ... }.frame(maxHeight: .infinity)` takes the rest of the stack and paints over the section header.
+
+- Header: `.layoutPriority(1)` + `.fixedSize(horizontal: false, vertical: true)` + `.background(.bar)`.
+- ScrollView: `.frame(minHeight: 0)` so it can shrink. `maxHeight: .infinity` on that scroll view is what hides the header.
+
+`VSplitView` `minHeight` / `.clipped()` on the pane is a different layer. This is sibling layout inside one pane. Titlebar overlay is a third layer.
+
 ## Window corner inset is points from the window radius
 
 Symptom: last lines hide under the bottom-trailing rounded corner (Tahoe).
@@ -150,9 +167,25 @@ Adjustable columns belong in `HSplitView` only at the **window** shell. Inside `
 - Keep icon-only buttons in the group.
 - Put the badge in its **own** `ToolbarItem`.
 - Draw a capsule: `↓ N  ↑ N` (simple arrows, not circle SF Symbols). Do not use `arrow.down.circle` inside a circular toolbar button.
+- `.sharedBackgroundVisibility(.hidden)` is `ToolbarContent`, not `View`. Putting it on the badge view does nothing; the circular glass still clips `↓ N ↑ N`. Apply it on the `ToolbarItem` that owns the capsule.
 
 `doc.badge.plus` at caption size is unreadable (plus clipped on the document). Prefer a one-line status letter (`A`/`M`/`D`/`R`) plus counts. Two-line rows double list height for no gain.
 
 ## Stacked buttons
 
 A `VStack(spacing: 0)` of `.controlSize(.large)` buttons makes Tahoe capsule radii collide. Use `spacing: 12`, the same `.buttonBorderShape(.roundedRectangle(radius: 8))` on both, `.borderedProminent` + `.bordered`.
+
+## Diff / code panes: semantic green and red look like a different font
+
+Symptom: unified-diff add and remove lines look heavier, thinner, or a different typeface than context lines, even when the `HStack` already has `.font(.mono(11))`.
+
+Cause: `.foregroundStyle(Color.green)` / `Color.red` (system, vibrant) on Tahoe dark chrome changes optical size and weight. SwiftUI `.system(size:weight:design: .monospaced)` plus a semantic color can pick a different optical size than `.primary` context.
+
+What works:
+
+- Pin the face: `Font(NSFont.monospacedSystemFont(ofSize:weight:))`.
+- Code stays `.primary`, same as context.
+- Color only the leading `+` / `-` and the background wash (`Color.green.opacity(0.12)` / `Color.red.opacity(0.12)`).
+- Read `@AppStorage("diffFontSize")` into that NSFont size. A Settings slider that the diff view ignores is dead.
+
+Xcode and VS Code keep editor foreground on the code and tint the wash + prefix.
