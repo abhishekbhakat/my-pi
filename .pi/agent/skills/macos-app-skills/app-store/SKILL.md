@@ -82,9 +82,25 @@ If Sparkle stays in the uploaded binary, review will reject it. Do **not** point
 
 ### Drop custom licensing
 
-- No serial-key screen, no “paste your license.”
-- The Mac App Store receipt (`Contents/_MASReceipt/receipt`) is how you know the user paid.
-- If features currently gate on a license file, replace that path with StoreKit / receipt validation for the store flavor.
+- No serial-key screen, no “paste your license.” (2.4.5 vi)
+- Store receipt lives at `Contents/_MASReceipt/receipt`. That is the license. MAS Mac apps are not FairPlay-encrypted. A USB or network copy of the `.app` launches unless the app checks the purchase.
+- Same Apple ID on a second Mac is a legal extra device. Family Sharing is the legal share path: https://support.apple.com/en-us/108774
+- Gate launch on StoreKit 2 `AppTransaction.shared`. Refuse to run if unverified. https://developer.apple.com/documentation/storekit/apptransaction
+- Do not use `exit(173)` on a macOS 15+ SDK build. Sequoia no longer refreshes the receipt that way.
+- Paid upfront app: `AppTransaction` covers the purchase. Free + unlock IAP: `Transaction.currentEntitlements`.
+- Dual-channel: MAS check on the store binary only. Developer ID / Sparkle needs its own license or stays free. A paid store listing does not protect the notarized DMG.
+- Receipt check stops casual AirDrop of the `.app`. It does not stop someone who shares an Apple ID.
+- Do not parse the receipt with OpenSSL PKCS7. StoreKit 2 replaces that path.
+
+```swift
+import StoreKit
+
+let verification = try await AppTransaction.shared
+guard case .verified = verification else {
+    NSApp.terminate(nil)
+    return
+}
+```
 
 ### Versioning and identity
 
@@ -259,6 +275,7 @@ App changes:
 - [ ] Sparkle unlinked and `SU*` keys removed from the store `Info.plist`
 - [ ] “Check for Updates” hidden on the store scheme
 - [ ] License-key UI removed from the store scheme
+- [ ] Store scheme calls `AppTransaction.shared` at launch and refuses to run when unverified
 - [ ] File paths work inside the container
 - [ ] Bundle ID matches the Connect record
 - [ ] Build number increments on every upload

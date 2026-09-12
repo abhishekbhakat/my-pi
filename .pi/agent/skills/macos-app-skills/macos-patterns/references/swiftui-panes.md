@@ -139,6 +139,21 @@ func windowCornerRadius(from window: NSWindow) -> CGFloat {
 
 A persistent `.inspector` on every section is empty on some pages and wastes 260–480pt. Bind `isPresented` to the section that actually has inspector content. Hide the toolbar toggle elsewhere. Prefer putting related info under the grid, not a sticky right column, when the Windows/source app did that.
 
+`.inspector` centers a hugging child. `ContentUnavailableView` plus a `VStack` that does not fill height puts the tab picker in the vertical middle. Pin:
+
+```swift
+VStack(spacing: 0) {
+    picker
+    Divider()
+    body
+}
+.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+```
+
+Empty copy is a leading `Text` with `.secondary` and `.topLeading`, not `ContentUnavailableView`.
+
+A master-detail `DiffView` (file list + patch, min ~160 + 240) does not fit `.inspectorColumnWidth(max: 400)`. It grows the column, clips chrome (`View` to `iew`), and leaves a sliver of patch. Inspector Diff tab: stacked patches or an `NSTextView`. File list stays on the Files tab. Do not embed the commit `DiffView` in the inspector.
+
 `.onDrag` without `preview:` lifts the whole row, including status labels. Put the drag on the letter+filename cluster and pass a compact `preview:`.
 
 ## Nested HSplitView has no resize cursor
@@ -189,3 +204,22 @@ What works:
 - Read `@AppStorage("diffFontSize")` into that NSFont size. A Settings slider that the diff view ignores is dead.
 
 Xcode and VS Code keep editor foreground on the code and tint the wash + prefix.
+
+### Per-line SwiftUI diffs hitch
+
+A stacked commit patch (`ForEach` of per-line `HStack`s plus nested `ScrollView(.vertical)` / `ScrollView(.horizontal)` and `.fixedSize`) lays out every line up front. A `project.pbxproj` commit freezes scroll. SwiftUI `ScrollView([.vertical, .horizontal])` hides the horizontal bar on Tahoe overlay scrollers.
+
+Use one `NSScrollView` + `NSTextView`:
+
+- `hasVerticalScroller` / `hasHorizontalScroller` = true, `autohidesScrollers` = false, `scrollerStyle = .legacy`
+- `isHorizontallyResizable = true`
+- `textContainer?.widthTracksTextView = false`
+- `containerSize.width = CGFloat.greatestFiniteMagnitude`
+- `NSParagraphStyle.lineBreakMode = .byClipping`
+- One `NSAttributedString` (header, cyan hunk line, green/red wash). Rebuild only when the diff string or font size changes.
+
+### `fixedSize(vertical: false)` opens a hole under the first file
+
+`LazyVStack` as the first child of a scroll view gets the viewport height as its proposal. `.fixedSize(horizontal: true, vertical: false)` accepts that height. The first file header sits at the top, then a blank band, then the patch.
+
+Hug the patch: `.fixedSize(horizontal: true, vertical: true)` on the line stack, `.fixedSize(horizontal: false, vertical: true)` on each file block. Prefer `VStack` over `LazyVStack` for the file list when an `NSTextView` is not in play yet.

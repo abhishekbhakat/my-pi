@@ -211,3 +211,5 @@ ls /Applications/ | grep -i xcode
 Never invent `git` pretty-format atoms. Check `git help` before adding format strings.
 
 `%1f` and `%x1f` are U+001F (UNIT SEPARATOR). Splitting on `\u{1C}` (FILE SEPARATOR) returns `[]`. Branch pickers, tag lists, and sidebar counts go empty while `git rev-parse --abbrev-ref HEAD` still works, so the toolbar can show a branch while a `Picker` is a blank chevron. Share one named constant (`"\u{1F}"`) between the format string and the parser. `%(upstream:track)` is valid. Do not invent `%(upstream:trackshort)`.
+
+`git show --no-renames=false` is invalid: `option 'no-renames' takes no value`. Use `--find-renames`. A single throwing `async let` around body + name-status + patch clears all three, so Diff is empty while Info still paints from the history row. Load body, files, and patch with separate `try?` so one failure does not wipe the others.

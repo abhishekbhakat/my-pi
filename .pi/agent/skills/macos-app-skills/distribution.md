@@ -37,6 +37,7 @@ Sign with Apple Distribution. Export a `.pkg`. Upload. App Review. Apple hosts t
 - No Sparkle, no `SUFeedURL`, no “Check for Updates”.
 - App Sandbox on. No custom license-key screen.
 - `altool` / Transporter never notarize.
+- Paid listing: store binary checks `AppTransaction.shared` at launch. MAS Mac apps are not FairPlay-encrypted; a USB copy of the `.app` launches unless the app checks. Details: macos-app-store.
 
 Skill: macos-app-store.
 
