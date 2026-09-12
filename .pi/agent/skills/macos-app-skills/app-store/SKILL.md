@@ -19,11 +19,11 @@ Two methods. Read `../distribution.md` before signing or shipping. This skill is
 
 Do not mix. `notarytool` never uploads to the store. `altool` / Transporter never notarize.
 
-| Channel                                 | What you ship              | Apple cut | You keep on $5 |
-| --------------------------------------- | -------------------------- | --------- | -------------- |
-| Mac App Store (standard)                | Paid listing + Apple IAP   | 30%       | $3.50          |
-| Mac App Store + Small Business Program  | Same, under $1M proceeds   | 15%       | $4.25          |
-| Offline / direct (notarize + Sparkle)   | `.dmg` / `.zip` you host   | $0        | ~$5 minus fees |
+| Channel                                 | What you ship              | Apple cut |
+| --------------------------------------- | -------------------------- | --------- |
+| Mac App Store (standard)                | Paid listing + Apple IAP   | 30%       |
+| Mac App Store + Small Business Program  | Same, under $1M proceeds   | 15%       |
+| Offline / direct (notarize + Sparkle)   | `.dmg` / `.zip` you host   | $0        |
 
 ## What Apple takes
 
@@ -112,12 +112,16 @@ guard case .verified = verification else {
 
 ## One-time App Store Connect setup
 
-1. App Store Connect → **My Apps** → **+** → New Mac app.
-2. Bundle ID (must already exist in the developer portal), name, primary language, SKU.
-3. Pricing: store tiers are Apple’s (`$4.99` / `$5.00`), not a free-form $5 in every country.
+1. App Store Connect → **My Apps** → **+** → New Mac app. Platform: macOS.
+2. Bundle ID (must already exist in the developer portal), name, primary language, SKU. Bundle ID and SKU are immutable after create. Ignore the banner that “all users currently have access.”
+3. Pricing: pick an Apple price tier. Do not invent a free-form price per country. Do not add Global / Temporary / Custom price-change events unless you are changing price.
 4. Privacy policy URL, category, age rating, screenshots, description, “What’s New.”
 5. Encryption / export compliance.
-6. Paid Apps agreement + banking + tax active.
+6. Paid Apps agreement + banking + tax active. That lives under App Store Connect → **Business** → Agreements, not the app’s Monetization tab.
+
+Screenshots: at least one Mac shot. Apple lists required sizes in Connect. Ten is a maximum, not a minimum. App previews (video) are optional.
+
+Age rating: fill the questionnaire from this app’s behavior. Do not copy answers from another listing.
 
 You can upload builds before metadata is perfect. You cannot **submit for review** until metadata, screenshots, and agreements are complete.
 
@@ -130,7 +134,30 @@ Keep **both** identities on the machine.
 | GitHub / Sparkle / notarized DMG    | Developer ID Application    | None (Developer ID is the profile)           |
 | Mac App Store upload                | Apple Distribution          | Mac App Store profile for that bundle ID     |
 
-Create the store cert and profile in [developer.apple.com/account](https://developer.apple.com/account) → Certificates, Identifiers & Profiles, or let `xcodebuild -allowProvisioningUpdates` create them when signed into the team.
+Create the store cert on **this** Mac. Do not revoke Developer ID.
+
+1. Keychain Access → Certificate Assistant → Request a Certificate From a Certificate Authority.
+2. Email = Apple ID. CA email blank. **Saved to disk**. That is a `.certSigningRequest`.
+3. [developer.apple.com/account](https://developer.apple.com/account) → Certificates → **+** → **Apple Distribution** (portal may say Mac App Distribution).
+4. Upload the CSR. Download the `.cer`. Double-click it into the **login** keychain.
+5. Keychain Access → My Certificates: **Apple Distribution … (TEAM)** with a **private key** nested under it.
+
+If the portal later says “no certificate available,” the CSR was made on another Mac or the `.cer` never landed in login. New CSR on this Mac. Request again.
+
+App ID: App Sandbox does **not** appear in portal Capabilities on macOS. Turn it on in entitlements (`com.apple.security.app-sandbox`). Leave extra Capabilities empty unless you already use iCloud or Push.
+
+MAS profile: type **Mac App Store** (Distribution). Not Developer ID. Not Development. System Settings refuses it (“only development profiles”). That is expected. Install from Terminal:
+
+```bash
+mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+security cms -D -i ~/Downloads/App.provisionprofile | grep -A1 UUID
+cp ~/Downloads/App.provisionprofile \
+  ~/Library/MobileDevice/Provisioning\ Profiles/PASTE-THE-UUID.provisionprofile
+```
+
+The folder name says MobileDevice. Mac profiles live there too.
+
+Or let `xcodebuild -allowProvisioningUpdates` create cert and profile when signed into the team.
 
 Do not notarize the App Store `.pkg`. Apple re-signs store binaries.
 
@@ -193,7 +220,19 @@ You should get `./build/export/MyApp.pkg`.
 
 ### Upload
 
-Auth with an [app-specific password](https://appleid.apple.com) or an App Store Connect API key. `altool` is deprecated **for notarization only**; Apple still documents it for store uploads. Transporter is the other official path.
+`altool` rejects the normal Apple ID password. Use an [app-specific password](https://appleid.apple.com) (Account Holder email) or an App Store Connect API key. `altool` is deprecated **for notarization only**; Apple still documents it for store uploads. Transporter is the other official path.
+
+Store the app-specific password once:
+
+```bash
+xcrun altool --store-password-in-keychain-item AC_PASSWORD \
+  -u YOUR_APPLE_ID@email.com \
+  -p "xxxx-xxxx-xxxx-xxxx"
+```
+
+Then `-p "@keychain:AC_PASSWORD"`. Method 1 `notarytool store-credentials AC_PASSWORD` is a different keychain profile. Same label is fine. Do not feed the Apple ID password to either.
+
+If the Makefile has `make upload`, it wraps archive → export → `altool`. Pass `APPLE_ID=...` or `ASC_KEY_ID` + `ASC_ISSUER`. Upload is not live: Processing → Ready to Submit (minutes to an hour), then select the build and submit for review.
 
 ```bash
 xcrun altool --upload-app \
@@ -282,8 +321,8 @@ App changes:
 
 Signing:
 
-- [ ] Apple Distribution certificate installed
-- [ ] Mac App Store provisioning profile for the bundle ID
+- [ ] Apple Distribution certificate installed, private key nested in login keychain; Developer ID kept
+- [ ] Mac App Store provisioning profile copied to `~/Library/MobileDevice/Provisioning Profiles/<UUID>.provisionprofile`
 - [ ] Developer ID cert kept separately for the GitHub channel
 
 First store upload:
@@ -291,9 +330,10 @@ First store upload:
 - [ ] `xcodebuild archive` with store scheme / Release / `generic/platform=macOS`
 - [ ] `ExportOptions.plist` with `method = app-store-connect`
 - [ ] `xcodebuild -exportArchive` produces a `.pkg`
+- [ ] App-specific password in `AC_PASSWORD` (or API key). Not the Apple ID password
 - [ ] `altool --upload-app -t macos` or `iTMSTransporter` succeeds
-- [ ] Build reaches Ready to Submit
-- [ ] Metadata + screenshots + privacy policy complete
+- [ ] Build reaches Ready to Submit. Upload is not live on the store
+- [ ] Metadata + Mac screenshot(s) + privacy policy complete. Age rating answered for this app
 - [ ] Submitted for review
 
 After approval:

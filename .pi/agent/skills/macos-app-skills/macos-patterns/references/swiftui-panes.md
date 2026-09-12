@@ -73,6 +73,7 @@ What works:
 - Put `.navigationTitle`, `.navigationSubtitle`, and `.toolbar` on the **outer** `HSplitView`, not the detail `VStack`.
 - Do not set `.navigationTitle` on the sidebar `List` (that pins the title to the sidebar slot).
 - Left: app name (`navigationTitle`). Center: document (`.principal` + `navigationSubtitle`). Right: `ToolbarItemGroup(placement: .primaryAction)` so icons keep a fixed trailing cluster.
+- Do not put a lone refresh in `ToolbarItem(placement: .navigation)`. `.navigation` is for back/leading chrome. A single control next to the traffic lights looks stranded. Icon actions go in the right cluster.
 - Strip overlay chrome:
 
 ```swift
@@ -186,9 +187,23 @@ Adjustable columns belong in `HSplitView` only at the **window** shell. Inside `
 
 `doc.badge.plus` at caption size is unreadable (plus clipped on the document). Prefer a one-line status letter (`A`/`M`/`D`/`R`) plus counts. Two-line rows double list height for no gain.
 
+`checkmark.circle` as Commit reads as done/OK. Hover help (`Commit ⇧⌘C`) is not enough if the glyph is the wrong verb. Pick a glyph that names the action, or show the word.
+
 ## Stacked buttons
 
 A `VStack(spacing: 0)` of `.controlSize(.large)` buttons makes Tahoe capsule radii collide. Use `spacing: 12`, the same `.buttonBorderShape(.roundedRectangle(radius: 8))` on both, `.borderedProminent` + `.bordered`.
+
+## Click-select vs double-click-open
+
+Finder behavior: single click highlights, double click / Return / Space opens.
+
+What fails:
+
+- Two `List`s sharing one `selection` binding. Highlight is tied to which list is first responder. The other list stays blank.
+- `.focusable()` on a parent of `List`. The parent takes first responder. The list never draws the selected row.
+- `onTapGesture(count: 2)` on the row. SwiftUI waits for the double-tap timeout and often never delivers the click to `List` selection.
+
+What works: drop `List` selection. `ScrollView` + `ForEach`. Paint the row with `Color.accentColor.opacity(0.28)` when `selectedPath == path`. Single `onTapGesture` sets `selectedPath`. `simultaneousGesture(TapGesture(count: 2))` opens. `@FocusState` on that pane, set true in the tap. `.onKeyPress(.return)` and `.onKeyPress(.space)` open `selectedPath`.
 
 ## Diff / code panes: semantic green and red look like a different font
 
@@ -223,3 +238,35 @@ Use one `NSScrollView` + `NSTextView`:
 `LazyVStack` as the first child of a scroll view gets the viewport height as its proposal. `.fixedSize(horizontal: true, vertical: false)` accepts that height. The first file header sits at the top, then a blank band, then the patch.
 
 Hug the patch: `.fixedSize(horizontal: true, vertical: true)` on the line stack, `.fixedSize(horizontal: false, vertical: true)` on each file block. Prefer `VStack` over `LazyVStack` for the file list when an `NSTextView` is not in play yet.
+
+### Side-by-side columns hug per row
+
+`HStack { leftCell; rightCell }` with `.fixedSize(horizontal: true)` on the code `Text` sizes each row to that line. Left column width then changes every row. Columns zigzag, overlap, and paint over the file header.
+
+Give both panes one shared width: `NSStackView` `distribution = .fillEqually`, or `.frame(width: col)` on both cells. Do not let a `SideCell` hug.
+
+### NSSplitView inside NSViewRepresentable
+
+`NSSplitView` plus `setPosition(bounds.width / 2, ofDividerAt: 0)` in `updateNSView` runs at width 0. A `didSplit` flag then skips later layout. The right pane is a sliver (a few pixels of wash plus a scrollbar).
+
+Use `NSStackView` (horizontal, `fillEqually`, spacing 1). It fills the representable frame. Nested `NSSplitView` also fights a parent SwiftUI `HSplitView` / `VSplitView`.
+
+### Representable with no height
+
+A bare `NSView` plus Auto Layout subviews reports no intrinsic height. SwiftUI `VStack` (file header, then representable) hugs the representable to overlay-scroller height. Two horizontal scrollbars sit on the header. The pane below is empty.
+
+Return `NSStackView` from `makeNSView`. Set hugging and vertical compression resistance to `.defaultLow` on the stack and both `NSScrollView`s. Implement `sizeThatFits` and return the proposal (`max(proposal.height ?? 240, 120)`). Put `.frame(maxWidth: .infinity, maxHeight: .infinity)` on the SwiftUI wrapper. Put `Int(bounds.width)xInt(bounds.height)` in the render key so `updateNSView` reapplies after the view leaves 0x0.
+
+### Synced scroll on two NSScrollViews
+
+`contentView.postsBoundsChangedNotifications = true`. Observe `NSView.boundsDidChangeNotification` on both clip views. Copy `from.contentView.bounds.origin` onto `to`, then `reflectScrolledClipView`. A `syncing` flag stops the echo.
+
+Vertical only: keep `to`'s x, copy y. Both axes: copy the full origin. AppKit clamps when one document is shorter.
+
+Pair add/delete rows (blank line on the other side) and set both document views to `max(leftHeight, rightHeight)`. Otherwise Y positions drift.
+
+### Colored +/- rows look padded
+
+`NSAttributedString` `.backgroundColor` on add/remove lines plus default font leading makes those rows taller than context.
+
+Set `text.layoutManager?.usesFontLeading = false` in `makeNSView`. Paragraph style: `lineSpacing = 0`, `paragraphSpacing = 0`, `paragraphSpacingBefore = 0`, `lineHeightMultiple = 1`, `minimumLineHeight = maximumLineHeight = ceil(font.ascender - font.descender)`.
