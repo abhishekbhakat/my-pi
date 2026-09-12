@@ -2,24 +2,33 @@
 name: macos-release
 description: >
   Release a native macOS app to GitHub with DMG packaging and Sparkle appcast updates. Use this
-  skill whenever the user wants to publish a new version, create a release, ship an update, push
-  a release to GitHub, or update the appcast. Also trigger when the user mentions DMG creation,
-  Sparkle signing, notarization, archiving, or anything related to distributing a new version of
-  their macOS app. This covers the full release pipeline: archive, notarize, export, create DMG,
-  sign with Sparkle EdDSA, update appcast.xml, git push, and GitHub release creation.
+  skill whenever the user wants to publish a GitHub release, ship a Sparkle update, create a DMG,
+  sign with Sparkle EdDSA, or update appcast.xml. Covers version bump, DMG via create-dmg,
+  sign_update, appcast.xml, git push, and gh release. This is offline / direct distribution
+  (Developer ID + notarize). Daily `make install` without Sparkle: macos-build. Mac App Store:
+  macos-app-store. Do not mix the two methods.
 ---
 
 # Release macOS App
 
-This skill covers the full release pipeline for distributing a native macOS app outside the Mac App Store via GitHub Releases with Sparkle auto-update support.
+Offline / direct distribution: GitHub Releases + Sparkle. Not the Mac App Store.
 
-## Release Pipeline Overview
+Read `../distribution.md` before signing or shipping.
+
+| Method        | Gate                                 | This skill                                  |
+| ------------- | ------------------------------------ | ------------------------------------------- |
+| Offline       | Developer ID + `notarytool` + staple | DMG, `sign_update`, appcast, `gh release`   |
+| Mac App Store | Apple Distribution + App Review      | none. Use macos-app-store.                  |
+
+Compile / `make install` / zip+notarize without Sparkle: macos-build. Same method, earlier step. Do not open Organizer for that loop. Sign the built `.app`. `ExportOptions.plist` + `-exportArchive` is the store pipeline (`method = app-store-connect`).
+
+## Release pipeline overview
 
 ```
 Bump version → Archive → Notarize → Export → Create DMG → Sign DMG → Update appcast.xml → Git push → GitHub Release
 ```
 
-SPM apps skip Xcode Archive. `swift build -c release --arch arm64` (and x86_64), assemble `Foo.app` (see macos-build), `codesign --options runtime --entitlements`, `lipo` if universal, notarytool on the zip/dmg, staple, then the DMG/appcast steps below. `sign_update` also ships inside Sparkle's SPM artifact, not only DerivedData.
+SPM apps skip Xcode Archive. `swift build -c release --arch arm64` (and x86_64), assemble `Foo.app` (see macos-build), `codesign --options runtime --entitlements`, `lipo` if universal, notarytool on the zip/dmg, staple, then the DMG/appcast steps below. `sign_update` also ships inside Sparkle's SPM artifact, not only DerivedData. Xcode apps default to one arch (`ARCHS` + `ONLY_ACTIVE_ARCH`); dist names include `-macOS-arm64` / `-macOS-x86_64`.
 
 ## Prerequisites
 

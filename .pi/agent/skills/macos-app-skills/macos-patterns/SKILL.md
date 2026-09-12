@@ -5,11 +5,12 @@ description: >
   whenever the user is building a macOS app and needs guidance on native patterns, or when they ask
   about menu bar apps, floating panels, window levels, keyboard shortcuts, CGEvent taps, file pickers, clipboard,
   drag and drop, screen capture, system-audio capture, TCC permissions, Keychain, Accessibility typing,
-  activation policy, Quick Look, launch at login, entitlements, or any macOS-specific
-  API. Also trigger when the user seems to be applying web development patterns to macOS (e.g., using
-  z-index thinking for windows, expecting simple clipboard APIs, or not understanding focus/activation).
-  This is the "how things actually work on macOS" reference that prevents the AI from generating
-  confident but wrong code. Use this skill proactively whenever building any native macOS app.
+  activation policy, Quick Look, launch at login, entitlements, HSplitView, VSplitView, pane overflow,
+  window growing with content, content under the sidebar, titlebar overlay, fullSizeContentView,
+  window corner radius, inspector layout, or Tahoe toolbar glass. Also trigger when the user seems
+  to be applying web development patterns to macOS (e.g., using z-index thinking for windows,
+  expecting simple clipboard APIs, or not understanding focus/activation). Use this skill
+  proactively whenever building any native macOS app.
 ---
 
 # Native macOS Patterns for Web Developers
@@ -504,38 +505,41 @@ class MyView: NSView {
 }
 ```
 
-## NavigationSplitView + Inspector Layout
+## NavigationSplitView vs HSplitView
 
-The native macOS pattern for a sidebar + detail + inspector layout:
+`NavigationSplitView` + `.inspector` is for Settings-style column browsers (sidebar list, one detail, optional inspector). See the settings-ui skill.
+
+For a document window (persistent workspace sidebar, `List`, `VSplitView`, diff panes): use `HSplitView`. On macOS, `NavigationSplitView` draws the detail at window x = 0 and overlays the sidebar. Leading-padding by sidebar width breaks when the user resizes the sidebar.
+
+Read `references/swiftui-panes.md` before writing or fixing split views, List/ScrollView overflow, titlebar overlay, window-corner clipping, nested splitters, or Tahoe toolbar glass.
+
+Settings / column browser only:
 
 ```swift
-struct ContentView: View {
-    @State private var selection: Item?
-    @State private var showInspector = true
-
-    var body: some View {
-        NavigationSplitView {
-            SidebarView(selection: $selection)
-                .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 300)
-        } detail: {
-            DetailView(item: selection)
-        }
-        .inspector(isPresented: $showInspector) {
-            InspectorView(item: selection)
-                .inspectorColumnWidth(min: 250, ideal: 280, max: 400)
-        }
-        .toolbar {
-            ToolbarItem {
-                Button { showInspector.toggle() } label: {
-                    Image(systemName: "sidebar.right")
-                }
-            }
-        }
-    }
+NavigationSplitView {
+    SidebarView(selection: $selection)
+        .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 300)
+} detail: {
+    DetailView(item: selection)
+}
+.inspector(isPresented: $showInspector) {
+    InspectorView(item: selection)
+        .inspectorColumnWidth(min: 250, ideal: 280, max: 400)
 }
 ```
 
-The `.inspector()` modifier creates a native right-side panel that slides in/out, automatically manages layout, and integrates with the window's toolbar.
+Do not put a `List` / `VSplitView` document pane in that `detail:` column. Document shell:
+
+```swift
+HSplitView {
+    SidebarView(...)
+        .frame(minWidth: 180, idealWidth: 220, maxWidth: 280)
+    detail
+        .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
+        .clipped()
+}
+.inspector(isPresented: $showInspector) { ... }
+```
 
 ## Launch at Login
 
@@ -569,7 +573,7 @@ Show a system Quick Look panel for any file (images, PDFs, videos, documents):
 ```swift
 import QuickLookUI
 
-class PreviewPresenter: NSObject, QLPreviewPanelDataSource {
+class PreviewPresenter: NSObject, @preconcurrency QLPreviewPanelDataSource {
     var url: URL?
 
     func show(url: URL) {
@@ -686,3 +690,7 @@ Start/stop the `SCStream` on the same lifecycle as the meeting recorder. Mix wit
 | `<input type="file">` mental model | macOS has modal, sheet-modal, and async file pickers | Use `NSOpenPanel` with the right presentation mode |
 | Single-monitor assumptions | macOS users commonly have 2-3 displays | Always use `NSScreen.screens` and find the right one |
 | CSS animation for everything | macOS has spring physics, reduced motion, per-window animation | Use SwiftUI `.animation(.spring(...))` and check `accessibilityDisplayShouldReduceMotion` |
+| `NavigationSplitView` for a document window | Detail draws at x=0 under the sidebar | `HSplitView`; read `references/swiftui-panes.md` |
+| `.windowResizability(.contentMinSize)` with a `List` | Window grows to the longest line | `.automatic` and clip |
+| Nested `HSplitView` inside `VSplitView` | No resize cursor on hover | `HStack` + 6pt handle, `NSCursor.resizeLeftRight.set()` |
+| `.toolbar` on the `HSplitView` detail column | Headers sit under the titlebar on Tahoe | Toolbar on the outer split; strip `.fullSizeContentView` |

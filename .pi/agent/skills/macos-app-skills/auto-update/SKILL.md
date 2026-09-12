@@ -6,12 +6,15 @@ description: >
   or integrate automatic update checking. Also trigger when the user mentions Sparkle, appcast,
   SUFeedURL, EdDSA signing, or update notifications. This covers the full setup: adding the Sparkle
   SPM dependency, creating the UpdaterManager singleton, wiring it into the app delegate and UI,
-  configuring Info.plist, and generating the initial appcast.xml.
+  configuring Info.plist, and generating the initial appcast.xml. Sparkle is rejected in a
+  Mac App Store binary (App Review 2.4.5 (vii)); use macos-app-store for that path.
 ---
 
 # Sparkle Auto-Update for macOS Apps
 
-This skill adds [Sparkle](https://sparkle-project.org/) auto-update support to a native macOS app. Sparkle is the standard open-source framework for macOS app updates outside the Mac App Store.
+This skill adds [Sparkle](https://sparkle-project.org/) auto-update support to a native macOS app. Sparkle is offline / direct distribution only (Developer ID + notarize). See `../distribution.md`.
+
+App Review 2.4.5 (vii) rejects Sparkle in a store binary. Store updates are App Store only. If the user wants Mac App Store distribution, load macos-app-store. Dual-channel is common: store scheme without Sparkle, offline scheme with Sparkle. Do not leave `SUFeedURL` in a store `Info.plist`.
 
 ## Overview
 
