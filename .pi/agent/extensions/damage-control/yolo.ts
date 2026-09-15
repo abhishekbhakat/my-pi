@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { Type } from "@sinclair/typebox";
 import { getAgentDir, type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-coding-agent";
 
 const EXTENSION_ID = "yolo";
@@ -49,8 +50,36 @@ function statusMessage(enabled: boolean): string {
 		: "YOLO mode is OFF: damage-control blocking is enabled.";
 }
 
+function toolDescription(enabled: boolean): string {
+	const state = enabled
+		? "YOLO is ON. damage-control skipped. git write allowed."
+		: "YOLO is OFF. damage-control checks tool calls. git write forbidden.";
+	return `${state} Never call this tool. Status is this description. User owns /yolo. Agent never enable YOLO. Never ask user to enable it to bypass a block.`;
+}
+
+function registerYoloTool(pi: ExtensionAPI, enabled: boolean): void {
+	pi.registerTool({
+		name: "yolo",
+		label: "Yolo",
+		description: toolDescription(enabled),
+		promptSnippet: "Yolo status: read yolo tool description. Never call yolo.",
+		promptGuidelines: [
+			"Read yolo tool description for YOLO on/off. Do not call yolo.",
+			"When YOLO is ON, git write is allowed. When OFF, git stays read-only.",
+		],
+		parameters: Type.Object({}),
+		async execute() {
+			return {
+				content: [{ type: "text" as const, text: toolDescription(isYoloEnabled()) }],
+				details: {},
+			};
+		},
+	});
+}
+
 export function registerYoloCommand(pi: ExtensionAPI): void {
-	applyConfig(readConfig());
+	const enabled = applyConfig(readConfig());
+	registerYoloTool(pi, enabled);
 
 	pi.on("session_start", (_event, ctx) => {
 		updateStatus(ctx, applyConfig(readConfig()));

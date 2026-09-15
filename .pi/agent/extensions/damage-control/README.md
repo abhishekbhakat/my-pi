@@ -6,6 +6,8 @@ Blocks risky tool calls before they run. Rules live in `rules.yaml` next to this
 
 `/yolo` toggles YOLO mode. Subcommands: `on`, `off`, `status`. Bare `/yolo` flips the current state.
 
+The `yolo` tool is status-only: its description is ON or OFF. Execute does nothing useful. After toggle, `/reload` so the description matches.
+
 - YOLO off (default): every tool call is checked against the loaded rules.
 - YOLO on: all checks are skipped and every tool call is allowed. The footer shows `yolo` bright; when off it shows dimmed next to `fast` and `intent`.
 

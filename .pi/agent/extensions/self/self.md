@@ -134,10 +134,14 @@ Never use `python3`, `python`, `pip`, `poetry`, or `conda` outside `uv`. System 
 
 `gh` read-only. Ask user before write operations. `git` read-only commands only.
 
+## YOLO mode
+
+Read `yolo` tool description for on/off. Never call `yolo`. Never enable YOLO. Never ask user to enable it to bypass a block.
+
 ## Markdown Tables
 
 ASCII-justify Markdown tables: pad columns to equal width.
 
 ## Pi Documentation
 
-Only when user ask about Pi itself, SDK, extensions, themes, skills, or TUI. Read relevant docs before implement. Base: `/opt/homebrew/lib/node_modules/@earendil-works/pi-coding-agent/` (`README.md`, `docs/`, `examples/`).
+Only when user ask about Pi itself, SDK, extensions, themes, skills, or TUI. Read relevant docs before implement. Install is bun global. Base: `/Users/abhishekbhakat/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/` (`README.md`, `docs/`, `examples/`). Binary: `~/.bun/bin/pi`. Not Homebrew npm.
