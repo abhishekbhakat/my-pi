@@ -12,9 +12,9 @@
  * when you need a full process restart (e.g. after trust changes, native
  * deps, or other state that /reload does not reset).
  *
- * Windows note: npm installs `pi` as a .cmd shim. spawn("pi") without a
- * shell cannot run .cmd/.bat. Prefer re-exec of the current node + cli.js
- * (or compiled binary) so relaunch works on win32/macOS/Linux without shell.
+ * Windows note: npm/bun may install `pi` as a .cmd shim. spawn("pi") without a
+ * shell cannot run .cmd/.bat. Prefer re-exec of the current runtime + cli.js
+ * (node or bun) so relaunch works on win32/macOS/Linux without shell.
  */
 
 import { execFileSync, spawn } from "node:child_process";
@@ -45,15 +45,15 @@ function isNodeRuntime(): boolean {
  * Resolve how to re-invoke pi on this platform.
  *
  * Priority:
- * 1. Same node + entry script (process.argv[1]) — works for npm global installs
- * 2. Same compiled binary (bun/pkg) — re-exec process.execPath
+ * 1. Same runtime + entry script (process.argv[1]) — npm or bun global
+ * 2. Same compiled binary (standalone bun/pkg) — re-exec process.execPath
  * 3. `pi` on PATH — shell required on win32 for .cmd shims
  */
 function resolvePiLaunch(): LaunchSpec {
 	const entry = process.argv[1];
-	if (isNodeRuntime() && entry) {
+	if (entry) {
 		const resolvedEntry = path.resolve(entry);
-		if (fs.existsSync(resolvedEntry)) {
+		if (fs.existsSync(resolvedEntry) && resolvedEntry !== process.execPath) {
 			return {
 				command: process.execPath,
 				prefixArgs: [...process.execArgv, resolvedEntry],
@@ -62,7 +62,7 @@ function resolvePiLaunch(): LaunchSpec {
 		}
 	}
 
-	// Compiled binary / standalone executable (not node hosting a script).
+	// Compiled binary / standalone executable (no separate entry script).
 	if (!isNodeRuntime() && process.execPath && fs.existsSync(process.execPath)) {
 		return {
 			command: process.execPath,
@@ -71,7 +71,7 @@ function resolvePiLaunch(): LaunchSpec {
 		};
 	}
 
-	// PATH fallback. On Windows npm exposes pi.cmd; shell is required.
+	// PATH fallback. On Windows npm/bun may expose pi.cmd; shell is required.
 	requirePiOnPath();
 	return {
 		command: "pi",

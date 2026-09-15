@@ -43,19 +43,27 @@ if (!existsSync(daemonTs)) {
 	process.exit(1);
 }
 
+function pkgIfPresent(dir) {
+	return existsSync(join(dir, "package.json")) ? dir : null;
+}
+
 function findPiPackageDir() {
-	if (process.env.PI_PACKAGE_DIR && existsSync(join(process.env.PI_PACKAGE_DIR, "package.json"))) {
-		return process.env.PI_PACKAGE_DIR;
+	if (process.env.PI_PACKAGE_DIR) {
+		const envDir = pkgIfPresent(process.env.PI_PACKAGE_DIR);
+		if (envDir) return envDir;
 	}
+	const bunGlobal = join(homedir(), ".bun", "install", "global", "node_modules", "@earendil-works", "pi-coding-agent");
+	const bunHit = pkgIfPresent(bunGlobal);
+	if (bunHit) return bunHit;
 	try {
 		const g = execFileSync("npm", ["root", "-g"], { encoding: "utf8" }).trim();
-		const dir = join(g, "@earendil-works", "pi-coding-agent");
-		if (existsSync(join(dir, "package.json"))) return dir;
+		const npmHit = pkgIfPresent(join(g, "@earendil-works", "pi-coding-agent"));
+		if (npmHit) return npmHit;
 	} catch {
 		// ignore
 	}
-	const brew = "/opt/homebrew/lib/node_modules/@earendil-works/pi-coding-agent";
-	if (existsSync(join(brew, "package.json"))) return brew;
+	const brew = pkgIfPresent("/opt/homebrew/lib/node_modules/@earendil-works/pi-coding-agent");
+	if (brew) return brew;
 	throw new Error("cannot find @earendil-works/pi-coding-agent");
 }
 

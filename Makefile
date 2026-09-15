@@ -19,7 +19,7 @@ help:
 		'' \
 		'Targets' \
 		'  make help                 Show this help (default)' \
-		'  make install              Copy repo .pi/agent -> ~/.pi/agent' \
+		'  make install              Setup bun if missing; migrate pi CLI npm -> bun; copy config' \
 		'  make sync                 Copy live ~/.pi/agent -> repo .pi/agent' \
 		'' \
 		'Pass-through flags via ARGS=' \

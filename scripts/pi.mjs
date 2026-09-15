@@ -260,6 +260,81 @@ function run(cmd, args, cwd, options = {}) {
   return result;
 }
 
+function commandOnPath(name) {
+  const result = spawnSync(name, ["--version"], { stdio: "ignore", shell: process.platform === "win32" });
+  return !result.error && result.status === 0;
+}
+
+const PI_PKG = "@earendil-works/pi-coding-agent";
+
+function extensionInstallSpec() {
+  if (commandOnPath("bun")) {
+    return { cmd: "bun", args: ["install", "--production"] };
+  }
+  return { cmd: "npm", args: ["install", "--omit=dev", "--no-fund", "--no-audit"] };
+}
+
+function npmGlobalPiDir() {
+  const result = spawnSync("npm", ["root", "-g"], {
+    encoding: "utf8",
+    shell: process.platform === "win32",
+  });
+  if (result.error || result.status !== 0) return null;
+  const dir = path.join(result.stdout.trim(), "@earendil-works", "pi-coding-agent");
+  return exists(path.join(dir, "package.json")) ? dir : null;
+}
+
+function bunGlobalPiDir() {
+  const dir = path.join(os.homedir(), ".bun", "install", "global", "node_modules", "@earendil-works", "pi-coding-agent");
+  return exists(path.join(dir, "package.json")) ? dir : null;
+}
+
+function prependBunBin() {
+  const dir = path.join(process.env.BUN_INSTALL || path.join(os.homedir(), ".bun"), "bin");
+  const parts = (process.env.PATH || "").split(path.delimiter).filter(Boolean);
+  if (!parts.includes(dir)) process.env.PATH = [dir, ...parts].join(path.delimiter);
+}
+
+function ensureBun() {
+  const setup = path.join(SCRIPT_DIR, "setup-bun.mjs");
+  if (!exists(setup)) die(`missing ${setup}`);
+  console.log("[bun]");
+  const result = run(process.execPath, [setup], REPO_ROOT, {
+    stdio: "inherit",
+    label: "setup bun",
+  });
+  if (result.status !== 0) die("bun setup failed.");
+  prependBunBin();
+  if (!commandOnPath("bun")) die("bun still not on PATH after setup-bun.mjs.");
+  console.log("");
+}
+
+function ensureBunPiCli() {
+  ensureBun();
+  console.log("[pi cli]");
+  const npmDir = npmGlobalPiDir();
+  if (npmDir) {
+    console.log(`  npm global found: ${npmDir}`);
+    const result = run("npm", ["uninstall", "-g", PI_PKG], REPO_ROOT, {
+      stdio: "inherit",
+      label: "npm uninstall -g",
+    });
+    if (result.status !== 0) die("npm uninstall -g failed.");
+  } else {
+    console.log("  no npm global pi");
+  }
+  if (bunGlobalPiDir()) {
+    console.log("  bun global pi already present\n");
+    return;
+  }
+  const result = run("bun", ["install", "-g", PI_PKG], REPO_ROOT, {
+    stdio: "inherit",
+    label: "bun install -g",
+  });
+  if (result.status !== 0) die("bun install -g failed.");
+  console.log("");
+}
+
 function parseArgs(argv) {
   const flags = { yes: false, prune: false, host: null };
   for (let i = 0; i < argv.length; i += 1) {
@@ -337,6 +412,7 @@ function applySparseCheckouts(skillsDir) {
 
 function install(flags) {
   if (!exists(REPO_AGENT)) die(`Source directory not found: ${REPO_AGENT}`);
+  ensureBunPiCli();
   console.log(`Copying .pi/agent -> ${HOME_AGENT}\n`);
   console.log("  Overwriting protected files.\n");
   fs.mkdirSync(HOME_AGENT, { recursive: true });
@@ -355,18 +431,19 @@ function install(flags) {
       console.log("");
       const extDir = path.join(HOME_AGENT, "extensions");
       if (exists(path.join(extDir, "package.json"))) {
-        console.log("[extensions npm]");
+        const spec = extensionInstallSpec();
+        console.log(`[extensions ${spec.cmd}]`);
         const lock = path.join(extDir, "package-lock.json");
         const nm = path.join(extDir, "node_modules");
         console.log(`  package-lock.json: ${exists(lock) ? "yes" : "missing (full resolve)"}`);
         console.log(`  node_modules: ${exists(nm) ? "preserved" : "absent (cold install)"}`);
-        console.log("  starting npm install (output below)...");
-        const result = run("npm", ["install", "--omit=dev", "--no-fund", "--no-audit"], extDir, {
+        console.log(`  starting ${spec.cmd} install (output below)...`);
+        const result = run(spec.cmd, spec.args, extDir, {
           stdio: "inherit",
-          label: "npm install",
+          label: `${spec.cmd} install`,
         });
-        if (result.status === 0) console.log("  npm install complete.\n");
-        else console.log(`  WARNING: npm install failed (status ${result.status ?? "unknown"}).\n`);
+        if (result.status === 0) console.log(`  ${spec.cmd} install complete.\n`);
+        else console.log(`  WARNING: ${spec.cmd} install failed (status ${result.status ?? "unknown"}).\n`);
       }
       continue;
     }
@@ -504,7 +581,7 @@ Usage:
   node scripts/pi.mjs sync [-p]
   node scripts/pi.mjs help
 
-install  Copy repo .pi/agent -> ~/.pi/agent
+install  Copy repo .pi/agent -> ~/.pi/agent; drop npm global pi; bun install -g if missing
 sync     Copy live ~/.pi/agent -> repo .pi/agent
 
 -h HOST  Set models.json proxy origin on install

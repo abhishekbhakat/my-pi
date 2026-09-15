@@ -2,6 +2,14 @@
 
 Source of truth for this machine's [pi](https://github.com/badlogic/pi-mono) agent config. Edit files under `.pi/agent/` here, then install them into the live `~/.pi/agent` tree.
 
+The `pi` CLI is bun global. `make install` runs `scripts/setup-bun.mjs` (install bun from bun.sh if missing, prepend `~/.bun/bin` for that process), uninstalls npm global `@earendil-works/pi-coding-agent` if present, then `bun install -g` when the bun copy is missing. Config copy still uses Node. Extension `node_modules` use bun when bun is available, else npm.
+
+Standalone bun bootstrap:
+
+```bash
+node scripts/setup-bun.mjs
+```
+
 Do not edit `~/.pi` by hand. Install is the only write path into the live agent.
 
 ## Layout

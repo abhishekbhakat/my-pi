@@ -1,5 +1,6 @@
 import { dirname, join } from "node:path";
 import { existsSync, readFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
 import { getPackageDir } from "@earendil-works/pi-coding-agent";
@@ -10,8 +11,8 @@ const PACKAGE_NAME = "@earendil-works/pi-coding-agent";
  * Resolve the installed pi coding agent package root and its export-html assets.
  *
  * Prefer pi's own getPackageDir() (works inside the running pi process on every OS).
- * Fall back to argv entry, npm global prefix, and PATH shims — including Windows
- * where `which` does not exist and npm installs `pi`/`pi.cmd` next to node_modules.
+ * Fall back to argv entry, bun global, npm global prefix, and PATH shims. Windows:
+ * `which` is missing; npm/bun shims live next to node_modules.
  */
 
 let cachedRoot: string | undefined;
@@ -137,6 +138,13 @@ function resolveFromPiBinary(): string | undefined {
 	return undefined;
 }
 
+function resolveFromBunGlobal(): string | undefined {
+	const root = process.env.BUN_INSTALL || join(homedir(), ".bun");
+	const candidate = join(root, "install", "global", "node_modules", PACKAGE_NAME);
+	if (isPiPackageRoot(candidate)) return candidate;
+	return undefined;
+}
+
 function resolveFromNpmRoot(): string | undefined {
 	// npm.cmd on Windows needs a shell; execFile without shell fails for .cmd.
 	try {
@@ -184,6 +192,7 @@ export function getPiPackageRoot(): string {
 		resolveFromArgv(),
 		resolveFromThisFile(),
 		resolveFromPiBinary(),
+		resolveFromBunGlobal(),
 		resolveFromNpmRoot(),
 	];
 
