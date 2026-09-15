@@ -153,6 +153,31 @@ func windowCornerRadius(from window: NSWindow) -> CGFloat {
 }
 ```
 
+Tahoe uses a small radius on a titlebar-only window and ~26pt once `NSToolbar` exists. A dashboard with no toolbar and a repo window with a unified toolbar jump the corner on open. Give the launch window a toolbar too, or the seed/measure still jumps.
+
+Do not assign `window.toolbar = NSToolbar(...)` from an `NSViewRepresentable` when SwiftUI hosts the window. Crash (macOS 26): `EXC_BREAKPOINT` in `+[NSApplication _crashOnException:]`, KVO `removeObserver:forKeyPath:` inside SwiftUI `AppKitWindowController.updateToolbarIfNeeded`. SwiftUI tears down its toolbar and the AppKit dummy is not the object it registered.
+
+Do not fake a toolbar with SwiftUI `Color.clear.frame(width: 1, height: 1)`. That 1pt item draws a hairline in the top-trailing chrome.
+
+SwiftUI must own the `NSToolbar`. Chrome representable only measures radius and strips `.fullSizeContentView`. Never set `window.toolbar`.
+
+`EmptyView` in `ToolbarItem(placement: .principal)` does **not** create an `NSToolbarItem`. Tahoe keeps the small titlebar-only radius. Tahoe’s large corner needs a real SwiftUI toolbar item with layout size, not `EmptyView` and not an AppKit-assigned toolbar. Match the principal item’s width to the other window’s switcher so the two windows agree.
+
+```swift
+.navigationTitle("App")
+.toolbarTitleDisplayMode(.inline)
+.toolbarBackground(.visible, for: .windowToolbar)
+.toolbar {
+    ToolbarItem(placement: .principal) {
+        Text("App")
+            .font(.headline)
+            .frame(minWidth: 160, idealWidth: 220, maxWidth: 320)
+    }
+}
+```
+
+Same representable on dashboard and repo so the environment value does not start at 10 then jump to 26.
+
 ## Inspector only when it has content
 
 A persistent `.inspector` on every section is empty on some pages and wastes 260–480pt. Bind `isPresented` to the section that actually has inspector content. Hide the toolbar toggle elsewhere. Prefer putting related info under the grid, not a sticky right column, when the Windows/source app did that.
