@@ -21,6 +21,10 @@
 # zvec-grep (zg) local workspace index
 .zvec-grep/
 
+# Python
+__pycache__/
+*.py[cod]
+
 # OS
 .DS_Store
 Thumbs.db

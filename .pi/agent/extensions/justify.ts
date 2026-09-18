@@ -1,7 +1,7 @@
 /**
  * Justify Command Extension
  *
- * /justify runs markdown-table-justify/justify.py with no LLM call.
+ * /justify runs markdown-table-justify/justify.ts with bun. No LLM call.
  *
  * Usage:
  *   /justify path/to/file.md
@@ -22,13 +22,14 @@ import type { AutocompleteItem } from "@earendil-works/pi-tui";
 const execFileAsync = promisify(execFile);
 
 const EXTENSION_DIR = path.dirname(fileURLToPath(import.meta.url));
-const SKILL_REL = path.join("skills", "markdown-table-justify", "justify.py");
-const FLAG_COMPLETIONS = ["-w", "--width", "--stdout", "-o", "--output"] as const;
+const SKILL_REL = path.join("skills", "markdown-table-justify", "justify.ts");
+const FLAG_COMPLETIONS = ["-w", "--width", "--stdout", "-o", "--output", "--no-jev"] as const;
 
 type ParsedArgs = {
 	width?: number;
 	stdout: boolean;
 	output?: string;
+	noJev?: boolean;
 	paths: string[];
 	error?: string;
 };
@@ -67,6 +68,7 @@ function parseArgs(raw: string): ParsedArgs {
 	let width: number | undefined;
 	let stdout = false;
 	let output: string | undefined;
+	let noJev = false;
 
 	for (let i = 0; i < tokens.length; i++) {
 		const tok = tokens[i];
@@ -83,6 +85,10 @@ function parseArgs(raw: string): ParsedArgs {
 		}
 		if (tok === "--stdout") {
 			stdout = true;
+			continue;
+		}
+		if (tok === "--no-jev") {
+			noJev = true;
 			continue;
 		}
 		if (tok === "-o" || tok === "--output") {
@@ -113,7 +119,7 @@ function parseArgs(raw: string): ParsedArgs {
 		return { stdout: false, paths: [], error: "Use either --stdout or -o, not both" };
 	}
 
-	return { width, stdout, output, paths };
+	return { width, stdout, output, noJev, paths };
 }
 
 function buildScriptArgs(
@@ -126,6 +132,7 @@ function buildScriptArgs(
 		args.push("-w", String(parsed.width));
 	}
 	if (parsed.stdout) args.push("--stdout");
+	if (parsed.noJev) args.push("--no-jev");
 	if (parsed.output) args.push("-o", resolveUserPath(parsed.output, cwd));
 	args.push(filePath);
 	return args;
@@ -137,7 +144,7 @@ async function runJustify(
 	cwd: string,
 ): Promise<{ code: number; stdout: string; stderr: string }> {
 	try {
-		const { stdout, stderr } = await execFileAsync("uv", ["run", scriptPath, ...scriptArgs], {
+		const { stdout, stderr } = await execFileAsync("bun", [scriptPath, ...scriptArgs], {
 			cwd,
 			maxBuffer: 16 * 1024 * 1024,
 			encoding: "utf8",
@@ -240,7 +247,7 @@ export default function justifyExtension(pi: ExtensionAPI) {
 			const scriptPath = resolveScriptPath();
 			if (!scriptPath) {
 				ctx.ui.notify(
-					"justify.py not found. Expected under ~/.pi/agent/skills/markdown-table-justify/ (run make install).",
+					"justify.ts not found. Expected under ~/.pi/agent/skills/markdown-table-justify/ (run make install).",
 					"error",
 				);
 				return;

@@ -47,4 +47,5 @@ export interface CapabilityContextSection {
 export interface CapabilityContextBundle {
 	sections: CapabilityContextSection[];
 	autoPaths: string[];
+	fileContents?: Record<string, string>;
 }

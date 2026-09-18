@@ -1,7 +1,9 @@
 import type { ExtensionAPI, ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { registerCapabilityCommands } from "./commands";
+import { BOOLEAN_GUY_DEF, BOOLEAN_GUY_SCHEMA, executeBooleanGuy, hasTypeSafeAuth } from "./booleanGuy";
 import { loadCapabilityDefs } from "./definitions";
+import { applyCapabilityPrune } from "./prune";
 import { executeCapability } from "./runner";
 import type { CapabilityDef, CapabilityToolInput } from "./types";
 
@@ -29,29 +31,42 @@ function registerCapabilityTool(pi: ExtensionAPI, def: CapabilityDef): void {
 
 export default function (pi: ExtensionAPI) {
 	const capabilities = loadCapabilityDefs();
-	const capabilityToolNames = capabilities.map((c) => c.toolName);
+	const booleanGuyReady = hasTypeSafeAuth();
+	const listed = booleanGuyReady ? [...capabilities, BOOLEAN_GUY_DEF] : [...capabilities];
+	const capabilityToolNames = listed.map((c) => c.toolName);
 
 	for (const capability of capabilities) {
 		registerCapabilityTool(pi, capability);
 	}
 
+	if (booleanGuyReady) {
+		pi.registerTool({
+			name: BOOLEAN_GUY_DEF.toolName,
+			label: BOOLEAN_GUY_DEF.label,
+			description: BOOLEAN_GUY_DEF.description,
+			promptSnippet: BOOLEAN_GUY_DEF.promptSnippet,
+			promptGuidelines: BOOLEAN_GUY_DEF.promptGuidelines,
+			parameters: BOOLEAN_GUY_SCHEMA,
+			execute: async (_callId, args, signal, onUpdate, ctx) =>
+				executeBooleanGuy(pi, args as Parameters<typeof executeBooleanGuy>[1], signal, onUpdate, ctx),
+		});
+	}
+
 	registerCapabilityCommands(pi, capabilities);
+	applyCapabilityPrune(pi, listed);
 
 	function toggleCapabilities(): { enabled: boolean; names: string[] } {
 		const active = pi.getActiveTools();
 		const allActive = capabilityToolNames.every((name) => active.includes(name));
 
 		if (allActive) {
-			// All are active, disable all
 			const filtered = active.filter((name) => !capabilityToolNames.includes(name));
 			pi.setActiveTools(filtered);
 			return { enabled: false, names: capabilityToolNames };
-		} else {
-			// Not all active (or none active), enable all
-			const merged = [...new Set([...active, ...capabilityToolNames])];
-			pi.setActiveTools(merged);
-			return { enabled: true, names: capabilityToolNames };
 		}
+		const merged = [...new Set([...active, ...capabilityToolNames])];
+		pi.setActiveTools(merged);
+		return { enabled: true, names: capabilityToolNames };
 	}
 
 	function setCapabilities(enable: boolean): { changed: boolean; names: string[] } {
@@ -63,13 +78,12 @@ export default function (pi: ExtensionAPI) {
 			const merged = [...new Set([...active, ...capabilityToolNames])];
 			pi.setActiveTools(merged);
 			return { changed: true, names: capabilityToolNames };
-		} else {
-			const noneActive = !capabilityToolNames.some((name) => active.includes(name));
-			if (noneActive) return { changed: false, names: capabilityToolNames };
-			const filtered = active.filter((name) => !capabilityToolNames.includes(name));
-			pi.setActiveTools(filtered);
-			return { changed: true, names: capabilityToolNames };
 		}
+		const noneActive = !capabilityToolNames.some((name) => active.includes(name));
+		if (noneActive) return { changed: false, names: capabilityToolNames };
+		const filtered = active.filter((name) => !capabilityToolNames.includes(name));
+		pi.setActiveTools(filtered);
+		return { changed: true, names: capabilityToolNames };
 	}
 
 	async function handleCapabilityCommand(args: string, ctx: ExtensionCommandContext): Promise<void> {
@@ -90,7 +104,7 @@ export default function (pi: ExtensionAPI) {
 
 		if (subcommand === "list") {
 			const active = pi.getActiveTools();
-			const lines = capabilities
+			const lines = listed
 				.map((c) => {
 					const status = active.includes(c.toolName) ? "[active]" : "[inactive]";
 					return `${status} ${c.toolName} (${c.model})\n${c.description}`;

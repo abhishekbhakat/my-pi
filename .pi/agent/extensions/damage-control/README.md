@@ -11,7 +11,7 @@ The `yolo` tool is status-only: its description is ON or OFF. Execute does nothi
 - YOLO off (default): every tool call is checked against the loaded rules.
 - YOLO on: all checks are skipped and every tool call is allowed. The footer shows `yolo` bright; when off it shows dimmed next to `fast` and `intent`.
 
-State persists in `extensions/yolo.json`, so the toggle survives `/reload` and restarts. Turning YOLO on prints a warning. Run `/yolo off` to re-enable the guardrails.
+State is per session id in `extensions/yolo.json` (`sessions.<id>: true`). Other sessions stay off. Toggle survives `/reload` and resume of that session. Legacy `{ "enabled": true }` is ignored. Sessions with no id (`--no-session`) keep the flag in memory only. `/delete` and `/xdelete` drop that id. Writes also drop ids whose `.jsonl` is gone under `sessions/`. Resume-picker deletes are cleaned on the next write. Turning YOLO on prints a warning. Run `/yolo off` to re-enable the guardrails.
 
 ## Files
 

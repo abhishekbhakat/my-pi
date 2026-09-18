@@ -56,6 +56,16 @@ const SECTION_PRIORITY: Record<string, string[]> = {
 		"Workspace Tree",
 		"Git Diff",
 	],
+	boolean_guy: [
+		"Git Status",
+		"Path Context",
+		"Git Diff",
+		"Recent Conversation",
+		"Workspace Tree",
+		"Action Timeline",
+		"Workspace",
+		"Prior Capability Turns",
+	],
 	commit_message: [
 		"Workspace",
 		"Git Diff",
@@ -289,7 +299,7 @@ function enforceContextBudget(
 	pathBlocks: PathBlock[],
 	maxContextChars: number,
 	toolName: string,
-): CapabilityContextSection[] {
+): { sections: CapabilityContextSection[]; pathBlocks: PathBlock[] } {
 	const next = sections.map((section) => ({ ...section }));
 	const blocks = [...pathBlocks];
 
@@ -299,7 +309,10 @@ function enforceContextBudget(
 
 	syncPathContext();
 	if (sectionsSize(next) <= maxContextChars) {
-		return orderedSections(toolName, next.filter((section) => section.content.trim()));
+		return {
+			sections: orderedSections(toolName, next.filter((section) => section.content.trim())),
+			pathBlocks: blocks,
+		};
 	}
 
 	const lowestPriorityTitle = (): string | null => {
@@ -363,7 +376,10 @@ function enforceContextBudget(
 		}
 	}
 
-	return orderedSections(toolName, next.filter((section) => section.content.trim()));
+	return {
+		sections: orderedSections(toolName, next.filter((section) => section.content.trim())),
+		pathBlocks: blocks,
+	};
 }
 
 async function runCommand(
@@ -377,7 +393,7 @@ async function runCommand(
 	return [result.stdout.trim(), result.stderr.trim()].filter(Boolean).join("\n").trim();
 }
 
-async function collectSerializedConversation(ctx: ExtensionContext, maxChars: number): Promise<string> {
+export async function collectSerializedConversation(ctx: ExtensionContext, maxChars: number): Promise<string> {
 	const messages = ctx.sessionManager.getBranch()
 		.flatMap((entry) => entry.type === "message" ? [entry.message] : []);
 
@@ -861,10 +877,17 @@ export async function buildCapabilityContext(
 	}
 
 	const budgeted = enforceContextBudget(sections, pathBlocks, promptBudget, def.toolName);
+	const fileContents: Record<string, string> = {};
+	for (const block of budgeted.pathBlocks) {
+		if (block.kind === "code" || block.kind === "structured") {
+			fileContents[block.relative] = block.content;
+		}
+	}
 
 	return {
-		sections: budgeted,
+		sections: budgeted.sections,
 		autoPaths: relativeAutoPaths,
+		fileContents,
 	};
 }
 

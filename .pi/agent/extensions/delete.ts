@@ -22,9 +22,11 @@
 
 import { rmSync } from "node:fs";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { forgetYoloSession } from "./damage-control/yolo";
 
 export default function deleteExtension(pi: ExtensionAPI) {
 	let pendingDelete: string | null = null;
+	let pendingDeleteId: string | null = null;
 
 	// Runs after TUI teardown on quit. Delete here so shutdown flush
 	// cannot recreate file afterwards.
@@ -37,9 +39,12 @@ export default function deleteExtension(pi: ExtensionAPI) {
 			return;
 		}
 		const target = pendingDelete;
+		const targetId = pendingDeleteId;
 		pendingDelete = null;
+		pendingDeleteId = null;
 		try {
 			rmSync(target, { force: true });
+			if (targetId) forgetYoloSession(targetId);
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err);
 			console.error(`xdelete failed: ${message}`);
@@ -51,6 +56,7 @@ export default function deleteExtension(pi: ExtensionAPI) {
 		handler: async (_args, ctx) => {
 			// Capture before newSession(): the old ctx is stale afterwards.
 			const oldSessionFile = ctx.sessionManager.getSessionFile();
+			const oldSessionId = ctx.sessionManager.getSessionId()?.trim() ?? "";
 
 			await ctx.newSession({
 				withSession: async (freshCtx) => {
@@ -60,6 +66,7 @@ export default function deleteExtension(pi: ExtensionAPI) {
 					}
 					try {
 						rmSync(oldSessionFile, { force: true });
+						if (oldSessionId) forgetYoloSession(oldSessionId);
 						freshCtx.ui.notify("Session deleted permanently. New session started.", "info");
 					} catch (err) {
 						const message = err instanceof Error ? err.message : String(err);
@@ -79,6 +86,7 @@ export default function deleteExtension(pi: ExtensionAPI) {
 				return;
 			}
 			pendingDelete = oldSessionFile;
+			pendingDeleteId = ctx.sessionManager.getSessionId()?.trim() ?? null;
 			ctx.ui.notify("Session deleted permanently. Exiting.", "info");
 			ctx.shutdown();
 		},
