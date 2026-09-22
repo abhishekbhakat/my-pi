@@ -36,6 +36,59 @@
         }
       ]
     },
+    "deepseek": {
+      "modelOverrides": {
+        "deepseek-flash": {
+          "contextWindow": 500000,
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": "low",
+            "medium": null,
+            "high": "high",
+            "xhigh": null,
+            "max": "max"
+          }
+        }
+      }
+    },
+    "cerebras": {
+      "baseUrl": "https://api.cerebras.ai/v1",
+      "api": "openai-completions",
+      "compat": {
+        "supportsStore": false,
+        "supportsDeveloperRole": false
+      },
+      "models": [
+        {
+          "id": "qwen-3.8-27b",
+          "name": "Qwen 3.8 27B (Cerebras)",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "contextWindow": 131072,
+          "maxTokens": 40960,
+          "thinkingLevelMap": {
+            "off": "none",
+            "minimal": null,
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "xhigh": null,
+            "max": null
+          }
+        }
+      ]
+    },
+    "openrouter": {
+      "modelOverrides": {
+        "meta/muse-spark-1.3": {
+          "contextWindow": 500000
+        },
+        "meta/muse-spark-1.3-contributor": {
+          "contextWindow": 500000
+        }
+      }
+    },
     "modal-kimi": {
       "baseUrl": "https://abhishek-avi-bak--ep-kimi-k3-server.us-west.modal.direct/v1",
       "api": "openai-completions",
@@ -101,6 +154,9 @@
             "low": null,
             "high": null
           }
+        },
+        "kimi-for-coding": {
+          "contextWindow": 500000
         }
       }
     },
@@ -164,6 +220,30 @@
         "supportsStore": false,
         "supportsDeveloperRole": false,
         "maxTokensField": "max_tokens"
+      },
+      "modelOverrides": {
+        "deepseek-v4.1-flash": {
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": "low",
+            "medium": null,
+            "high": "high",
+            "xhigh": null,
+            "max": "max"
+          }
+        },
+        "glm-5.3-flash": {
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": "low",
+            "medium": null,
+            "high": "high",
+            "xhigh": null,
+            "max": "max"
+          }
+        }
       },
       "models": [
         {

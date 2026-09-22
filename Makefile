@@ -19,7 +19,8 @@ help:
 		'' \
 		'Targets' \
 		'  make help                 Show this help (default)' \
-		'  make install              Setup bun if missing; migrate pi CLI npm -> bun; copy config' \
+		'  make install              Setup bun if missing; migrate pi CLI npm -> bun; copy config;' \
+		'                            run pi update and pi update --extensions' \
 		'  make sync                 Copy live ~/.pi/agent -> repo .pi/agent' \
 		'' \
 		'Pass-through flags via ARGS=' \
@@ -32,7 +33,8 @@ help:
 		'' \
 		'Notes' \
 		'  auth.json: api_key merge both ways; oauth home -> repo on sync only.' \
-		'  After install, run /reload or /restart inside pi.'
+		'  After install, run /reload or /restart inside pi.' \
+		'  Install also updates the pi CLI and installed packages.'
 
 install:
 	$(CLI) install $(ARGS)

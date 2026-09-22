@@ -289,6 +289,29 @@ function bunGlobalPiDir() {
   return exists(path.join(dir, "package.json")) ? dir : null;
 }
 
+function piBinary() {
+  const bunHome = process.env.BUN_INSTALL || path.join(os.homedir(), ".bun");
+  const local = path.join(bunHome, "bin", process.platform === "win32" ? "pi.cmd" : "pi");
+  if (exists(local)) return local;
+  return commandOnPath("pi") ? "pi" : null;
+}
+
+function updatePiAndExtensions() {
+  const pi = piBinary();
+  console.log("[pi update]");
+  if (!pi) {
+    console.log("  pi binary not found; skipping pi update.\n");
+    return;
+  }
+  for (const args of [["update"], ["update", "--extensions"]]) {
+    const result = run(pi, args, REPO_ROOT, { stdio: "inherit", label: `pi ${args.join(" ")}` });
+    if (result.status !== 0) {
+      console.log(`  WARNING: pi ${args.join(" ")} failed (status ${result.status ?? "unknown"}).`);
+    }
+  }
+  console.log("");
+}
+
 function prependBunBin() {
   const dir = path.join(process.env.BUN_INSTALL || path.join(os.homedir(), ".bun"), "bin");
   const parts = (process.env.PATH || "").split(path.delimiter).filter(Boolean);
@@ -495,6 +518,7 @@ function install(flags) {
     console.log("  Done.");
   }
   console.log(`\n=============================\n Copy complete.\n Copied: ${copied}\n Skipped: ${skipped}\n=============================\n`);
+  updatePiAndExtensions();
   console.log("Run /reload in pi to pick up changes.");
 }
 
@@ -581,7 +605,8 @@ Usage:
   node scripts/pi.mjs sync [-p]
   node scripts/pi.mjs help
 
-install  Copy repo .pi/agent -> ~/.pi/agent; drop npm global pi; bun install -g if missing
+install  Copy repo .pi/agent -> ~/.pi/agent; drop npm global pi; bun install -g if missing;
+         then run \`pi update\` and \`pi update --extensions\`
 sync     Copy live ~/.pi/agent -> repo .pi/agent
 
 -h HOST  Set models.json proxy origin on install
@@ -589,7 +614,8 @@ sync     Copy live ~/.pi/agent -> repo .pi/agent
 -y       Accepted, unused (protected files always overwritten)
 
 auth.json: api_key merge both ways (incoming override, dest-only stay).
-  oauth (type=oauth) flows home -> repo on sync only; install never overwrites live oauth.`);
+  oauth (type=oauth) flows home -> repo on sync only; install never overwrites live oauth.
+install also updates the pi CLI and installed packages via \`pi update\` + \`pi update --extensions\`.`);
 }
 
 const [command, ...rest] = process.argv.slice(2);
