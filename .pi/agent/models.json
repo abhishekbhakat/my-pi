@@ -175,12 +175,40 @@
         }
       }
     },
-    "xai": {
+    "grok-cli": {
       "modelOverrides": {
-        "grok-4.5": {
+        "grok-4.7": {
           "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "xhigh": "xhigh",
+            "max": null
+          }
+        },
+        "grok-4.7-build-fast": {
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "xhigh": "xhigh",
+            "max": null
+          }
+        },
+        "grok-composer-2.5-fast": {
+          "reasoning": true,
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
             "low": null,
-            "medium": null
+            "medium": null,
+            "high": null,
+            "xhigh": null,
+            "max": null
           }
         }
       }
