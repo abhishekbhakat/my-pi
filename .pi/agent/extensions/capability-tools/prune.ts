@@ -22,7 +22,7 @@ const KEYWORDS: Record<string, string> = {
 
 type NoulAnswer = { noul?: unknown; probability?: unknown; p?: unknown };
 
-type CacheEntry = { at: number; allow: boolean };
+type CacheEntry = { at: number; prune: boolean };
 
 const verdictCache = new Map<string, CacheEntry>();
 
@@ -61,7 +61,7 @@ function mentionedInTask(def: CapabilityDef, task: string): boolean {
 	return keyword !== undefined && hay.includes(keyword);
 }
 
-function cacheSet(key: string, allow: boolean): void {
+function cacheSet(key: string, prune: boolean): void {
 	if (verdictCache.size >= CACHE_LIMIT) {
 		const now = Date.now();
 		for (const [k, v] of verdictCache) {
@@ -72,7 +72,7 @@ function cacheSet(key: string, allow: boolean): void {
 			if (first !== undefined) verdictCache.delete(first);
 		}
 	}
-	verdictCache.set(key, { at: Date.now(), allow });
+	verdictCache.set(key, { at: Date.now(), prune });
 }
 
 export function applyCapabilityPrune(pi: ExtensionAPI, defs: CapabilityDef[]): void {
@@ -84,10 +84,7 @@ export function applyCapabilityPrune(pi: ExtensionAPI, defs: CapabilityDef[]): v
 		if (!def) return;
 
 		const task = taskOf(event.input);
-		if (mentionedInTask(def, task)) {
-			process.stderr.write(`[capability-prune] tool=${def.toolName} decision=allow reason=mention\n`);
-			return;
-		}
+		if (mentionedInTask(def, task)) return;
 
 		const key = typeSafeApiKey();
 		if (!key) return;
@@ -95,37 +92,28 @@ export function applyCapabilityPrune(pi: ExtensionAPI, defs: CapabilityDef[]): v
 		const conversation = await collectSerializedConversation(ctx, CONVERSATION_CHARS);
 		const ck = `${def.toolName}|${task}|${conversation.length}|${conversation.slice(-1500)}`;
 		const cached = verdictCache.get(ck);
-		let allow: boolean | null = null;
-		let cachedHit = false;
+		let prune: boolean;
 		if (cached && Date.now() - cached.at < CACHE_MS) {
-			allow = cached.allow;
-			cachedHit = true;
+			prune = cached.prune;
 		} else {
-			const p = await noulAllow(key, def, task, questionsSummary(event.input), conversation, ctx.signal);
+			const p = await noulPruneProbability(key, def, task, questionsSummary(event.input), conversation, ctx.signal);
 			if (p === null) return;
-			allow = p >= THRESHOLD;
-			cacheSet(ck, allow);
-			process.stderr.write(
-				`[capability-prune] tool=${def.toolName} p=${p.toFixed(3)} decision=${allow ? "allow" : "block"} ` +
-					`task=${JSON.stringify(task.slice(0, 80))}\n`,
-			);
-		}
-		if (cachedHit) {
-			process.stderr.write(`[capability-prune] tool=${def.toolName} decision=${allow ? "allow" : "block"} cache=hit\n`);
+			prune = p >= THRESHOLD;
+			cacheSet(ck, prune);
 		}
 
-		if (!allow) {
+		if (prune) {
 			return {
 				block: true,
 				reason:
-					`${def.toolName} skipped: off-topic for this turn (Jev Noul below ${THRESHOLD}). ` +
+					`${def.toolName} skipped: Jev Noul marked this call for pruning (score at least ${THRESHOLD}). ` +
 					"Proceed without this helper using read/edit/bash. Do not retry this call.",
 			};
 		}
 	});
 }
 
-async function noulAllow(
+async function noulPruneProbability(
 	apiKey: string,
 	def: CapabilityDef,
 	task: string,
@@ -156,15 +144,14 @@ async function noulAllow(
 					conversation,
 				},
 				questions: {
-					allow: {
+					prune: {
 						type: "noul",
 						instructions:
-							`True if calling ${def.toolName} now is useful for the current user turn. ` +
-							`Tool purpose: ${def.description}. Helper task: ${task.slice(0, 1500) || "(none)"}. ` +
-							"False if this call is off-topic or ordinary read/edit/bash is enough.",
+							`Decide only whether to prune this ${def.toolName} call from the current turn. ` +
+							`Helper task: ${task.slice(0, 1500) || "(none)"}. Return true to prune, false to keep.`,
 						criteria: {
-							true: "This helper call would change what the agent does this turn.",
-							false: "This helper call is unused noise for this turn.",
+							true: "Prune this helper call from the current turn.",
+							false: "Keep this helper call for the current turn.",
 						},
 					},
 				},
@@ -172,8 +159,8 @@ async function noulAllow(
 			signal: controller.signal,
 		});
 		if (response.status === 401 || response.status === 422 || !response.ok) return null;
-		const body = await response.json() as { answers?: { allow?: unknown } };
-		return noulProb(body.answers?.allow) ?? null;
+		const body = await response.json() as { answers?: { prune?: unknown } };
+		return noulProb(body.answers?.prune) ?? null;
 	} catch {
 		return null;
 	} finally {

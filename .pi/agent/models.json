@@ -172,6 +172,28 @@
             "xhigh": "xhigh",
             "max": "max"
           }
+        },
+        "gpt-6-sol": {
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": null,
+            "medium": null,
+            "high": "high",
+            "xhigh": "xhigh",
+            "max": "max"
+          }
+        },
+        "gpt-6-luna": {
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": null,
+            "medium": null,
+            "high": "high",
+            "xhigh": "xhigh",
+            "max": "max"
+          }
         }
       }
     },
