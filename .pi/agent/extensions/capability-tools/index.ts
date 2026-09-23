@@ -1,7 +1,7 @@
 import type { ExtensionAPI, ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { registerCapabilityCommands } from "./commands";
-import { BOOLEAN_GUY_DEF, BOOLEAN_GUY_SCHEMA, executeBooleanGuy, hasTypeSafeAuth } from "./booleanGuy";
+import { BOOLEAN_GUY_DEF, BOOLEAN_GUY_SCHEMA, executeBooleanGuy } from "./booleanGuy";
 import { loadCapabilityDefs } from "./definitions";
 import { applyCapabilityPrune } from "./prune";
 import { executeCapability } from "./runner";
@@ -31,26 +31,23 @@ function registerCapabilityTool(pi: ExtensionAPI, def: CapabilityDef): void {
 
 export default function (pi: ExtensionAPI) {
 	const capabilities = loadCapabilityDefs();
-	const booleanGuyReady = hasTypeSafeAuth();
-	const listed = booleanGuyReady ? [...capabilities, BOOLEAN_GUY_DEF] : [...capabilities];
+	const listed = [...capabilities, BOOLEAN_GUY_DEF];
 	const capabilityToolNames = listed.map((c) => c.toolName);
 
 	for (const capability of capabilities) {
 		registerCapabilityTool(pi, capability);
 	}
 
-	if (booleanGuyReady) {
-		pi.registerTool({
-			name: BOOLEAN_GUY_DEF.toolName,
-			label: BOOLEAN_GUY_DEF.label,
-			description: BOOLEAN_GUY_DEF.description,
-			promptSnippet: BOOLEAN_GUY_DEF.promptSnippet,
-			promptGuidelines: BOOLEAN_GUY_DEF.promptGuidelines,
-			parameters: BOOLEAN_GUY_SCHEMA,
-			execute: async (_callId, args, signal, onUpdate, ctx) =>
-				executeBooleanGuy(pi, args as Parameters<typeof executeBooleanGuy>[1], signal, onUpdate, ctx),
-		});
-	}
+	pi.registerTool({
+		name: BOOLEAN_GUY_DEF.toolName,
+		label: BOOLEAN_GUY_DEF.label,
+		description: BOOLEAN_GUY_DEF.description,
+		promptSnippet: BOOLEAN_GUY_DEF.promptSnippet,
+		promptGuidelines: BOOLEAN_GUY_DEF.promptGuidelines,
+		parameters: BOOLEAN_GUY_SCHEMA,
+		execute: async (_callId, args, signal, onUpdate, ctx) =>
+			executeBooleanGuy(pi, args as Parameters<typeof executeBooleanGuy>[1], signal, onUpdate, ctx),
+	});
 
 	registerCapabilityCommands(pi, capabilities);
 	applyCapabilityPrune(pi, listed);

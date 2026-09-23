@@ -14,13 +14,13 @@ import {
 } from "@earendil-works/pi-ai";
 import { hashText } from "./sessions.ts";
 
-const BRIDGE = `# Pi/Claude Code CLI bridge instructions
+const BRIDGE_BASE = `# Pi/Claude Code CLI bridge instructions
 
 You are being used as the model backend for Pi Coding Agent through the local Claude Code CLI.
 The extension invokes Claude Code with \`claude -p\` for each model turn.
-Claude Code's own tools are disabled with \`--tools ""\`; Pi, not Claude Code, executes real file, shell, network, and MCP actions.
+Claude Code's own tools are disabled with \`--tools ""\`; Pi, not Claude Code, executes real file, shell, network, and MCP actions.`;
 
-If you need Pi to run a tool, output only one or more tool-call blocks and no prose:
+const BRIDGE_TOOLS = `If you need Pi to run a tool, output only one or more tool-call blocks and no prose:
 <pi_tool_call>{"name":"tool_name","arguments":{}}</pi_tool_call>
 
 Rules for Pi tool calls:
@@ -29,6 +29,14 @@ Rules for Pi tool calls:
 - Do not wrap tool calls in Markdown fences.
 - If you can answer without a tool, answer normally in plain text.
 - After Pi returns tool results, continue from the transcript and either answer or request another Pi tool call.`;
+
+const BRIDGE_NO_TOOLS = `No tools are available for this turn.
+Do not emit <pi_tool_call> blocks, XML tool tags, or any function-call syntax.
+Answer in plain text only.`;
+
+function bridgeInstructions(tools: Tool[]): string {
+	return tools.length > 0 ? `${BRIDGE_BASE}\n\n${BRIDGE_TOOLS}` : `${BRIDGE_BASE}\n\n${BRIDGE_NO_TOOLS}`;
+}
 
 export function safeJson(value: unknown): string {
 	try {
@@ -110,7 +118,7 @@ export function bridgeContext(context: TranscriptContext): BridgeContext {
 }
 
 export function buildPrompt(context: BridgeContext): string {
-	const sections: string[] = [BRIDGE];
+	const sections: string[] = [bridgeInstructions(context.tools)];
 	if (context.systemPrompt?.trim()) {
 		sections.push(`# Pi system prompt\n\n${context.systemPrompt}`);
 	}
@@ -120,7 +128,11 @@ export function buildPrompt(context: BridgeContext): string {
 	} else {
 		sections.push("# Conversation transcript\n\n(no prior messages)");
 	}
-	sections.push("Now produce the next assistant message for Pi.");
+	sections.push(
+		context.tools.length > 0
+			? "Now produce the next assistant message for Pi."
+			: "Now produce the next assistant message for Pi as plain text only. No tool calls.",
+	);
 	return sections.join("\n\n---\n\n");
 }
 
@@ -162,11 +174,13 @@ export function buildDeltaPrompt(
 			? "(no new Pi messages; continue from the Claude Code session.)"
 			: delta.map(serializeMessage).join("\n\n---\n\n");
 	const sections = [
-		BRIDGE,
+		bridgeInstructions(context.tools),
 		...(context.tools.length > 0 ? [`# Available Pi tools\n\n${serializeTools(context.tools)}`] : []),
 		"# New messages since last Claude Code turn",
 		body,
-		"Produce the next assistant message for Pi. Prior turns already live in this Claude Code session.",
+		context.tools.length > 0
+			? "Produce the next assistant message for Pi. Prior turns already live in this Claude Code session."
+			: "Produce the next assistant message for Pi as plain text only. No tool calls. Prior turns already live in this Claude Code session.",
 	];
 	return sections.join("\n\n---\n\n");
 }

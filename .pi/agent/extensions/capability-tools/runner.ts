@@ -23,7 +23,7 @@ function fastWireState(): FastWireState | undefined {
 }
 
 function extractText(response: {
-	content?: Array<{ type: string; text?: string; thinking?: string }>;
+	content?: Array<{ type: string; text?: string; thinking?: string; name?: string; arguments?: unknown }>;
 	stopReason?: string;
 	errorMessage?: string;
 }): string {
@@ -35,6 +35,22 @@ function extractText(response: {
 		.trim();
 
 	if (text) return text;
+
+	// Text-only helpers sometimes hallucinate toolCall parts. Surface intent instead of empty.
+	const toolBits = parts
+		.filter((item) => item.type === "toolCall")
+		.map((item) => {
+			const name = typeof item.name === "string" ? item.name : "unknown";
+			const args =
+				item.arguments !== undefined ? JSON.stringify(item.arguments).slice(0, 200) : "{}";
+			return `${name} ${args}`;
+		});
+	if (toolBits.length > 0) {
+		return (
+			`Helper attempted unavailable tool calls: ${toolBits.join("; ")}. ` +
+			"Proceed with read/grep/find; do not retry this helper blindly."
+		);
+	}
 
 	// Prefer provider/error status over partial thinking so failures are not masked.
 	if (response.errorMessage) return response.errorMessage;
@@ -61,6 +77,41 @@ function extractText(response: {
 	}
 
 	return "";
+}
+
+const TOOLISH_PROVIDER_RE = /MALFORMED_FUNCTION_CALL|UNEXPECTED_TOOL_CALL|TOO_MANY_TOOL_CALLS/i;
+const FALLBACK_NO_RETRY =
+	"Proceed with read/grep/find; do not retry this helper blindly.";
+
+/** True when the whole answer is fake tool markup, not a prose mention of the tag. */
+function isHallucinatedToolAnswer(text: string): boolean {
+	const trimmed = text.trim();
+	if (!trimmed) return false;
+	if (/^(?:\s*<pi_tool_call>[\s\S]*?<\/pi_tool_call>\s*)+$/.test(trimmed)) return true;
+	if (!trimmed.includes("<pi_tool_call>")) return false;
+	const without = trimmed.replace(/<pi_tool_call>[\s\S]*?<\/pi_tool_call>/g, "").trim();
+	return without.length < 40;
+}
+
+function isThrownToolish(message: string): boolean {
+	return TOOLISH_PROVIDER_RE.test(message);
+}
+
+function isToolishFailure(response: {
+	content?: Array<{ type: string }>;
+	stopReason?: string;
+	errorMessage?: string;
+}, text: string): boolean {
+	if (response.stopReason === "toolUse") return true;
+	if (TOOLISH_PROVIDER_RE.test(response.errorMessage ?? "")) return true;
+	if ((response.content ?? []).some((part) => part.type === "toolCall")) return true;
+	return isHallucinatedToolAnswer(text);
+}
+
+function withNoRetryGuidance(text: string, label: string): string {
+	const base = text.trim() || `${label} failed (tool-call hallucination).`;
+	if (base.includes("do not retry this helper blindly")) return base;
+	return `${base} ${FALLBACK_NO_RETRY}`;
 }
 
 type PartialStreamSource = {
@@ -183,69 +234,136 @@ export async function executeCapability(
 		},
 	});
 
+	const TEXT_ONLY_REMINDER =
+		"PLAIN TEXT ONLY. Do not emit function calls, tool calls, XML tool tags, or <pi_tool_call> blocks.\n\n";
+
 	try {
 		// Route through composed provider so custom extension APIs
 		// (e.g. claude-code-cli-runner) resolve. Fall back to pi-ai
 		// direct stream only when provider missing.
 		const provider = ctx.modelRegistry.getProvider(model.provider);
-		const requestContext = {
-			systemPrompt: def.systemPrompt,
-			messages: [
-				{
-					role: "user",
-					content: [{ type: "text", text: prompt }],
-					timestamp: Date.now(),
-				},
-			],
-		};
 		const requestOptions = {
 			apiKey: auth.apiKey,
 			headers: auth.headers,
 			signal,
 			reasoningEffort: model.reasoning ? def.reasoningEffort : undefined,
 			serviceTier,
+			toolChoice: "none" as const,
 			metadata: { capability: def.toolName },
 		};
-		const eventStream = provider
-			? provider.stream(model, requestContext, requestOptions)
-			: piAiStream(model, requestContext, requestOptions);
 
-		// Drain stream so result() can settle. UI shows a 2-line live preview
-		// from text, or thinking while the model is still reasoning.
-		let lastPublish = 0;
-		let lastPreview = "";
-		for await (const event of eventStream) {
-			if (signal?.aborted) break;
+		const runOnce = async (userPrompt: string) => {
+			const requestContext = {
+				systemPrompt: def.systemPrompt,
+				tools: [] as [],
+				messages: [
+					{
+						role: "user" as const,
+						content: [{ type: "text" as const, text: userPrompt }],
+						timestamp: Date.now(),
+					},
+				],
+			};
+			const eventStream = provider
+				? provider.stream(model, requestContext, requestOptions)
+				: piAiStream(model, requestContext, requestOptions);
 
-			const partial = "partial" in event ? event.partial : undefined;
-			if (!partial) continue;
+			// Drain stream so result() can settle. UI shows a 2-line live preview
+			// from text, or thinking while the model is still reasoning.
+			let lastPublish = 0;
+			let lastPreview = "";
+			for await (const event of eventStream) {
+				if (signal?.aborted) break;
 
-			const source = extractPartialStreamSource(partial);
-			if (!source) continue;
+				const partial = "partial" in event ? event.partial : undefined;
+				if (!partial) continue;
 
-			const preview = formatStreamingPreview(source, input.previewLines ?? 2);
-			if (!preview || preview === lastPreview) continue;
+				const source = extractPartialStreamSource(partial);
+				if (!source) continue;
 
-			const now = Date.now();
-			// Throttle UI updates; always allow the first preview through.
-			if (lastPreview && now - lastPublish < 120) continue;
-			lastPublish = now;
-			lastPreview = preview;
+				const preview = formatStreamingPreview(source, input.previewLines ?? 2);
+				if (!preview || preview === lastPreview) continue;
 
-			onUpdate?.({
-				content: [{ type: "text", text: preview }],
+				const now = Date.now();
+				// Throttle UI updates; always allow the first preview through.
+				if (lastPreview && now - lastPublish < 120) continue;
+				lastPublish = now;
+				lastPreview = preview;
+
+				onUpdate?.({
+					content: [{ type: "text", text: preview }],
+					details: {
+						status: "streaming",
+						streamKind: source.kind,
+						capability: def.toolName,
+						paths: context.autoPaths,
+						promptChars: userPrompt.length,
+					},
+				});
+			}
+
+			return await eventStream.result();
+		};
+
+		let response: Awaited<ReturnType<typeof runOnce>> | undefined;
+		let text = "";
+		let userPrompt = prompt;
+		let attempt = 0;
+
+		while (attempt < 2) {
+			try {
+				response = await runOnce(userPrompt);
+				text = extractText(response);
+			} catch (error) {
+				const message = error instanceof Error ? error.message : "Capability call failed";
+				if (attempt === 0 && !signal?.aborted && isThrownToolish(message)) {
+					attempt = 1;
+					userPrompt = TEXT_ONLY_REMINDER + prompt;
+					onUpdate?.({
+						content: [{ type: "text", text: `${def.label}: tool-call throw, retrying once as plain text...` }],
+						details: { status: "running", capability: def.toolName, paths: context.autoPaths },
+					});
+					continue;
+				}
+				return {
+					content: [{
+						type: "text",
+						text: withNoRetryGuidance(`${def.label} failed: ${message}`, def.label),
+					}],
+					details: {
+						status: "error",
+						capability: def.toolName,
+						model: `${model.provider}/${model.id}`,
+						paths: context.autoPaths,
+						promptChars: prompt.length,
+					},
+				};
+			}
+
+			if (attempt === 0 && isToolishFailure(response, text) && !signal?.aborted) {
+				attempt = 1;
+				userPrompt = TEXT_ONLY_REMINDER + prompt;
+				onUpdate?.({
+					content: [{ type: "text", text: `${def.label}: tool-call failure, retrying once as plain text...` }],
+					details: { status: "running", capability: def.toolName, paths: context.autoPaths },
+				});
+				continue;
+			}
+			break;
+		}
+
+		if (!response) {
+			return {
+				content: [{ type: "text", text: withNoRetryGuidance(`${def.label} failed.`, def.label) }],
 				details: {
-					status: "streaming",
-					streamKind: source.kind,
+					status: "error",
 					capability: def.toolName,
+					model: `${model.provider}/${model.id}`,
 					paths: context.autoPaths,
 					promptChars: prompt.length,
 				},
-			});
+			};
 		}
-
-		const response = await eventStream.result();
-		const text = extractText(response);
 
 		if (response.stopReason === "aborted") {
 			return {
@@ -260,15 +378,20 @@ export async function executeCapability(
 			};
 		}
 
-		if (response.stopReason === "error") {
+		const toolish = isToolishFailure(response, text);
+		if (response.stopReason === "error" || toolish) {
+			const failureText = toolish
+				? withNoRetryGuidance(text, def.label)
+				: text || `${def.label} failed.`;
 			return {
-				content: [{ type: "text", text: text || `${def.label} failed.` }],
+				content: [{ type: "text", text: failureText }],
 				details: {
 					status: "error",
 					capability: def.toolName,
 					model: `${model.provider}/${model.id}`,
 					paths: context.autoPaths,
 					promptChars: prompt.length,
+					stopReason: response.stopReason,
 				},
 			};
 		}
@@ -293,7 +416,7 @@ export async function executeCapability(
 	} catch (error) {
 		const message = error instanceof Error ? error.message : "Capability call failed";
 		return {
-			content: [{ type: "text", text: `${def.label} failed: ${message}` }],
+			content: [{ type: "text", text: withNoRetryGuidance(`${def.label} failed: ${message}`, def.label) }],
 			details: {
 				status: "error",
 				capability: def.toolName,

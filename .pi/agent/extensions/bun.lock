@@ -8,7 +8,6 @@
         "@google/genai": "^1.0.0",
         "marked": "^18.0.14",
         "shlex": "^3.0.0",
-        "yaml": "^2.7.0",
       },
       "devDependencies": {
         "typescript": "^5.9.3",
@@ -104,6 +103,5 @@
 
     "ws": ["ws@8.21.3", "", { "peerDependencies": { "bufferutil": "^4.0.1", "utf-8-validate": ">=5.0.2" }, "optionalPeers": ["bufferutil", "utf-8-validate"] }, "sha512-201TZ/kPWxoPr/OKWjquZR1SWKXcvxdH+e1xrx89b3YbmzLMFCLfnaG1HFIgWzJOEWZ7MvpK++odZufgYR50Rw=="],
 
-    "yaml": ["yaml@2.8.2", "", { "bin": "bin.mjs" }, ""],
   }
 }

@@ -159,7 +159,7 @@ export function registerCompactTools(pi: ExtensionAPI): void {
 	register(
 		"bash",
 		seed.bash,
-		"Execute bash commands (`tree --gitignore`, `ls`, `rg`,  etc.)",
+		"Execute bash commands (`uv run python -c`, `make --help`, `ssh`, etc.)",
 	);
 	register("grep", seed.grep);
 	register("find", seed.find);

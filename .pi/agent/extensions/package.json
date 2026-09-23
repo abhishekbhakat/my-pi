@@ -5,8 +5,7 @@
   "dependencies": {
     "@google/genai": "^1.0.0",
     "marked": "^18.0.14",
-    "shlex": "^3.0.0",
-    "yaml": "^2.7.0"
+    "shlex": "^3.0.0"
   },
   "devDependencies": {
     "typescript": "^5.9.3"

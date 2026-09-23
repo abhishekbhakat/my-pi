@@ -41,12 +41,29 @@
         "deepseek-flash": {
           "contextWindow": 500000,
           "thinkingLevelMap": {
+            "off": "off",
             "minimal": null,
             "low": "low",
             "medium": null,
             "high": "high",
             "xhigh": null,
             "max": "max"
+          }
+        }
+      }
+    },
+    "xiaomi-token-plan-sgp": {
+      "modelOverrides": {
+        "mimo-v2.6-pro": {
+          "contextWindow": 262144,
+          "thinkingLevelMap": {
+            "off": "off",
+            "minimal": null,
+            "low": "low",
+            "medium": null,
+            "high": "high",
+            "xhigh": null,
+            "max": null
           }
         }
       }
@@ -155,7 +172,7 @@
           }
         },
         "kimi-for-coding": {
-          "contextWindow": 500000
+          "contextWindow": 262144
         }
       }
     },
@@ -198,7 +215,11 @@
     },
     "grok-cli": {
       "modelOverrides": {
+        "grok-4.5": {
+          "contextWindow": 262144
+        },
         "grok-4.7": {
+          "contextWindow": 262144,
           "thinkingLevelMap": {
             "off": null,
             "minimal": null,
@@ -210,6 +231,7 @@
           }
         },
         "grok-4.7-build-fast": {
+          "contextWindow": 262144,
           "thinkingLevelMap": {
             "off": null,
             "minimal": null,

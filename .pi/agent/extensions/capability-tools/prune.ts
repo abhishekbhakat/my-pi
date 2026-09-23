@@ -1,10 +1,8 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { typeSafeApiKey } from "./booleanGuy";
+import { JEV_API_KEY, JEV_MODEL, JEV_URL } from "../shared/jev-zen";
 import { collectSerializedConversation } from "./context";
 import type { CapabilityDef } from "./types";
 
-const SYSTEMONE_URL = "https://api.typesafe.ai/v1/systemone";
-const MODEL = "jev-latest";
 const LISA_ACTIVE = Symbol.for("my-pi.lisa.active");
 const THRESHOLD = 0.6;
 const CONVERSATION_CHARS = 8000;
@@ -86,9 +84,6 @@ export function applyCapabilityPrune(pi: ExtensionAPI, defs: CapabilityDef[]): v
 		const task = taskOf(event.input);
 		if (mentionedInTask(def, task)) return;
 
-		const key = typeSafeApiKey();
-		if (!key) return;
-
 		const conversation = await collectSerializedConversation(ctx, CONVERSATION_CHARS);
 		const ck = `${def.toolName}|${task}|${conversation.length}|${conversation.slice(-1500)}`;
 		const cached = verdictCache.get(ck);
@@ -96,7 +91,7 @@ export function applyCapabilityPrune(pi: ExtensionAPI, defs: CapabilityDef[]): v
 		if (cached && Date.now() - cached.at < CACHE_MS) {
 			prune = cached.prune;
 		} else {
-			const p = await noulPruneProbability(key, def, task, questionsSummary(event.input), conversation, ctx.signal);
+			const p = await noulPruneProbability(JEV_API_KEY, def, task, questionsSummary(event.input), conversation, ctx.signal);
 			if (p === null) return;
 			prune = p >= THRESHOLD;
 			cacheSet(ck, prune);
@@ -128,14 +123,14 @@ async function noulPruneProbability(
 
 	const taskSlice = task.slice(0, 4000);
 	try {
-		const response = await fetch(SYSTEMONE_URL, {
+		const response = await fetch(JEV_URL, {
 			method: "POST",
 			headers: {
 				Authorization: `Bearer ${apiKey}`,
 				"Content-Type": "application/json",
 			},
 			body: JSON.stringify({
-				model: MODEL,
+				model: JEV_MODEL,
 				state: {
 					task: taskSlice,
 					questions,

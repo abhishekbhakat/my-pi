@@ -17,6 +17,27 @@ export function claudeBin(): string {
 	return process.env.CLAUDE_CODE_PI_BIN?.trim() || "claude";
 }
 
+const ROUTING_ENV = [
+	"ANTHROPIC_API_KEY",
+	"ANTHROPIC_AUTH_TOKEN",
+	"ANTHROPIC_BASE_URL",
+	"ANTHROPIC_CUSTOM_HEADERS",
+	"ANTHROPIC_BEDROCK_BASE_URL",
+	"ANTHROPIC_VERTEX_BASE_URL",
+	"ANTHROPIC_FOUNDRY_BASE_URL",
+	"ANTHROPIC_FOUNDRY_API_KEY",
+	"ANTHROPIC_FOUNDRY_RESOURCE",
+	"CLAUDE_CODE_USE_BEDROCK",
+	"CLAUDE_CODE_USE_VERTEX",
+	"CLAUDE_CODE_USE_FOUNDRY",
+];
+
+export function claudeEnv(): NodeJS.ProcessEnv {
+	const env = { ...process.env };
+	for (const name of ROUTING_ENV) delete env[name];
+	return env;
+}
+
 export function requestTimeoutMs(): number {
 	const configured = Number(process.env.CLAUDE_CODE_PI_TIMEOUT_MS);
 	if (Number.isFinite(configured) && configured > 0) return configured;
@@ -70,6 +91,11 @@ export function effortArgs(level: ModelThinkingLevel | undefined, map?: Thinking
 	return effort ? ["--effort", effort] : [];
 }
 
+export function thinkingDisplayArgs(level: ModelThinkingLevel | undefined): string[] {
+	if (!level || level === "off") return [];
+	return ["--thinking-display", "summarized"];
+}
+
 export function buildClaudeArgs(options: {
 	modelId: string;
 	reasoning?: ModelThinkingLevel;
@@ -90,6 +116,7 @@ export function buildClaudeArgs(options: {
 	}
 	if (options.sessionName) args.push("-n", options.sessionName);
 	args.push(...effortArgs(options.reasoning, options.thinkingLevelMap));
+	args.push(...thinkingDisplayArgs(options.reasoning));
 	args.push("--output-format", "stream-json", "--verbose");
 	if (options.useStreamJson) args.push("--input-format", "stream-json");
 	return args;

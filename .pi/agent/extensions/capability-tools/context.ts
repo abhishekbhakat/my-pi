@@ -393,12 +393,57 @@ async function runCommand(
 	return [result.stdout.trim(), result.stderr.trim()].filter(Boolean).join("\n").trim();
 }
 
+/**
+ * Rewrite only generated action-record lines. Call-shaped text like
+ * `read(path="...")` primes Gemini into MALFORMED_FUNCTION_CALL.
+ * Keep targets in inert prose; leave user/assistant prose untouched.
+ */
+function softenToolCallRecord(body: string): string {
+	const parts: string[] = [];
+	for (const match of body.matchAll(/\b([A-Za-z_][\w-]*)\s*\(([^)]*)\)/g)) {
+		const name = match[1];
+		const args = match[2] ?? "";
+		const path =
+			args.match(/(?:^|,)\s*(?:path|file|cwd)\s*=\s*"([^"]+)"/i)?.[1] ??
+			args.match(/(?:^|,)\s*(?:path|file|cwd)\s*=\s*'([^']+)'/i)?.[1];
+		const pattern = args.match(/(?:^|,)\s*pattern\s*=\s*"([^"]{1,80})"/i)?.[1];
+		const bits = [`used ${name}`];
+		if (path) bits.push(`on ${path}`);
+		if (pattern) bits.push(`pattern ${JSON.stringify(pattern)}`);
+		parts.push(bits.join(" "));
+	}
+	if (parts.length === 0) return body.slice(0, 240);
+	return parts.join("; ");
+}
+
+export function softenHelperTranscript(text: string): string {
+	if (!text) return text;
+	const lines = text.split("\n");
+	const out: string[] = [];
+	for (const line of lines) {
+		if (line.startsWith("[Assistant tool calls]:")) {
+			const body = line.slice("[Assistant tool calls]:".length).trim();
+			out.push(
+				`[Past assistant actions for reference only; not callable]: ${softenToolCallRecord(body)}`,
+			);
+			continue;
+		}
+		if (line.startsWith("[Tool result]")) {
+			out.push(line.replace(/^\[Tool result[^\]]*\]:/, "[Past tool output for reference only]:"));
+			continue;
+		}
+		out.push(line);
+	}
+	return out.join("\n");
+}
+
 export async function collectSerializedConversation(ctx: ExtensionContext, maxChars: number): Promise<string> {
 	const messages = ctx.sessionManager.getBranch()
 		.flatMap((entry) => entry.type === "message" ? [entry.message] : []);
 
 	if (messages.length === 0) return "";
-	return truncateTail(serializeConversation(convertToLlm(messages)), maxChars);
+	const raw = serializeConversation(convertToLlm(messages));
+	return truncateTail(softenHelperTranscript(raw), maxChars);
 }
 
 async function collectGitStatus(

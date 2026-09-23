@@ -12,7 +12,7 @@ import {
 	type ToolCall,
 	type TranscriptContext,
 } from "@earendil-works/pi-ai";
-import { buildClaudeArgs, claudeBin, describeStreamError, requestTimeoutMs, STDERR_LIMIT, type SessionArgMode } from "./cli.ts";
+import { buildClaudeArgs, claudeBin, claudeEnv, describeStreamError, requestTimeoutMs, STDERR_LIMIT, type SessionArgMode } from "./cli.ts";
 import {
 	bridgeContext,
 	buildDeltaPrompt,
@@ -185,7 +185,7 @@ export function streamClaudeCode(
 				}),
 				{
 					stdio: ["pipe", "pipe", "pipe"],
-					env: { ...process.env },
+					env: claudeEnv(),
 					cwd: mirror!.record?.cwd || process.cwd(),
 				},
 			);
@@ -279,7 +279,10 @@ export function streamClaudeCode(
 				stream.push({ type: "thinking_delta", contentIndex: thinkingIndex, delta: parsed.thinking, partial: output });
 				stream.push({ type: "thinking_end", contentIndex: thinkingIndex, content: parsed.thinking, partial: output });
 			}
-			const toolCalls = parseToolCalls(responseText);
+			// Capability helpers and other tool-free callers get plain text only.
+			// Parsing <pi_tool_call> here would wipe the answer into stopReason toolUse.
+			const allowTools = !isCapabilityCall(options) && mirror.bridge.tools.length > 0;
+			const toolCalls = allowTools ? parseToolCalls(responseText) : [];
 			if (toolCalls.length > 0) {
 				output.stopReason = "toolUse";
 				for (const call of toolCalls) {

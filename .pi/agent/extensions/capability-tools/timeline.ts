@@ -78,12 +78,15 @@ export async function collectActionTimeline(
 			model,
 			{
 				systemPrompt: TIMELINE_SYSTEM_PROMPT,
+				tools: [],
 				messages: [
 					{
 						role: "user",
 						content: [{
 							type: "text",
 							text: [
+								"PLAIN TEXT ONLY. No function calls or tool syntax.",
+								"",
 								"## Current Helper Task",
 								task.trim(),
 								"",
@@ -99,9 +102,16 @@ export async function collectActionTimeline(
 				apiKey: auth.apiKey,
 				headers: auth.headers,
 				signal,
+				toolChoice: "none",
 				reasoningEffort: model.reasoning ? (def.timelineReasoningEffort ?? "medium") : undefined,
+				metadata: { capability: `${def.toolName}:timeline` },
 			},
 		);
+
+		if (response.stopReason === "error" || response.stopReason === "aborted" || response.stopReason === "toolUse") {
+			return "";
+		}
+		if (response.errorMessage) return "";
 
 		const timeline = truncateHead(extractText(response), def.maxTimelineChars);
 		if (timeline) setTimelineCache(cacheKey, timeline);
