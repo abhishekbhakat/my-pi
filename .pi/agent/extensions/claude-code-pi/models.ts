@@ -1,3 +1,5 @@
+import type { ThinkingLevelMap } from "@earendil-works/pi-ai";
+
 export const PROVIDER_ID = "claude-code-cli";
 export const API_ID = "claude-code-cli-runner";
 export const DEFAULT_CONTEXT_WINDOW = 1_000_000;
@@ -68,11 +70,12 @@ export function configuredModels(raw: string | undefined): ClaudeCodeModelInfo[]
 	});
 }
 
-export function providerModels(models: ClaudeCodeModelInfo[]) {
+export function providerModels(models: ClaudeCodeModelInfo[], thinkingLevelMap?: ThinkingLevelMap) {
 	return models.map((model) => ({
 		id: model.id,
 		name: `${model.name} (Claude Code CLI)`,
 		reasoning: model.reasoning,
+		...(thinkingLevelMap ? { thinkingLevelMap } : {}),
 		input: ["text", "image"] as ("text" | "image")[],
 		contextWindow: model.contextWindow,
 		maxTokens: model.maxTokens,

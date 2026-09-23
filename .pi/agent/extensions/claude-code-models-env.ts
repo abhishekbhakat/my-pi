@@ -3,10 +3,10 @@
  * Local extensions run before package extensions, so this env is visible
  * when claude-code-pi calls configuredModels(process.env.CLAUDE_CODE_PI_MODELS).
  *
- * Bare alias `fable` tracks latest. We pin `claude-fable-5-1` instead.
+ * Fable is disabled: pinned Opus only, alongside sonnet.
  */
-const DEFAULT_MODELS = "sonnet,opus,claude-fable-5-1";
-const PIN = "claude-fable-5-1";
+const DEFAULT_MODELS = "sonnet,opus";
+const PIN = "opus";
 
 function normalizeModelsEnv(raw: string | undefined): string {
 	if (!raw?.trim()) return DEFAULT_MODELS;

@@ -41,7 +41,6 @@
         "deepseek-flash": {
           "contextWindow": 500000,
           "thinkingLevelMap": {
-            "off": null,
             "minimal": null,
             "low": "low",
             "medium": null,
@@ -190,8 +189,8 @@
             "minimal": null,
             "low": null,
             "medium": null,
-            "high": "high",
-            "xhigh": "xhigh",
+            "high": null,
+            "xhigh": null,
             "max": "max"
           }
         }

@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { checkCliStatus, claudeBin, setupGuidance, type CliStatus } from "./cli.ts";
+import { buildThinkingLevelMap, checkCliStatus, claudeBin, detectEffortLevels, setupGuidance, type CliStatus } from "./cli.ts";
 import { API_ID, configuredModels, PROVIDER_ID, providerModels, type ClaudeCodeModelInfo } from "./models.ts";
 import { getActivePiSessionId, loadRecord, setActivePiSessionId } from "./sessions.ts";
 import { streamClaudeCode } from "./stream.ts";
@@ -10,6 +10,7 @@ export { buildClaudeArgs, effortArgs } from "./cli.ts";
 export { buildPrompt, buildStreamJsonInput, parseStreamJsonOutput } from "./prompt.ts";
 
 let registeredModels: ClaudeCodeModelInfo[] = configuredModels(process.env.CLAUDE_CODE_PI_MODELS);
+let effortLevels: string[] = [];
 let lastCliStatus: CliStatus | undefined;
 
 function registerClaudeProvider(pi: ExtensionAPI) {
@@ -18,7 +19,7 @@ function registerClaudeProvider(pi: ExtensionAPI) {
 		baseUrl: "cli:claude-p",
 		apiKey: "claude-code-cli-no-api-key",
 		api: API_ID,
-		models: providerModels(registeredModels),
+		models: providerModels(registeredModels, buildThinkingLevelMap(effortLevels)),
 		streamSimple: streamClaudeCode,
 	});
 }
@@ -31,7 +32,9 @@ function statusLines(status?: CliStatus): string[] {
 		"Transport: local `claude -p` per model turn; Pi session maps to a Claude Code session UUID",
 		"Fallbacks: none (no Anthropic SDK, HTTP API, or built-in Claude provider)",
 		'Own Claude Code tools: disabled via --tools ""',
-		"Thinking: --effort mapped from Pi thinking levels (minimal→low … xhigh)",
+		effortLevels.length > 0
+			? `Thinking: --effort levels from claude --help: ${effortLevels.join(", ")}`
+			: "Thinking: --effort levels not detected; CLI default effort used",
 		"Images: sent as base64 blocks via --input-format stream-json",
 		`Registered models: ${registeredModels.length}`,
 	];
@@ -54,6 +57,7 @@ function statusLines(status?: CliStatus): string[] {
 
 export default function claudeCodePiExtension(pi: ExtensionAPI) {
 	registeredModels = configuredModels(process.env.CLAUDE_CODE_PI_MODELS);
+	effortLevels = detectEffortLevels();
 	registerClaudeProvider(pi);
 
 	pi.on("session_start", async (_event: any, ctx: any) => {

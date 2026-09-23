@@ -204,6 +204,7 @@ export async function executeCapability(
 			signal,
 			reasoningEffort: model.reasoning ? def.reasoningEffort : undefined,
 			serviceTier,
+			metadata: { capability: def.toolName },
 		};
 		const eventStream = provider
 			? provider.stream(model, requestContext, requestOptions)

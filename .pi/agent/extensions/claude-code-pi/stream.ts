@@ -5,15 +5,25 @@ import {
 	type Api,
 	type AssistantMessage,
 	type AssistantMessageEventStream,
-	type Context,
 	type ImageContent,
 	type Message,
 	type Model,
 	type SimpleStreamOptions,
 	type ToolCall,
+	type TranscriptContext,
 } from "@earendil-works/pi-ai";
-import { buildClaudeArgs, claudeBin, requestTimeoutMs, setupGuidance, STDERR_LIMIT, type SessionArgMode } from "./cli.ts";
-import { buildDeltaPrompt, buildPrompt, buildStreamJsonInput, parseStreamJsonOutput, parseToolCalls, safeJson, selectSentMessages } from "./prompt.ts";
+import { buildClaudeArgs, claudeBin, describeStreamError, requestTimeoutMs, STDERR_LIMIT, type SessionArgMode } from "./cli.ts";
+import {
+	bridgeContext,
+	buildDeltaPrompt,
+	buildPrompt,
+	buildStreamJsonInput,
+	parseStreamJsonOutput,
+	parseToolCalls,
+	safeJson,
+	selectSentMessages,
+	type BridgeContext,
+} from "./prompt.ts";
 import {
 	canResume,
 	ensureRecord,
@@ -34,12 +44,16 @@ function isSessionLoss(error: unknown): boolean {
 	return RESEED_SIGNATURES.some((sig) => message.includes(sig));
 }
 
-// Main Pi turns carry the agent tool registry. Capability helpers (reasoning
-// coach, scout) run with an empty tool list and their own system prompt, so
-// they never touch the mirror. A tool-free main turn also runs stateless;
-// that is the accepted trade for not inferring caller identity from content.
-function isMainSessionTurn(context: Context): boolean {
-	return (context.tools?.length ?? 0) > 0;
+// Capability calls are marked by capability-tools metadata. They decide their
+// own context and tool set, so they must never seed or resume the main mirror.
+function isCapabilityCall(options?: SimpleStreamOptions): boolean {
+	return typeof options?.metadata?.capability === "string";
+}
+
+// Unmarked calls with a tool registry are normal Pi turns. Tool-free unmarked
+// calls stay stateless; that covers cache warmup and other internal callers.
+function isMainSessionTurn(bridge: BridgeContext, options?: SimpleStreamOptions): boolean {
+	return !isCapabilityCall(options) && bridge.tools.length > 0;
 }
 
 function emptyUsage(): AssistantMessage["usage"] {
@@ -86,45 +100,48 @@ function imagesFrom(messages: Message[]): ImageContent[] {
 type Mirror = {
 	mode: SessionArgMode;
 	record?: SessionRecord;
+	bridge: BridgeContext;
 	prompt: string;
 	sentMessages: Message[];
 };
 
-async function resolveMirror(context: Context): Promise<Mirror> {
+async function resolveMirror(context: TranscriptContext, options?: SimpleStreamOptions): Promise<Mirror> {
+	const bridge = bridgeContext(context);
 	const piSessionId = getActivePiSessionId();
-	if (!piSessionId || !isMainSessionTurn(context)) {
-		return { mode: "none", prompt: buildPrompt(context), sentMessages: context.messages };
+	if (!piSessionId || !isMainSessionTurn(bridge, options)) {
+		return { mode: "none", bridge, prompt: buildPrompt(bridge), sentMessages: bridge.messages };
 	}
 
 	const record = await ensureRecord(piSessionId, process.cwd());
-	const systemHash = hashSystemPrompt(context.systemPrompt);
+	const systemHash = hashSystemPrompt(bridge.systemPrompt);
 	if (
 		record.initialized &&
 		record.systemHash === systemHash &&
-		canResume(record, context.messages)
+		canResume(record, bridge.messages)
 	) {
 		return {
 			mode: "resume",
 			record,
-			prompt: buildDeltaPrompt(context, record.syncedCount, record.lastReplyHash),
-			sentMessages: selectSentMessages(context, record.syncedCount, record.lastReplyHash),
+			bridge,
+			prompt: buildDeltaPrompt(bridge, record.syncedCount, record.lastReplyHash),
+			sentMessages: selectSentMessages(bridge, record.syncedCount, record.lastReplyHash),
 		};
 	}
 	if (!record.initialized) {
-		return { mode: "seed", record, prompt: buildPrompt(context), sentMessages: context.messages };
+		return { mode: "seed", record, bridge, prompt: buildPrompt(bridge), sentMessages: bridge.messages };
 	}
 	if (record.systemHash === systemHash) {
 		// Same conversation, prefix broke (/undo, compact): start a fresh mirror.
 		const next = await reseedRecord(piSessionId, process.cwd());
-		return { mode: "seed", record: next, prompt: buildPrompt(context), sentMessages: context.messages };
+		return { mode: "seed", record: next, bridge, prompt: buildPrompt(bridge), sentMessages: bridge.messages };
 	}
 	// Different system prompt (helper): stateless, mirror untouched.
-	return { mode: "none", prompt: buildPrompt(context), sentMessages: context.messages };
+	return { mode: "none", bridge, prompt: buildPrompt(bridge), sentMessages: bridge.messages };
 }
 
 export function streamClaudeCode(
 	model: Model<Api>,
-	context: Context,
+	context: TranscriptContext,
 	options?: SimpleStreamOptions,
 ): AssistantMessageEventStream {
 	const stream = createAssistantMessageEventStream();
@@ -160,6 +177,7 @@ export function streamClaudeCode(
 				buildClaudeArgs({
 					modelId: model.id,
 					reasoning: options?.reasoning,
+					thinkingLevelMap: model.thinkingLevelMap,
 					useStreamJson,
 					sessionMode: mirror!.mode,
 					claudeSessionId: mirror!.record?.claudeSessionId,
@@ -202,12 +220,16 @@ export function streamClaudeCode(
 
 			if (options?.signal?.aborted) throw new Error("Request was aborted");
 			if (timedOut) throw new Error(`claude -p timed out after ${timeout}ms`);
-			if (code !== 0) throw new Error(stderr.trim() || `claude -p exited with code ${code}`);
+			// stream-json reports CLI failures in the stdout result event; stderr is often empty.
+			if (code !== 0) {
+				const detail = parseStreamJsonOutput(stdout).text.trim();
+				throw new Error(stderr.trim() || detail || `claude -p exited with code ${code}`);
+			}
 		};
 
 		try {
 			// resolveMirror does disk IO; it must settle the stream on failure.
-			mirror = await resolveMirror(context);
+			mirror = await resolveMirror(context, options);
 			stream.push({ type: "start", partial: output });
 			try {
 				await runOnce();
@@ -219,7 +241,7 @@ export function streamClaudeCode(
 					isSessionLoss(error)
 				) {
 					const record = await reseedRecord(mirror.record.piSessionId, process.cwd());
-					mirror = { mode: "seed", record, prompt: buildPrompt(context), sentMessages: context.messages };
+					mirror = { mode: "seed", record, bridge: mirror.bridge, prompt: buildPrompt(mirror.bridge), sentMessages: mirror.bridge.messages };
 					await runOnce();
 				} else {
 					throw error;
@@ -237,10 +259,11 @@ export function streamClaudeCode(
 			if (mirror.record) {
 				await markSeeded(
 					mirror.record,
-					context.messages,
-					context.systemPrompt,
+					mirror.bridge.messages,
+					mirror.bridge.systemPrompt,
 					mirror.mode,
-					parsed.text || undefined,
+					// Same order and join as assistantText() so skipRecordedReply matches.
+					[parsed.thinking, parsed.text].filter(Boolean).join("\n") || undefined,
 				);
 			} else if (mirror.mode === "none") {
 				const piSessionId = getActivePiSessionId();
@@ -249,6 +272,13 @@ export function streamClaudeCode(
 
 			applyUsage(model, output, parsed, mirror.prompt);
 			const responseText = parsed.text;
+			if (parsed.thinking) {
+				const thinkingIndex = output.content.length;
+				output.content.push({ type: "thinking", thinking: parsed.thinking });
+				stream.push({ type: "thinking_start", contentIndex: thinkingIndex, partial: output });
+				stream.push({ type: "thinking_delta", contentIndex: thinkingIndex, delta: parsed.thinking, partial: output });
+				stream.push({ type: "thinking_end", contentIndex: thinkingIndex, content: parsed.thinking, partial: output });
+			}
 			const toolCalls = parseToolCalls(responseText);
 			if (toolCalls.length > 0) {
 				output.stopReason = "toolUse";
@@ -293,7 +323,7 @@ export function streamClaudeCode(
 				await reseedRecord(mirror.record.piSessionId, process.cwd()).catch(() => undefined);
 			}
 			output.stopReason = options?.signal?.aborted ? "aborted" : "error";
-			output.errorMessage = setupGuidance(error instanceof Error ? error.message : String(error));
+			output.errorMessage = await describeStreamError(error);
 			stream.push({ type: "error", reason: output.stopReason, error: output });
 			stream.end();
 		}

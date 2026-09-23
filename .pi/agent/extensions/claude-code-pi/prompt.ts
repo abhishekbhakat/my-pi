@@ -1,4 +1,17 @@
-import type { AssistantMessage, Context, ImageContent, Message, TextContent, Tool, ToolCall } from "@earendil-works/pi-ai";
+import {
+	collapseSystemMessages,
+	getCurrentSystemPrompt,
+	getCurrentTools,
+	withoutInitialSystemMessage,
+	type AssistantMessage,
+	type Context,
+	type ImageContent,
+	type Message,
+	type TextContent,
+	type Tool,
+	type ToolCall,
+	type TranscriptContext,
+} from "@earendil-works/pi-ai";
 import { hashText } from "./sessions.ts";
 
 const BRIDGE = `# Pi/Claude Code CLI bridge instructions
@@ -47,16 +60,18 @@ export function serializeMessage(message: Message): string {
 		].join("\n");
 	}
 
-	const parts = message.content.map((part: TextContent | ToolCall | { type: "thinking"; thinking: string }) => {
-		if (part.type === "text") return part.text;
-		if (part.type === "thinking") return `<thinking>${part.thinking}</thinking>`;
-		return `<pi_tool_call>${safeJson({ name: part.name, arguments: part.arguments })}</pi_tool_call>`;
-	});
+	const parts = typeof message.content === "string"
+		? [message.content]
+		: message.content.map((part: TextContent | ToolCall | { type: "thinking"; thinking: string }) => {
+				if (part.type === "text") return part.text;
+				if (part.type === "thinking") return `<thinking>${part.thinking}</thinking>`;
+				return `<pi_tool_call>${safeJson({ name: part.name, arguments: part.arguments })}</pi_tool_call>`;
+			});
 	return `ASSISTANT:\n${parts.join("\n")}`;
 }
 
 export function serializeTools(tools?: Tool[]): string {
-	if (!tools || tools.length === 0) return "No Pi tools are available for this turn.";
+	if (!tools || tools.length === 0) return "";
 	return safeJson(
 		tools.map((tool) => ({
 			name: tool.name,
@@ -74,12 +89,32 @@ export function contextImages(context: Context): ImageContent[] {
 	);
 }
 
-export function buildPrompt(context: Pick<Context, "systemPrompt" | "messages" | "tools">): string {
+export type BridgeContext = {
+	systemPrompt: string;
+	messages: Message[];
+	tools: Tool[];
+};
+
+/**
+ * Provider streamSimple receives a normalized transcript, not Context shorthand.
+ * Replays system messages into the bridge prompt shape Pi used before
+ * normalization: one system prompt, current tools, and conversation messages.
+ */
+export function bridgeContext(context: TranscriptContext): BridgeContext {
+	const normalized = collapseSystemMessages(context);
+	return {
+		systemPrompt: getCurrentSystemPrompt(normalized.messages),
+		messages: withoutInitialSystemMessage(normalized.messages),
+		tools: getCurrentTools(normalized.messages),
+	};
+}
+
+export function buildPrompt(context: BridgeContext): string {
 	const sections: string[] = [BRIDGE];
 	if (context.systemPrompt?.trim()) {
 		sections.push(`# Pi system prompt\n\n${context.systemPrompt}`);
 	}
-	sections.push(`# Available Pi tools\n\n${serializeTools(context.tools)}`);
+	sections.push(...(context.tools.length > 0 ? [`# Available Pi tools\n\n${serializeTools(context.tools)}`] : []));
 	if (context.messages.length > 0) {
 		sections.push(`# Conversation transcript\n\n${context.messages.map(serializeMessage).join("\n\n---\n\n")}`);
 	} else {
@@ -112,12 +147,12 @@ function skipRecordedReply(messages: Message[], lastReplyHash: string | undefine
 }
 
 // Messages that will actually be written to Claude Code for a resume turn.
-export function selectSentMessages(context: Context, syncedCount: number, lastReplyHash?: string): Message[] {
+export function selectSentMessages(context: BridgeContext, syncedCount: number, lastReplyHash?: string): Message[] {
 	return skipRecordedReply(context.messages.slice(syncedCount), lastReplyHash);
 }
 
 export function buildDeltaPrompt(
-	context: Pick<Context, "systemPrompt" | "messages" | "tools">,
+	context: BridgeContext,
 	syncedCount: number,
 	lastReplyHash?: string,
 ): string {
@@ -126,14 +161,14 @@ export function buildDeltaPrompt(
 		delta.length === 0
 			? "(no new Pi messages; continue from the Claude Code session.)"
 			: delta.map(serializeMessage).join("\n\n---\n\n");
-	return [
+	const sections = [
 		BRIDGE,
-		"# Available Pi tools",
-		serializeTools(context.tools),
+		...(context.tools.length > 0 ? [`# Available Pi tools\n\n${serializeTools(context.tools)}`] : []),
 		"# New messages since last Claude Code turn",
 		body,
 		"Produce the next assistant message for Pi. Prior turns already live in this Claude Code session.",
-	].join("\n\n---\n\n");
+	];
+	return sections.join("\n\n---\n\n");
 }
 
 export function buildStreamJsonInput(images: ImageContent[], prompt: string): string {
@@ -154,11 +189,13 @@ export type ParsedCliUsage = {
 
 export function parseStreamJsonOutput(stdout: string): {
 	text: string;
+	thinking: string;
 	sessionId?: string;
 	usage?: ParsedCliUsage;
 	isError?: boolean;
 } {
 	const texts: string[] = [];
+	const thoughts: string[] = [];
 	let result = "";
 	let sessionId: string | undefined;
 	let usage: ParsedCliUsage | undefined;
@@ -174,6 +211,9 @@ export function parseStreamJsonOutput(stdout: string): {
 		if (event?.type === "assistant") {
 			for (const block of event.message?.content ?? []) {
 				if (block?.type === "text" && typeof block.text === "string" && block.text) texts.push(block.text);
+				if (block?.type === "thinking" && typeof block.thinking === "string" && block.thinking) {
+					thoughts.push(block.thinking);
+				}
 			}
 		} else if (event?.type === "result") {
 			if (typeof event.result === "string") result = event.result;
@@ -190,7 +230,7 @@ export function parseStreamJsonOutput(stdout: string): {
 			}
 		}
 	}
-	return { text: result || texts.join("\n"), sessionId, usage, isError };
+	return { text: result || texts.join("\n"), thinking: thoughts.join("\n\n"), sessionId, usage, isError };
 }
 
 function parseToolCallJson(raw: string): Array<{ name: string; arguments: Record<string, any> }> {
