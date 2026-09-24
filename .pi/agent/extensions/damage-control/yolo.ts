@@ -121,9 +121,9 @@ function statusMessage(enabled: boolean, ephemeral: boolean): string {
 
 function toolDescription(enabled: boolean): string {
 	const state = enabled
-		? "YOLO is ON. damage-control skipped. git write allowed."
-		: "YOLO is OFF. damage-control checks tool calls. git write forbidden.";
-	return `${state} Never call this tool. Status is this description. User owns /yolo. Agent never enable YOLO. Never ask user to enable it to bypass a block.`;
+		? "YOLO is ON. damage-control skipped. No prompts, no blocks."
+		: "YOLO is OFF. damage-control checks tool calls. Risky commands prompt user allow/deny. Protected paths hard-blocked.";
+	return `${state} Never call this tool. Status is this description. User owns /yolo. Agent never enable YOLO. Never ask user to enable it.`;
 }
 
 function registerYoloTool(pi: ExtensionAPI, enabled: boolean): void {
@@ -134,7 +134,8 @@ function registerYoloTool(pi: ExtensionAPI, enabled: boolean): void {
 		promptSnippet: "Yolo status: read yolo tool description. Never call yolo.",
 		promptGuidelines: [
 			"Read yolo tool description for YOLO on/off. Do not call yolo.",
-			"When YOLO is ON, git write is allowed. When OFF, git stays read-only.",
+			"YOLO OFF: any command OK to try; damage-control prompts user for risky ones. Denied or blocked: stop, report, no retry.",
+			"YOLO ON: no checks. Still no destructive action user did not ask for.",
 		],
 		parameters: Type.Object({}),
 		async execute() {

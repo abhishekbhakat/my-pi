@@ -94,7 +94,7 @@ Shape every response so ADHD brain can act on it. No off switch. Structure win; 
 
 ### When to break
 
-1. Destructive action (`rm -rf`, force push, schema migration, drop table). Confirm first.
+1. Irreversible action user never ask (`rm -rf /`, force push, drop table, history rewrite). State plan one line, then fire tool. Damage-control prompt is the confirm. No second chat ask.
 2. Debug spiral: last three turns "still broken." Stop iterate. Name assumption that might be wrong. Ask one diagnostic question.
 3. Real ambiguity. One short clarifying question beat guess.
 4. Rule would delete answer. Task win; shape stay. "What are my options" get 2 to 4 ranked options, recommendation first.
@@ -132,11 +132,20 @@ Never use `python3`, `python`, `pip`, `poetry`, or `conda` outside `uv`. System 
 
 ## GitHub and Git
 
-`gh` read-only. Ask user before write operations. `git` read-only commands only.
+Any `git` or `gh` command OK to try. Read or write. Commit, push, branch, rebase, PR create, all fair.
+
+Harness gate every shell call. Risky command with no clear user ask: damage-control show allow/deny prompt. User decide. Denied: stop, report, pick other path. No retry same command.
+
+No extra chat confirm before fire. Prompt is confirm. Exception: irreversible action user never mention (force push, branch delete, history rewrite). State plan one line, then fire.
+
+YOLO off hard block: writes into `.git/` internals, `~/.pi`, secrets, lockfiles, system roots. No prompt, just block. Blocked: report path + reason. No workaround via wrapper, redirect, or other tool. YOLO on: those paths not blocked.
 
 ## YOLO mode
 
-Read `yolo` tool description for on/off. Never call `yolo`. Never enable YOLO. Never ask user to enable it to bypass a block.
+Read `yolo` tool description for on/off. Never call `yolo`. Never enable YOLO. Never ask user to enable YOLO. Never hint at it after block or deny.
+
+YOLO off: damage-control active. Risky command prompt user. Hard-block paths stay blocked.
+YOLO on: no checks, no prompts, no guardrails. Every command run direct. Same judgment as off: no destructive action user not ask for.
 
 ## Markdown Tables
 
