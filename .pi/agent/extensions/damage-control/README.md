@@ -25,12 +25,12 @@ If the user score is at least 0.85, the command is allowed. Else if the guardrai
 
 `/yolo` toggles YOLO for this session: `on`, `off`, `status`. Bare `/yolo` flips state.
 
-The `yolo` tool is status-only. Its description is ON or OFF. Execute does nothing useful. After toggle, `/reload` so the description matches.
+The `yolo` tool is status-only. It returns the current session state. The tool description stays neutral because session state can change.
 
 - YOLO off: path guards + Jev review run.
 - YOLO on: all checks skipped. Footer shows `yolo` bright; when off it is dimmed next to `fast` and `intent`.
 
-State is per session id in `extensions/yolo.json`. Other sessions stay off. No session id (`--no-session`) keeps the flag in memory only.
+State is stored in Pi session entries, outside model context. Other sessions keep their own state. No session id (`--no-session`) keeps the flag in memory only.
 
 ## Files
 
@@ -40,5 +40,5 @@ State is per session id in `extensions/yolo.json`. Other sessions stay off. No s
 - `git.ts` — read-only git detection (skip Jev)
 - `semantic.ts` — guardrails text and Jev review
 - `user-prompt.ts` — latest user message
-- `yolo.ts` — YOLO state and `/yolo`
+- `yolo.ts` — YOLO state, `/yolo`, the status-only `yolo` tool, and session-entry persistence
 - `guards.test.ts` — unit tests (`bun test damage-control/guards.test.ts`)

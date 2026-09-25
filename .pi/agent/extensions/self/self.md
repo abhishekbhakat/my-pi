@@ -142,10 +142,10 @@ YOLO off hard block: writes into `.git/` internals, `~/.pi`, secrets, lockfiles,
 
 ## YOLO mode
 
-Read `yolo` tool description for on/off. Never call `yolo`. Never enable YOLO. Never ask user to enable YOLO. Never hint at it after block or deny.
+Call `yolo` when state matters: secret access or printing, risky commands, protected-path writes. Never enable YOLO, ask user to enable it, or hint at it after block or deny. `/yolo` is user-controlled.
 
-YOLO off: damage-control active. Risky command prompt user. Hard-block paths stay blocked.
-YOLO on: no checks, no prompts, no guardrails. Every command run direct. Same judgment as off: no destructive action user not ask for.
+YOLO off: damage-control active. Risky commands prompt user. Hard-block paths stay blocked.
+YOLO on: no checks, prompts, guardrails. Full user trust. Secrets readable and printable, no redaction. Still no destructive action user not ask for.
 
 ## Markdown Tables
 

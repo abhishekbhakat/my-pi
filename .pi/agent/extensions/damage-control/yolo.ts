@@ -1,107 +1,48 @@
-import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 import { Type } from "@sinclair/typebox";
-import { getAgentDir, type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 
 const EXTENSION_ID = "yolo";
-const CONFIG_NAME = "yolo.json";
 const YOLO_KEY = Symbol.for("my-pi.yolo.state");
 
-type YoloFile = { sessions?: Record<string, boolean>; enabled?: boolean };
-type YoloState = { currentId: string; bySession: Record<string, boolean>; ephemeral: boolean };
-
-function emptyState(): YoloState {
-	return { currentId: "", bySession: {}, ephemeral: false };
-}
-
-function configPath(): string {
-	return join(getAgentDir(), "extensions", CONFIG_NAME);
-}
+type YoloState = { enabled: boolean; currentId: string };
+type YoloData = { enabled?: unknown };
 
 function getState(): YoloState {
 	const g = globalThis as typeof globalThis & { [YOLO_KEY]?: YoloState };
-	if (!g[YOLO_KEY]) g[YOLO_KEY] = emptyState();
+	if (!g[YOLO_KEY]) g[YOLO_KEY] = { enabled: false, currentId: "" };
 	return g[YOLO_KEY];
-}
-
-function readSessions(): Record<string, boolean> {
-	const path = configPath();
-	if (!existsSync(path)) return {};
-	try {
-		const parsed = JSON.parse(readFileSync(path, "utf-8")) as YoloFile;
-		const out: Record<string, boolean> = {};
-		if (parsed.sessions && typeof parsed.sessions === "object") {
-			for (const [id, value] of Object.entries(parsed.sessions)) {
-				if (id && value === true) out[id] = true;
-			}
-		}
-		return out;
-	} catch (error) {
-		console.error(`Warning: Could not parse ${path}: ${error}`);
-		return {};
-	}
-}
-
-const SESSION_FILE_ID = /_([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.jsonl$/i;
-
-function liveSessionIds(): Set<string> {
-	const root = join(getAgentDir(), "sessions");
-	const ids = new Set<string>();
-	if (!existsSync(root)) return ids;
-	const entries = readdirSync(root, { recursive: true, withFileTypes: true });
-	for (const entry of entries) {
-		if (!entry.isFile()) continue;
-		const match = entry.name.match(SESSION_FILE_ID);
-		if (match) ids.add(match[1]);
-	}
-	return ids;
-}
-
-function pruneSessions(bySession: Record<string, boolean>): Record<string, boolean> {
-	const live = liveSessionIds();
-	const sessions: Record<string, boolean> = {};
-	for (const [id, value] of Object.entries(bySession)) {
-		if (id && value && live.has(id)) sessions[id] = true;
-	}
-	return sessions;
-}
-
-function writeSessions(bySession: Record<string, boolean>): void {
-	const sessions = pruneSessions(bySession);
-	writeFileSync(configPath(), `${JSON.stringify({ sessions }, null, 2)}\n`);
-}
-
-export function forgetYoloSession(id: string): void {
-	const trimmed = id.trim();
-	if (!trimmed) return;
-	const state = getState();
-	delete state.bySession[trimmed];
-	if (state.currentId === trimmed) {
-		state.currentId = "";
-		state.ephemeral = false;
-	}
-	const disk = readSessions();
-	delete disk[trimmed];
-	writeSessions(disk);
 }
 
 function sessionIdFrom(ctx: ExtensionContext): string {
 	return ctx.sessionManager.getSessionId()?.trim() ?? "";
 }
 
-function bindSession(id: string): boolean {
+function isYoloData(value: unknown): value is YoloData {
+	return typeof value === "object" && value !== null && "enabled" in value;
+}
+
+function restore(ctx: ExtensionContext, forceOff = false): boolean {
 	const state = getState();
-	state.currentId = id;
-	if (!id) return state.ephemeral;
-	const fromFile = readSessions();
-	state.bySession[id] = fromFile[id] === true;
-	return state.bySession[id];
+	state.currentId = sessionIdFrom(ctx);
+	if (forceOff) {
+		state.enabled = false;
+		return false;
+	}
+	state.enabled = false;
+	for (const entry of ctx.sessionManager.getBranch()) {
+		if (entry.type === "custom" && entry.customType === EXTENSION_ID && isYoloData(entry.data)) {
+			state.enabled = entry.data.enabled === true;
+		}
+	}
+	return state.enabled;
 }
 
 export function isYoloEnabled(): boolean {
-	const state = getState();
-	if (!state.currentId) return state.ephemeral;
-	return state.bySession[state.currentId] === true;
+	return getState().enabled;
+}
+
+export function forgetYoloSession(_id: string): void {
+	// Kept for extension API compatibility. YOLO state now lives in session entries.
 }
 
 function updateStatus(ctx: ExtensionContext, enabled: boolean): void {
@@ -113,34 +54,32 @@ function statusMessage(enabled: boolean, ephemeral: boolean): string {
 	const base = enabled
 		? "YOLO mode is ON for this session: damage-control blocking is disabled. All tool calls are allowed. Run /yolo off to re-enable guardrails."
 		: "YOLO mode is OFF for this session: damage-control blocking is enabled.";
-	if (ephemeral) {
-		return `${base} This session has no id; the flag is in-memory only.`;
-	}
+	if (ephemeral) return `${base} This session has no id; the flag is in-memory only.`;
 	return base;
 }
 
-function toolDescription(enabled: boolean): string {
+function statusText(enabled: boolean): string {
 	const state = enabled
 		? "YOLO is ON. damage-control skipped. No prompts, no blocks."
 		: "YOLO is OFF. damage-control checks tool calls. Risky commands prompt user allow/deny. Protected paths hard-blocked.";
-	return `${state} Never call this tool. Status is this description. User owns /yolo. Agent never enable YOLO. Never ask user to enable it.`;
+	return `${state} YOLO does not expand what the user requested. /yolo is user-controlled.`;
 }
 
-function registerYoloTool(pi: ExtensionAPI, enabled: boolean): void {
+function registerYoloTool(pi: ExtensionAPI): void {
 	pi.registerTool({
 		name: "yolo",
 		label: "Yolo",
-		description: toolDescription(enabled),
-		promptSnippet: "Yolo status: read yolo tool description. Never call yolo.",
+		description: "Read-only YOLO status tool. Returns current session state as ON or OFF. State can change via /yolo, so call this tool when status matters instead of assuming.",
+		promptSnippet: "Yolo status: call this status-only tool when current ON/OFF state matters.",
 		promptGuidelines: [
-			"Read yolo tool description for YOLO on/off. Do not call yolo.",
-			"YOLO OFF: any command OK to try; damage-control prompts user for risky ones. Denied or blocked: stop, report, no retry.",
-			"YOLO ON: no checks. Still no destructive action user did not ask for.",
+			"Call yolo when user asks about YOLO or before destructive commands if status is unknown.",
+			"Never toggle YOLO with this tool. /yolo command is user-controlled.",
+			"YOLO ON disables damage-control checks; it does not expand what the user requested.",
 		],
 		parameters: Type.Object({}),
 		async execute() {
 			return {
-				content: [{ type: "text" as const, text: toolDescription(isYoloEnabled()) }],
+				content: [{ type: "text" as const, text: statusText(isYoloEnabled()) }],
 				details: {},
 			};
 		},
@@ -148,10 +87,17 @@ function registerYoloTool(pi: ExtensionAPI, enabled: boolean): void {
 }
 
 export function registerYoloCommand(pi: ExtensionAPI): void {
-	registerYoloTool(pi, isYoloEnabled());
+	registerYoloTool(pi);
 
-	pi.on("session_start", (_event, ctx) => {
-		const enabled = bindSession(sessionIdFrom(ctx));
+	pi.on("session_start", (event, ctx) => {
+		const isFork = event.reason === "fork";
+		const enabled = restore(ctx, isFork);
+		if (isFork) pi.appendEntry(EXTENSION_ID, { enabled: false });
+		updateStatus(ctx, enabled);
+	});
+
+	pi.on("session_tree", (_event, ctx) => {
+		const enabled = restore(ctx);
 		updateStatus(ctx, enabled);
 	});
 
@@ -162,9 +108,9 @@ export function registerYoloCommand(pi: ExtensionAPI): void {
 		handler: async (args, ctx) => {
 			const action = args.trim().toLowerCase();
 			const id = sessionIdFrom(ctx);
-			bindSession(id);
 			const state = getState();
-			const current = id ? state.bySession[id] === true : isYoloEnabled();
+			state.currentId = id;
+			const current = state.enabled;
 			if (action === "status") {
 				ctx.ui.notify(statusMessage(current, !id), "info");
 				return;
@@ -174,17 +120,8 @@ export function registerYoloCommand(pi: ExtensionAPI): void {
 				return;
 			}
 			const enabled = action === "on" ? true : action === "off" ? false : !current;
-			if (id) {
-				state.currentId = id;
-				state.bySession[id] = enabled;
-				const disk = readSessions();
-				if (enabled) disk[id] = true;
-				else delete disk[id];
-				writeSessions(disk);
-			} else {
-				state.currentId = "";
-				state.ephemeral = enabled;
-			}
+			state.enabled = enabled;
+			if (id) pi.appendEntry(EXTENSION_ID, { enabled });
 			updateStatus(ctx, enabled);
 			ctx.ui.notify(statusMessage(enabled, !id), enabled ? "warning" : "info");
 		},
