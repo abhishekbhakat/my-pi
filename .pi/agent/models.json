@@ -18,7 +18,9 @@
           "id": "glm-5-3-flash",
           "name": "GLM 5.3 Flash (RunInfra)",
           "reasoning": true,
-          "input": ["text"],
+          "input": [
+            "text"
+          ],
           "contextWindow": 262144,
           "maxTokens": 131072,
           "thinkingLevelMap": {
@@ -52,32 +54,34 @@
         }
       }
     },
-    "xiaomi-token-plan-sgp": {
-      "modelOverrides": {
-        "mimo-v2.6-flash": {
+    "mistral": {
+      "baseUrl": "https://api.mistral.ai/v1",
+      "api": "openai-completions",
+      "models": [
+        {
+          "id": "zai-glm-5-3",
+          "name": "GLM 5.3 (Mistral)",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
           "contextWindow": 262144,
+          "maxTokens": 128000,
           "thinkingLevelMap": {
-            "off": "off",
+            "off": null,
             "minimal": null,
             "low": "low",
             "medium": null,
             "high": "high",
             "xhigh": null,
-            "max": null
-          }
-        },
-        "mimo-v2.6-pro": {
-          "contextWindow": 262144,
-          "thinkingLevelMap": {
-            "off": "off",
-            "minimal": null,
-            "low": "low",
-            "medium": null,
-            "high": "high",
-            "xhigh": null,
-            "max": null
+            "max": "max"
           }
         }
+      ],
+      "compat": {
+        "supportsStore": false,
+        "supportsDeveloperRole": false,
+        "maxTokensField": "max_tokens"
       }
     },
     "cerebras": {
@@ -92,7 +96,10 @@
           "id": "qwen-3.8-27b",
           "name": "Qwen 3.8 27B (Cerebras)",
           "reasoning": true,
-          "input": ["text", "image"],
+          "input": [
+            "text",
+            "image"
+          ],
           "contextWindow": 131072,
           "maxTokens": 40960,
           "thinkingLevelMap": {
@@ -133,7 +140,9 @@
           "id": "moonshotai/Kimi-K3",
           "name": "Kimi K3 (Modal)",
           "reasoning": true,
-          "input": ["text"],
+          "input": [
+            "text"
+          ],
           "contextWindow": 1048576,
           "maxTokens": 1048576,
           "thinkingLevelMap": {
@@ -157,7 +166,10 @@
           "id": "space-bunny-free",
           "name": "Space Bunny Free",
           "reasoning": true,
-          "input": ["text", "image"],
+          "input": [
+            "text",
+            "image"
+          ],
           "cost": {
             "input": 0,
             "output": 0,
@@ -189,7 +201,10 @@
           "id": "gemini-3.8-flash",
           "name": "Gemini 3.8 Flash",
           "reasoning": true,
-          "input": ["text", "image"],
+          "input": [
+            "text",
+            "image"
+          ],
           "contextWindow": 262144,
           "maxTokens": 65536,
           "cost": {
@@ -316,7 +331,10 @@
           "id": "claude-fable-5-1",
           "name": "Claude Fable 5.1 (OpenLux)",
           "reasoning": true,
-          "input": ["text", "image"],
+          "input": [
+            "text",
+            "image"
+          ],
           "contextWindow": 1000000,
           "maxTokens": 128000,
           "thinkingLevelMap": {
@@ -368,7 +386,9 @@
           "id": "glm-5.3-flash",
           "name": "GLM 5.3 Flash (InferX)",
           "reasoning": true,
-          "input": ["text"],
+          "input": [
+            "text"
+          ],
           "contextWindow": 262144,
           "maxTokens": 131072,
           "thinkingLevelMap": {
@@ -388,7 +408,9 @@
           "id": "deepseek-v4.1-flash",
           "name": "DeepSeek V4.1 Flash (InferX)",
           "reasoning": true,
-          "input": ["text"],
+          "input": [
+            "text"
+          ],
           "contextWindow": 262144,
           "maxTokens": 131072,
           "thinkingLevelMap": {
@@ -414,7 +436,9 @@
           "id": "qwen/qwen3.8-27b",
           "name": "Qwen3.8 27B (Groq)",
           "reasoning": true,
-          "input": ["text"],
+          "input": [
+            "text"
+          ],
           "contextWindow": 131042,
           "maxTokens": 16384,
           "thinkingLevelMap": {
@@ -442,7 +466,10 @@
           "id": "qwen/qwen3.8-flash",
           "name": "Qwen3.8 Flash (Command Code)",
           "reasoning": true,
-          "input": ["text", "image"],
+          "input": [
+            "text",
+            "image"
+          ],
           "contextWindow": 1000000,
           "maxTokens": 131072
         },
@@ -450,7 +477,9 @@
           "id": "moonshotai/Kimi-K3",
           "name": "Kimi K3 (Command Code)",
           "reasoning": true,
-          "input": ["text"],
+          "input": [
+            "text"
+          ],
           "contextWindow": 1000000,
           "maxTokens": 128000,
           "thinkingLevelMap": {
@@ -471,7 +500,9 @@
           "id": "z-ai/glm-5.3",
           "name": "GLM 5.3 (Command Code)",
           "reasoning": true,
-          "input": ["text"],
+          "input": [
+            "text"
+          ],
           "contextWindow": 1000000,
           "maxTokens": 128000,
           "compat": {
@@ -482,7 +513,9 @@
           "id": "z-ai/glm-5.3-flash",
           "name": "GLM 5.3 Flash (Command Code)",
           "reasoning": true,
-          "input": ["text"],
+          "input": [
+            "text"
+          ],
           "contextWindow": 1048576,
           "maxTokens": 131072,
           "thinkingLevelMap": {
