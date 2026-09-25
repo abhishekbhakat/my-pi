@@ -34,3 +34,9 @@ Thumbs.db
 
 # Plan skill state
 .agents/PLAN*.md
+
+# setup writeAtomic temp files
+*.tmp
+
+# Tests
+tests/

@@ -54,6 +54,18 @@
     },
     "xiaomi-token-plan-sgp": {
       "modelOverrides": {
+        "mimo-v2.6-flash": {
+          "contextWindow": 262144,
+          "thinkingLevelMap": {
+            "off": "off",
+            "minimal": null,
+            "low": "low",
+            "medium": null,
+            "high": "high",
+            "xhigh": null,
+            "max": null
+          }
+        },
         "mimo-v2.6-pro": {
           "contextWindow": 262144,
           "thinkingLevelMap": {
@@ -102,6 +114,9 @@
         },
         "meta/muse-spark-1.3-contributor": {
           "contextWindow": 500000
+        },
+        "z-ai/glm-5.3": {
+          "contextWindow": 262144
         }
       }
     },
@@ -132,6 +147,38 @@
           },
           "compat": {
             "thinkingFormat": "together"
+          }
+        }
+      ]
+    },
+    "opencode": {
+      "models": [
+        {
+          "id": "space-bunny-free",
+          "name": "Space Bunny Free",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 262144,
+          "maxTokens": 524288,
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": "minimal",
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "xhigh": "xhigh",
+            "max": null
+          },
+          "compat": {
+            "supportsDeveloperRole": false,
+            "supportsStrictMode": true,
+            "sendSessionAffinityHeaders": true
           }
         }
       ]

@@ -8,7 +8,7 @@ const ORIGINATOR = "codex_cli_rs";
 const HINT = "x-codex-routing-hint";
 const TIER = "priority";
 const WRAP_KEY = Symbol.for("my-pi.fast-mode.wrap.v2");
-const FALLBACK = "gpt-5.6-sol";
+const FALLBACK = "gpt-6-astra";
 const CODEX = "openai-codex";
 
 type FastConfig = { enabled: boolean; showStatus: boolean; debug: boolean };
@@ -23,7 +23,7 @@ type WrapState = FastConfig & {
 const DEFAULT: FastConfig = { enabled: false, showStatus: true, debug: false };
 
 function isCodexId(id: string): boolean {
-	return id.startsWith("gpt-5");
+	return id.startsWith("gpt-5") || id.startsWith("gpt-6");
 }
 
 function rememberCodex(provider: string, id: string): void {
