@@ -55,8 +55,7 @@
       }
     },
     "mistral": {
-      "baseUrl": "https://api.mistral.ai/v1",
-      "api": "openai-completions",
+      "api": "mistral-conversations",
       "models": [
         {
           "id": "zai-glm-5-3",
@@ -77,12 +76,7 @@
             "max": "max"
           }
         }
-      ],
-      "compat": {
-        "supportsStore": false,
-        "supportsDeveloperRole": false,
-        "maxTokensField": "max_tokens"
-      }
+      ]
     },
     "cerebras": {
       "baseUrl": "https://api.cerebras.ai/v1",
