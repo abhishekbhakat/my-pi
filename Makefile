@@ -22,8 +22,10 @@ PI_RUST_DIR := vendor/pi_agent_rust
 PI_INSTALLER := $(PI_RUST_DIR)/install.sh
 PI_PKG := @earendil-works/pi-coding-agent
 
-# rustup shims live in ~/.cargo/bin even when rustup itself is from brew.
-export PATH := $(HOME)/.cargo/bin:$(PATH)
+# rustup shims: ~/.cargo/bin (rustup.rs install) and/or brew keg path (brew rustup
+# keeps cargo/rustc proxies in its opt dir, unlinked from /opt/homebrew/bin).
+RUSTUP_BIN := $(shell brew --prefix rustup 2>/dev/null)/bin
+export PATH := $(HOME)/.cargo/bin:$(RUSTUP_BIN):$(PATH)
 
 .PHONY: help install rust-toolchain rust-install config-install rust-uninstall install-bun sync setup test-setup
 
@@ -60,7 +62,8 @@ help:
 		'  node scripts/pi.mjs setup --create-branch NAME' \
 		'' \
 		'Notes' \
-		'  Rust pi installs to ~/.local/bin; it must resolve before ~/.bun/bin.' \
+		'  Rust pi becomes the canonical `pi`; the vendor installer adopts the' \
+		'  existing pi path when migrating (default dest ~/.local/bin).' \
 		'  TS bun pi is preserved by migration under the legacy-pi alias.' \
 		'  Toolchain pin lives in vendor/pi_agent_rust/rust-toolchain.toml (nightly);' \
 		'  rustup auto-installs the pinned nightly on first build.' \
@@ -74,9 +77,8 @@ install: rust-toolchain rust-install config-install
 	@printf '%s\n' \
 		'' \
 		'Install complete.' \
-		'  Rust pi:   ~/.local/bin/pi (source pin: vendor/pi_agent_rust)' \
-		'  Legacy TS: legacy-pi alias (bun copy preserved)' \
-		'  PATH must resolve ~/.local/bin before ~/.bun/bin for rust pi to win.' \
+		'  Rust pi is now the canonical `pi` (see install summary above for path).' \
+		'  Legacy TS: legacy-pi alias (bun copy preserved).' \
 		'  Run /reload or /restart inside pi.'
 
 rust-toolchain:
