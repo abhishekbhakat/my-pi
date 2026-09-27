@@ -1408,11 +1408,12 @@ function ensureBunPiCli() {
 }
 
 function parseArgs(argv) {
-  const flags = { yes: false, prune: false, host: null };
+  const flags = { yes: false, prune: false, host: null, configOnly: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === "-y") flags.yes = true;
     else if (arg === "-p" || arg === "--prune" || arg === "-Prune") flags.prune = true;
+    else if (arg === "--config-only") flags.configOnly = true;
     else if (arg === "-h") {
       flags.host = argv[i + 1];
       i += 1;
@@ -1508,7 +1509,7 @@ function applySparseCheckouts(skillsDir) {
 
 function install(flags) {
   if (!exists(REPO_AGENT)) die(`Source directory not found: ${REPO_AGENT}`);
-  ensureBunPiCli();
+  if (!flags.configOnly) ensureBunPiCli();
   console.log(`Copying .pi/agent -> ${HOME_AGENT}\n`);
   console.log("  Overwriting protected files.\n");
   fs.mkdirSync(HOME_AGENT, { recursive: true });
@@ -1591,7 +1592,7 @@ function install(flags) {
     console.log("  Done.");
   }
   console.log(`\n=============================\n Copy complete.\n Copied: ${copied}\n Skipped: ${skipped}\n=============================\n`);
-  updatePiAndExtensions();
+  if (!flags.configOnly) updatePiAndExtensions();
   console.log("Run /reload in pi to pick up changes.");
 }
 
@@ -1744,7 +1745,7 @@ async function setup(flags) {
     });
     console.log(describePersistSummary({ gate, staged, order, capTargets, report }));
     try {
-      runInstall = await prompter.askYesNo("Run make install now?");
+      runInstall = await prompter.askYesNo("Apply config install now (repo .pi/agent -> ~/.pi/agent)?");
     } catch (error) {
       if (error instanceof SetupAbort && error.exitCode === 130) {
         throw new SetupAbort("files already written; install skipped", 130);
@@ -1757,7 +1758,7 @@ async function setup(flags) {
 
   if (runInstall) {
     try {
-      install({ yes: false, prune: false, host: null });
+      install({ yes: false, prune: false, host: null, configOnly: true });
     } catch (error) {
       console.log(`WARNING: install failed: ${error?.message ?? error}`);
     }
@@ -1783,23 +1784,26 @@ function printHelp() {
   console.log(`my-pi config CLI
 
 Usage:
-  node scripts/pi.mjs install [-h HOST]
+  node scripts/pi.mjs install [--config-only] [-h HOST]
   node scripts/pi.mjs sync [-p]
   node scripts/pi.mjs setup [--create-branch NAME] [--help]
   node scripts/pi.mjs help
 
-install  Copy repo .pi/agent -> ~/.pi/agent; drop npm global pi; bun install -g if missing;
-         then run \`pi update\` and \`pi update --extensions\`
+install  Copy repo .pi/agent -> ~/.pi/agent.
+         Default also manages the bun pi CLI (npm global removed, bun install -g if
+         missing) and runs \`pi update\` + \`pi update --extensions\`.
+         --config-only skips all CLI steps; used after the Rust pi is built
+         (see make install / make config-install).
 sync     Copy live ~/.pi/agent -> repo .pi/agent
 setup    Interactive provider/auth bootstrap on a local branch (see setup --help)
 
+--config-only  Config copy only; no bun CLI setup, no pi update
 -h HOST  Set models.json proxy origin on install
 -p       Prune repo files missing from live on sync
 -y       Accepted, unused (protected files always overwritten)
 
 auth.json: api_key merge both ways (incoming override, dest-only stay).
-  oauth (type=oauth) flows home -> repo on sync only; install never overwrites live oauth.
-install also updates the pi CLI and installed packages via \`pi update\` + \`pi update --extensions\`.`);
+  oauth (type=oauth) flows home -> repo on sync only; install never overwrites live oauth.`);
 }
 
 function isMain() {
