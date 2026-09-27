@@ -16,3 +16,8 @@
 [submodule ".pi/agent/skills/diagram-design"]
 	path = .pi/agent/skills/diagram-design
 	url = https://github.com/cathrynlavery/diagram-design.git
+[submodule "vendor/pi_agent_rust"]
+	path = vendor/pi_agent_rust
+	url = https://github.com/Dicklesworthstone/pi_agent_rust
+	shallow = true
+	branch = main
