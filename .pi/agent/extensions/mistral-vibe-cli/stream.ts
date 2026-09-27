@@ -12,7 +12,7 @@ import {
 	type TranscriptContext,
 } from "@earendil-works/pi-ai";
 import { buildVibeArgs, describeStreamError, requestTimeoutMs, STDERR_LIMIT, vibeBin, vibeEnv } from "./cli.ts";
-import { bridgeContext, buildPrompt, buildRetryPrompt, firstInvalidToolCall, parseJsonOutput, parseToolCalls, repairToolArguments, safeJson, type BridgeContext } from "./prompt.ts";
+import { bridgeContext, buildEmptyTurnPrompt, buildPrompt, buildRetryPrompt, firstInvalidToolCall, parseJsonOutput, parseToolCalls, repairToolArguments, safeJson, type BridgeContext } from "./prompt.ts";
 
 // Capability calls are marked by capability-tools metadata. They decide their
 // own context and must never see tool-call syntax: their answers would be
@@ -142,6 +142,26 @@ export function streamVibeCli(
 						prompt = retryPrompt;
 					}
 				}
+			}
+
+			// A thinking-only turn (no text, no tool calls) would end Pi's turn
+			// silently. Ask Vibe once for the missing message; a still-empty result
+			// surfaces as an error instead of a blank assistant message.
+			if (toolCalls.length === 0 && !parsed.text.trim()) {
+				const emptyPrompt = buildEmptyTurnPrompt(prompt, parsed.thinking);
+				const retry = await runVibeOnce(model, emptyPrompt, options);
+				const retryParsed = parseJsonOutput(retry.stdout);
+				if (!retryParsed.isError) {
+					const retryCalls = allowTools ? repairToolArguments(bridge.tools, parseToolCalls(retryParsed.text)) : [];
+					if (retryCalls.length > 0 || retryParsed.text.trim()) {
+						parsed = retryParsed;
+						toolCalls = retryCalls;
+						prompt = emptyPrompt;
+					}
+				}
+			}
+			if (toolCalls.length === 0 && !parsed.text.trim()) {
+				throw new Error("vibe -p returned a thinking-only message with no text or tool calls");
 			}
 
 			applyUsage(model, output, prompt, parsed.text);

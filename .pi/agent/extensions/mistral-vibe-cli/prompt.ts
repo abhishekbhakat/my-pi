@@ -295,6 +295,17 @@ export function buildRetryPrompt(basePrompt: string, previousText: string, reaso
 	].join("\n\n---\n\n");
 }
 
+const EMPTY_TURN_INSTRUCTIONS = `Your previous message ended after its thinking with no visible answer.
+Produce the next assistant message now: answer the user in plain text, or emit <pi_tool_call> block(s) when a tool is needed. Do not repeat the thinking.`;
+
+export function buildEmptyTurnPrompt(basePrompt: string, previousThinking: string): string {
+	return [
+		basePrompt,
+		`ASSISTANT:\n<thinking>${previousThinking}</thinking>`,
+		`USER:\n${EMPTY_TURN_INSTRUCTIONS}`,
+	].join("\n\n---\n\n");
+}
+
 // The bridge has no native function calling: the model hand-writes argument
 // JSON, so required properties sometimes arrive under near-miss names (for
 // example "question" instead of "task"). Repair against the tool schema so
