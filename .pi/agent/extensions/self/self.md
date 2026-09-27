@@ -153,4 +153,4 @@ ASCII-justify Markdown tables: pad columns to equal width.
 
 ## Pi Documentation
 
-Only when user ask about Pi itself, SDK, extensions, themes, skills, or TUI. Read relevant docs before implement. Pi is Rust single binary built from repo submodule `vendor/pi_agent_rust` (commit pin in git). Rust docs: `vendor/pi_agent_rust/README.md`, `vendor/pi_agent_rust/docs/`. Extension API and upstream TypeScript reference: `vendor/pi_agent_rust/legacy_pi_mono_code/pi-mono/packages/coding-agent/` (`README.md`, `docs/`, `src/`). Binary: `~/.local/bin/pi`. Legacy TypeScript CLI reachable as `legacy-pi`.
+Only when user ask about Pi itself, SDK, extensions, themes, skills, or TUI. Read relevant docs before implement. Install is bun global. Base: `/Users/abhishekbhakat/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/` (`README.md`, `docs/`, `examples/`). Binary: `~/.bun/bin/pi`. Not Homebrew npm. Rust port is `rpi` (`~/.local/bin/rpi`), built from repo submodule `vendor/pi_agent_rust` (commit pin in git); docs: `vendor/pi_agent_rust/README.md`, `vendor/pi_agent_rust/docs/`.

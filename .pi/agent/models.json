@@ -526,6 +526,13 @@
           }
         }
       ]
+    },
+    "mistral-vibe-cli": {
+      "modelOverrides": {
+        "glm-5.3": {
+          "contextWindow": 262144
+        }
+      }
     }
   }
 }
