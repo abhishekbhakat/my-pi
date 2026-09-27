@@ -1,9 +1,10 @@
 # my-pi — install / sync live ~/.pi config; bun TypeScript `pi` + Rust `rpi`
 #
 #   make help
-#   make install                       (bun pi + config copy + pi update; build + install rpi)
+#   make install                       (bun pi + config copy + pi update)
 #   make install ARGS="-h HOST"        (set models.json proxy host)
-#   make install-bun                   (bun pi + config copy + pi update; no Rust build)
+#   make install-bun                   (same as install, minus the bun-pi restore step)
+#   make rpi-install                   (ensure toolchain; build + install Rust rpi)
 #   make rust-toolchain                (ensure cargo via rustup)
 #   make rust-install                  (build + install Rust rpi only)
 #   make rust-uninstall                (remove Rust rpi)
@@ -31,7 +32,7 @@ RPI_BIN := $(RPI_DEST)/rpi
 RUSTUP_BIN := $(shell brew --prefix rustup 2>/dev/null)/bin
 export PATH := $(HOME)/.cargo/bin:$(RUSTUP_BIN):$(PATH)
 
-.PHONY: help install install-bun restore-bun-pi rust-toolchain rust-install rust-uninstall config-install sync setup test-setup
+.PHONY: help install install-bun restore-bun-pi rpi-install rust-toolchain rust-install rust-uninstall config-install sync setup test-setup
 
 help:
 	@printf '%s\n' \
@@ -40,9 +41,10 @@ help:
 		'Targets' \
 		'  make help                 Show this help (default)' \
 		'  make install              Bun pi: setup bun, migrate npm -> bun, copy config,' \
-		'                            pi update + pi update --extensions; then build + install' \
-		'                            Rust rpi from vendor/pi_agent_rust' \
-		'  make install-bun          Bun pi + config copy + pi update only (skip Rust build)' \
+		'                            pi update + pi update --extensions (no Rust build)' \
+		'  make install-bun          Same as install, minus the bun-pi restore step' \
+		'  make rpi-install          Ensure rust toolchain; build vendor/pi_agent_rust;' \
+		'                            install as ~/.local/bin/rpi' \
 		'  make rust-toolchain       Install rustup toolchain if cargo missing' \
 		'  make rust-install         Build vendor/pi_agent_rust; install as ~/.local/bin/rpi' \
 		'  make rust-uninstall       Remove ~/.local/bin/rpi' \
@@ -60,7 +62,7 @@ help:
 		'                                      pin branch name; plain make setup auto-creates pi-install-<ddmmyyyy>' \
 		'  make setup ARGS="--help"            setup usage' \
 		'  make test-setup ARGS="00-harness"   run one Docker case' \
-		'  make rust-install RPI_DEST=DIR       install rpi into DIR (default ~/.local/bin)' \
+		'  make rpi-install RPI_DEST=DIR      install rpi into DIR (default ~/.local/bin)' \
 		'' \
 		'Or call Node directly (same on macOS, Linux, Windows):' \
 		'  node scripts/pi.mjs install [--config-only] [-h HOST]' \
@@ -77,13 +79,19 @@ help:
 		'  setup writes repo .pi/agent only; never ~/.pi except via its optional install.' \
 		'  test-setup needs Docker; never mounts host repo; secrets excluded by .gitignore.'
 
-install: restore-bun-pi install-bun rust-toolchain rust-install
+install: restore-bun-pi install-bun
 	@printf '%s\n' \
 		'' \
 		'Install complete.' \
 		'  pi:  bun TypeScript CLI ($(BUN_BIN)/pi)' \
-		'  rpi: Rust build of vendor/pi_agent_rust ($(RPI_BIN))' \
-		'  Run /reload or /restart inside pi.'
+		'  Run /reload or /restart inside pi.' \
+		'  rpi not touched; run make rpi-install to build + install it.'
+
+rpi-install: rust-toolchain rust-install
+	@printf '%s\n' \
+		'' \
+		'rpi install complete.' \
+		'  rpi: Rust build of vendor/pi_agent_rust ($(RPI_BIN))'
 
 install-bun:
 	$(CLI) install $(ARGS)

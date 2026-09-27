@@ -530,7 +530,16 @@
     "mistral-vibe-cli": {
       "modelOverrides": {
         "glm-5.3": {
-          "contextWindow": 262144
+          "contextWindow": 262144,
+          "thinkingLevelMap": {
+            "off": "off",
+            "minimal": null,
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "xhigh": null,
+            "max": "max"
+          }
         }
       }
     }

@@ -12,7 +12,7 @@ import {
 	type TranscriptContext,
 } from "@earendil-works/pi-ai";
 import { buildVibeArgs, describeStreamError, requestTimeoutMs, STDERR_LIMIT, vibeBin, vibeEnv } from "./cli.ts";
-import { bridgeContext, buildPrompt, parseJsonOutput, parseToolCalls, safeJson, type BridgeContext } from "./prompt.ts";
+import { bridgeContext, buildPrompt, buildRetryPrompt, firstInvalidToolCall, parseJsonOutput, parseToolCalls, repairToolArguments, safeJson, type BridgeContext } from "./prompt.ts";
 
 // Capability calls are marked by capability-tools metadata. They decide their
 // own context and must never see tool-call syntax: their answers would be
@@ -41,6 +41,56 @@ function applyUsage(model: Model<Api>, output: AssistantMessage, prompt: string,
 	calculateCost(model, output.usage);
 }
 
+type VibeRunResult = { stdout: string; stderr: string };
+
+// One `vibe -p` run: spawn, feed the prompt on stdin, enforce timeout and
+// abort, and surface nonzero exits as errors.
+async function runVibeOnce(model: Model<Api>, prompt: string, options?: SimpleStreamOptions): Promise<VibeRunResult> {
+	let stdout = "";
+	let stderr = "";
+	let timedOut = false;
+
+	const child = spawn(vibeBin(), buildVibeArgs(), {
+		stdio: ["pipe", "pipe", "pipe"],
+		env: vibeEnv(model.id),
+		cwd: process.cwd(),
+	});
+
+	const abort = () => child.kill("SIGTERM");
+	const timeout = requestTimeoutMs();
+	const timer = setTimeout(() => {
+		timedOut = true;
+		child.kill("SIGTERM");
+	}, timeout);
+	options?.signal?.addEventListener("abort", abort, { once: true });
+
+	// Vibe can exit before consuming a large stdin; EPIPE must not crash Pi.
+	child.stdin!.on("error", () => undefined);
+	child.stdin!.end(prompt);
+	child.stdout!.setEncoding("utf8");
+	child.stderr!.setEncoding("utf8");
+	child.stdout!.on("data", (chunk: string) => {
+		stdout += chunk;
+	});
+	child.stderr!.on("data", (chunk: string) => {
+		stderr = (stderr + chunk).slice(-STDERR_LIMIT);
+	});
+
+	const code = await new Promise<number | null>((resolve, reject) => {
+		child.on("error", reject);
+		child.on("close", resolve);
+	});
+	clearTimeout(timer);
+	options?.signal?.removeEventListener("abort", abort);
+
+	if (options?.signal?.aborted) throw new Error("Request was aborted");
+	if (timedOut) throw new Error(`vibe -p timed out after ${timeout}ms`);
+	if (code !== 0) {
+		throw new Error(stderr.trim() || stdout.trim().slice(-2_000) || `vibe -p exited with code ${code}`);
+	}
+	return { stdout, stderr };
+}
+
 export function streamVibeCli(
 	model: Model<Api>,
 	context: TranscriptContext,
@@ -62,57 +112,37 @@ export function streamVibeCli(
 
 		let bridge: BridgeContext | undefined;
 		let prompt = "";
-		let stderr = "";
-		let stdout = "";
-		let timedOut = false;
-		let timer: ReturnType<typeof setTimeout> | undefined;
 
 		try {
 			bridge = bridgeContext(context);
 			prompt = buildPrompt(bridge);
 			stream.push({ type: "start", partial: output });
 
-			const child = spawn(vibeBin(), buildVibeArgs(), {
-				stdio: ["pipe", "pipe", "pipe"],
-				env: vibeEnv(model.id),
-				cwd: process.cwd(),
-			});
+			const first = await runVibeOnce(model, prompt, options);
+			let parsed = parseJsonOutput(first.stdout);
+			if (parsed.isError) throw new Error(parsed.text || first.stderr.trim() || "vibe -p returned an error result");
 
-			const abort = () => child.kill("SIGTERM");
-			const timeout = requestTimeoutMs();
-			timer = setTimeout(() => {
-				timedOut = true;
-				child.kill("SIGTERM");
-			}, timeout);
-			options?.signal?.addEventListener("abort", abort, { once: true });
+			// Capability helpers and other tool-free callers get plain text only.
+			const allowTools = !isCapabilityCall(options) && bridge.tools.length > 0;
+			let toolCalls = allowTools ? repairToolArguments(bridge.tools, parseToolCalls(parsed.text)) : [];
 
-			// Vibe can exit before consuming a large stdin; EPIPE must not crash Pi.
-			child.stdin!.on("error", () => undefined);
-			child.stdin!.end(prompt);
-			child.stdout!.setEncoding("utf8");
-			child.stderr!.setEncoding("utf8");
-			child.stdout!.on("data", (chunk: string) => {
-				stdout += chunk;
-			});
-			child.stderr!.on("data", (chunk: string) => {
-				stderr = (stderr + chunk).slice(-STDERR_LIMIT);
-			});
-
-			const code = await new Promise<number | null>((resolve, reject) => {
-				child.on("error", reject);
-				child.on("close", resolve);
-			});
-			if (timer) clearTimeout(timer);
-			options?.signal?.removeEventListener("abort", abort);
-
-			if (options?.signal?.aborted) throw new Error("Request was aborted");
-			if (timedOut) throw new Error(`vibe -p timed out after ${timeout}ms`);
-			if (code !== 0) {
-				throw new Error(stderr.trim() || stdout.trim().slice(-2_000) || `vibe -p exited with code ${code}`);
+			// Hand-written JSON sometimes breaks (triple quotes, raw newlines in
+			// string values). When blocks exist but none parse, ask Vibe once to
+			// re-emit them instead of letting the block land as plain text.
+			const invalidReason = allowTools ? firstInvalidToolCall(parsed.text) : undefined;
+			if (invalidReason !== undefined) {
+				const retryPrompt = buildRetryPrompt(prompt, parsed.text, invalidReason);
+				const retry = await runVibeOnce(model, retryPrompt, options);
+				const retryParsed = parseJsonOutput(retry.stdout);
+				if (!retryParsed.isError) {
+					const retryCalls = allowTools ? repairToolArguments(bridge.tools, parseToolCalls(retryParsed.text)) : [];
+					if (retryCalls.length > 0) {
+						parsed = retryParsed;
+						toolCalls = retryCalls;
+						prompt = retryPrompt;
+					}
+				}
 			}
-
-			const parsed = parseJsonOutput(stdout);
-			if (parsed.isError) throw new Error(parsed.text || stderr.trim() || "vibe -p returned an error result");
 
 			applyUsage(model, output, prompt, parsed.text);
 			if (parsed.thinking) {
@@ -122,9 +152,6 @@ export function streamVibeCli(
 				stream.push({ type: "thinking_delta", contentIndex: thinkingIndex, delta: parsed.thinking, partial: output });
 				stream.push({ type: "thinking_end", contentIndex: thinkingIndex, content: parsed.thinking, partial: output });
 			}
-			// Capability helpers and other tool-free callers get plain text only.
-			const allowTools = !isCapabilityCall(options) && bridge.tools.length > 0;
-			const toolCalls = allowTools ? parseToolCalls(parsed.text) : [];
 			if (toolCalls.length > 0) {
 				output.stopReason = "toolUse";
 				for (const call of toolCalls) {
@@ -160,7 +187,6 @@ export function streamVibeCli(
 			stream.push({ type: "done", reason: "stop", message: output });
 			stream.end();
 		} catch (error) {
-			if (timer) clearTimeout(timer);
 			output.stopReason = options?.signal?.aborted ? "aborted" : "error";
 			output.errorMessage = await describeStreamError(error);
 			stream.push({ type: "error", reason: output.stopReason, error: output });

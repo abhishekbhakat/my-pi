@@ -19,7 +19,7 @@ mistral-vibe-cli/
 1. Pi calls `streamSimple` with the normalized transcript.
 2. The bridge rebuilds the conversation: bridge instructions, Pi system prompt, available Pi tools, full transcript.
 3. `vibe -p --enabled-tools __none__ --output json --max-turns 1` runs with the prompt on stdin.
-4. Vibe's own tools are disabled, so Vibe never executes anything. When Pi offers tools, the bridge teaches `<pi_tool_call>` blocks and Pi executes them. Tool-free callers (capability helpers, cache warmup) get a plain-text bridge and never parse `<pi_tool_call>` into `toolUse`.
+4. Vibe's own tools are disabled, so Vibe never executes anything. When Pi offers tools, the bridge teaches `<pi_tool_call>` blocks and Pi executes them. Tool-free callers (capability helpers, cache warmup) get a plain-text bridge and never parse `<pi_tool_call>` into `toolUse`. Block parsing is lenient: a trailing block missing its `</pi_tool_call>` close tag is salvaged up to the end of the message, and a complete JSON value followed by junk (stray backticks) is parsed by cutting at the last closing brace. If a block still does not parse (triple quotes, raw newlines in string values), the bridge re-runs `vibe -p` once with the broken output and the parse error, and adopts the corrected call; if the retry also fails, the block lands as plain text as before.
 5. The JSON message array is parsed; assistant text (and thinking, when present) becomes the Pi assistant message.
 
 Stateless by design: every turn resends the full transcript. `vibe -p` has no session-resume contract for programmatic mode, so there is no session map to corrupt. Each run writes a Vibe session log under `~/.vibe/logs/session/` — that is Vibe's own behavior.

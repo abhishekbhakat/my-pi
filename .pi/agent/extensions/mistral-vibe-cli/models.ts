@@ -64,8 +64,8 @@ export function providerModels(models: VibeCliModelInfo[]) {
 	return models.map((model) => ({
 		id: model.id,
 		name: `${model.name} (Mistral Vibe CLI)`,
-		// Vibe -p exposes no thinking control; the model's own Vibe config decides.
-		reasoning: false,
+		// Vibe -p exposes no thinking flag; Vibe's own model config decides actual reasoning.
+		reasoning: true,
 		input: ["text"] as ("text")[],
 		contextWindow: model.contextWindow,
 		maxTokens: model.maxTokens,
