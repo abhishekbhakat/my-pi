@@ -1,3 +1,4 @@
+import { splitReprThinking } from "./repr-thinking.ts";
 import {
 	collapseSystemMessages,
 	getCurrentSystemPrompt,
@@ -162,7 +163,7 @@ function entryText(entry: VibeEntry): { text: string; thinking: string } {
  * model output arrives as message entries with source "harness". Anything that
  * fails to parse is surfaced as an error result, never silently dropped.
  */
-export function parseJsonOutput(stdout: string): ParsedVibeOutput {
+export function parseJsonOutput(stdout: string, reprThinking: "auto" | "off" = "auto"): ParsedVibeOutput {
 	let parsed: unknown;
 	try {
 		parsed = JSON.parse(stdout);
@@ -189,8 +190,10 @@ export function parseJsonOutput(stdout: string): ParsedVibeOutput {
 		}
 		if (entry?.type !== "message" || entry?.role !== "assistant") continue;
 		const { text, thinking } = entryText(entry);
-		if (text) texts.push(text);
+		const split = reprThinking === "auto" ? splitReprThinking(text) : { text, thinking: "" };
+		if (split.text) texts.push(split.text);
 		if (thinking) thoughts.push(thinking);
+		if (split.thinking) thoughts.push(split.thinking);
 	}
 	if (texts.length === 0 && thoughts.length === 0) failed = true;
 	return { text: texts.join("\n"), thinking: thoughts.join("\n\n"), isError: failed };

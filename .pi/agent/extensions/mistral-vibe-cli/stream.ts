@@ -11,7 +11,7 @@ import {
 	type ToolCall,
 	type TranscriptContext,
 } from "@earendil-works/pi-ai";
-import { buildVibeArgs, describeStreamError, requestTimeoutMs, STDERR_LIMIT, vibeBin, vibeEnv } from "./cli.ts";
+import { buildVibeArgs, describeStreamError, reprThinkingMode, requestTimeoutMs, STDERR_LIMIT, vibeBin, vibeEnv } from "./cli.ts";
 import { bridgeContext, buildEmptyTurnPrompt, buildPrompt, buildRetryPrompt, firstInvalidToolCall, parseJsonOutput, parseToolCalls, repairToolArguments, safeJson, type BridgeContext } from "./prompt.ts";
 
 // Capability calls are marked by capability-tools metadata. They decide their
@@ -118,8 +118,9 @@ export function streamVibeCli(
 			prompt = buildPrompt(bridge);
 			stream.push({ type: "start", partial: output });
 
+			const reprThinking = reprThinkingMode();
 			const first = await runVibeOnce(model, prompt, options);
-			let parsed = parseJsonOutput(first.stdout);
+			let parsed = parseJsonOutput(first.stdout, reprThinking);
 			if (parsed.isError) throw new Error(parsed.text || first.stderr.trim() || "vibe -p returned an error result");
 
 			// Capability helpers and other tool-free callers get plain text only.
@@ -133,11 +134,14 @@ export function streamVibeCli(
 			if (invalidReason !== undefined) {
 				const retryPrompt = buildRetryPrompt(prompt, parsed.text, invalidReason);
 				const retry = await runVibeOnce(model, retryPrompt, options);
-				const retryParsed = parseJsonOutput(retry.stdout);
+				const retryParsed = parseJsonOutput(retry.stdout, reprThinking);
 				if (!retryParsed.isError) {
 					const retryCalls = allowTools ? repairToolArguments(bridge.tools, parseToolCalls(retryParsed.text)) : [];
 					if (retryCalls.length > 0) {
-						parsed = retryParsed;
+						parsed = {
+							...retryParsed,
+							thinking: [parsed.thinking, retryParsed.thinking].filter(Boolean).join("\n\n"),
+						};
 						toolCalls = retryCalls;
 						prompt = retryPrompt;
 					}
@@ -150,11 +154,14 @@ export function streamVibeCli(
 			if (toolCalls.length === 0 && !parsed.text.trim()) {
 				const emptyPrompt = buildEmptyTurnPrompt(prompt, parsed.thinking);
 				const retry = await runVibeOnce(model, emptyPrompt, options);
-				const retryParsed = parseJsonOutput(retry.stdout);
+				const retryParsed = parseJsonOutput(retry.stdout, reprThinking);
 				if (!retryParsed.isError) {
 					const retryCalls = allowTools ? repairToolArguments(bridge.tools, parseToolCalls(retryParsed.text)) : [];
 					if (retryCalls.length > 0 || retryParsed.text.trim()) {
-						parsed = retryParsed;
+						parsed = {
+							...retryParsed,
+							thinking: [parsed.thinking, retryParsed.thinking].filter(Boolean).join("\n\n"),
+						};
 						toolCalls = retryCalls;
 						prompt = emptyPrompt;
 					}

@@ -29,6 +29,11 @@ export function vibeEnv(modelId: string): NodeJS.ProcessEnv {
 	return env;
 }
 
+// Set to "off" to leave Vibe's Python-repr thinking chunks in assistant text.
+export function reprThinkingMode(): "auto" | "off" {
+	return process.env.MISTRAL_VIBE_CLI_REPR_THINKING?.trim().toLowerCase() === "off" ? "off" : "auto";
+}
+
 export function requestTimeoutMs(): number {
 	const configured = Number(process.env.MISTRAL_VIBE_CLI_TIMEOUT_MS);
 	if (Number.isFinite(configured) && configured > 0) return configured;

@@ -20,7 +20,7 @@ mistral-vibe-cli/
 2. The bridge rebuilds the conversation: bridge instructions, Pi system prompt, available Pi tools, full transcript.
 3. `vibe -p --enabled-tools __none__ --output json --max-turns 1` runs with the prompt on stdin.
 4. Vibe's own tools are disabled, so Vibe never executes anything. When Pi offers tools, the bridge teaches `<pi_tool_call>` blocks and Pi executes them. Tool-free callers (capability helpers, cache warmup) get a plain-text bridge and never parse `<pi_tool_call>` into `toolUse`. Block parsing is lenient: a trailing block missing its `</pi_tool_call>` close tag is salvaged up to the end of the message, and a complete JSON value followed by junk (stray backticks) is parsed by cutting at the last closing brace. If a block still does not parse (triple quotes, raw newlines in string values), the bridge re-runs `vibe -p` once with the broken output and the parse error, and adopts the corrected call; if the retry also fails, the block lands as plain text as before.
-5. The JSON message array is parsed; assistant text (and thinking, when present) becomes the Pi assistant message.
+5. The JSON message array is parsed; assistant text and structured thinking become the Pi assistant message. In `auto` mode, the bridge also recognizes Python-repr thinking chunks at the start of assistant text (for example `{'type': 'thinking', 'thinking': [{'type': 'text', 'text': '...'}]}`), joins their text fragments, and sends them as Pi thinking. It leaves unmatched text alone. Thinking-only output triggers the existing empty-turn retry.
 
 Stateless by design: every turn resends the full transcript. `vibe -p` has no session-resume contract for programmatic mode, so there is no session map to corrupt. Each run writes a Vibe session log under `~/.vibe/logs/session/` — that is Vibe's own behavior.
 
@@ -38,6 +38,7 @@ Stateless by design: every turn resends the full transcript. `vibe -p` has no se
 | `MISTRAL_VIBE_CLI_BIN` | Override the vibe executable (default `vibe`) |
 | `MISTRAL_VIBE_CLI_MODELS` | Comma-separated Vibe model aliases to register |
 | `MISTRAL_VIBE_CLI_TIMEOUT_MS` | Per-turn timeout (default 300000) |
+| `MISTRAL_VIBE_CLI_REPR_THINKING` | Parse Python-repr thinking at the start of assistant text (`auto`, default); set `off` to leave it as text |
 | `MISTRAL_VIBE_CLI_CONTEXT_WINDOW` | Context window for all registered models (default 262144) |
 
 The child env strips inherited `VIBE_ACTIVE_MODEL` and `MISTRAL_API_KEY`, then sets `VIBE_ACTIVE_MODEL` only for non-`default` models. Vibe keeps its own auth in `~/.vibe/.env` and its own model config in `~/.vibe/config.toml`; inherited values would silently retarget it.

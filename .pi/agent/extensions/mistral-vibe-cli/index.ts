@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { checkCliStatus, setupGuidance, vibeBin, type CliStatus } from "./cli.ts";
+import { checkCliStatus, reprThinkingMode, setupGuidance, vibeBin, type CliStatus } from "./cli.ts";
 import { API_ID, configuredModels, PROVIDER_ID, providerModels, type VibeCliModelInfo } from "./models.ts";
 import { streamVibeCli } from "./stream.ts";
 
@@ -31,6 +31,7 @@ function statusLines(status?: CliStatus): string[] {
 		"Fallbacks: none (no Mistral HTTP API or built-in Mistral provider)",
 		"Images: not supported (vibe -p has no image input)",
 		`Registered models: ${registeredModels.length}`,
+		`Python-repr thinking: ${reprThinkingMode()}`,
 	];
 
 	const current = status ?? lastCliStatus;
@@ -79,6 +80,7 @@ export default function mistralVibeCliExtension(pi: ExtensionAPI) {
 				ctx.ui.notify("Set MISTRAL_VIBE_CLI_BIN to override the vibe executable.", "info");
 				ctx.ui.notify("Set MISTRAL_VIBE_CLI_MODELS for comma-separated Vibe model aliases (default always available).", "info");
 				ctx.ui.notify("Set MISTRAL_VIBE_CLI_TIMEOUT_MS / MISTRAL_VIBE_CLI_CONTEXT_WINDOW to tune the bridge.", "info");
+				ctx.ui.notify("Set MISTRAL_VIBE_CLI_REPR_THINKING=off to disable leaked-thinking parsing (default: auto).", "info");
 				return;
 			}
 			ctx.ui.notify(`Unknown /mistral-vibe-cli subcommand: ${sub}. Try /mistral-vibe-cli help`, "warning");
