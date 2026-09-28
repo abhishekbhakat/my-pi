@@ -11,7 +11,7 @@ import {
 	type ToolCall,
 	type TranscriptContext,
 } from "@earendil-works/pi-ai";
-import { buildVibeArgs, describeStreamError, reprThinkingMode, requestTimeoutMs, STDERR_LIMIT, vibeBin, vibeEnv } from "./cli.ts";
+import { buildVibeArgs, describeStreamError, reprThinkingMode, requestTimeoutMs, STDERR_LIMIT, vibeBin, vibeEnv, VibeIncompleteResponseError } from "./cli.ts";
 import { bridgeContext, buildEmptyTurnPrompt, buildPrompt, buildRetryPrompt, firstInvalidToolCall, parseJsonOutput, parseToolCalls, repairToolArguments, safeJson, type BridgeContext } from "./prompt.ts";
 
 // Capability calls are marked by capability-tools metadata. They decide their
@@ -168,7 +168,7 @@ export function streamVibeCli(
 				}
 			}
 			if (toolCalls.length === 0 && !parsed.text.trim()) {
-				throw new Error("vibe -p returned a thinking-only message with no text or tool calls");
+				throw new VibeIncompleteResponseError("vibe -p returned only reasoning twice, with no visible answer or tool call. Try a shorter prompt or another Vibe model.");
 			}
 
 			applyUsage(model, output, prompt, parsed.text);

@@ -298,13 +298,15 @@ export function buildRetryPrompt(basePrompt: string, previousText: string, reaso
 	].join("\n\n---\n\n");
 }
 
-const EMPTY_TURN_INSTRUCTIONS = `Your previous message ended after its thinking with no visible answer.
-Produce the next assistant message now: answer the user in plain text, or emit <pi_tool_call> block(s) when a tool is needed. Do not repeat the thinking.`;
+const EMPTY_TURN_INSTRUCTIONS = `Your previous message ended after reasoning with no visible answer.
+Continue from that reasoning. Output only the final answer in plain text, or <pi_tool_call> block(s) when a tool is needed. Do not repeat or extend the reasoning.`;
 
 export function buildEmptyTurnPrompt(basePrompt: string, previousThinking: string): string {
+	// Keep the most recent reasoning as context without doubling a long prompt.
+	const recentThinking = previousThinking.slice(-4_000);
 	return [
 		basePrompt,
-		`ASSISTANT:\n<thinking>${previousThinking}</thinking>`,
+		`ASSISTANT:\n<thinking>${recentThinking}</thinking>`,
 		`USER:\n${EMPTY_TURN_INSTRUCTIONS}`,
 	].join("\n\n---\n\n");
 }

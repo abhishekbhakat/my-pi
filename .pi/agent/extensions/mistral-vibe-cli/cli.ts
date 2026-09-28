@@ -4,9 +4,12 @@ export const STATUS_TIMEOUT_MS = 4_000;
 export const REQUEST_TIMEOUT_MS = 5 * 60_000;
 export const STDERR_LIMIT = 20_000;
 
-// Matches no Vibe tool, so --enabled-tools leaves the agent with zero tools.
+// Matches no Vibe tool. The legacy harness honors this allowlist; Vibe 2.25.8's
+// unified harness still offers native tools, so the bridge must pin legacy.
 // Vibe must never execute actions itself; Pi executes all tools.
 export const TOOL_NONE = "__none__";
+
+export class VibeIncompleteResponseError extends Error {}
 
 export type CliStatus = {
 	ok: boolean;
@@ -21,11 +24,12 @@ export function vibeBin(): string {
 // Vibe owns its auth through ~/.vibe/.env and its model choice through
 // ~/.vibe/config.toml. Inherited values would silently retarget it.
 const STRIP_ENV = ["VIBE_ACTIVE_MODEL", "MISTRAL_API_KEY"];
+const VIBE_MODEL_ALIASES: Record<string, string> = { "glm-5.3": "glm-5-3" };
 
 export function vibeEnv(modelId: string): NodeJS.ProcessEnv {
 	const env = { ...process.env };
 	for (const name of STRIP_ENV) delete env[name];
-	if (modelId !== "default") env.VIBE_ACTIVE_MODEL = modelId;
+	if (modelId !== "default") env.VIBE_ACTIVE_MODEL = VIBE_MODEL_ALIASES[modelId] ?? modelId;
 	return env;
 }
 
@@ -42,7 +46,7 @@ export function requestTimeoutMs(): number {
 
 // The prompt travels over stdin: transcripts can exceed argv limits.
 export function buildVibeArgs(): string[] {
-	return ["-p", "--enabled-tools", TOOL_NONE, "--output", "json", "--max-turns", "1"];
+	return ["-p", "--legacy-harness", "--enabled-tools", TOOL_NONE, "--output", "json", "--max-turns", "1"];
 }
 
 export function runCapture(
@@ -118,6 +122,7 @@ export function setupGuidance(error: string): string {
 export async function describeStreamError(error: unknown): Promise<string> {
 	const reason = error instanceof Error ? error.message : String(error);
 	const status = await checkCliStatus();
+	if (status.ok && error instanceof VibeIncompleteResponseError) return `mistral-vibe-cli: ${reason}`;
 	if (status.ok) return `mistral-vibe-cli bridge error: ${reason}`;
 	return setupGuidance(status.detail ?? reason);
 }
