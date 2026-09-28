@@ -21,6 +21,9 @@
 # zvec-grep (zg) local workspace index
 .zvec-grep/
 
+# Cloudflare cf CLI local project state
+.cloudflare/
+
 # Python
 __pycache__/
 *.py[cod]

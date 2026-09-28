@@ -38,6 +38,13 @@
         }
       ]
     },
+    "claude-code-cli": {
+      "modelOverrides": {
+        "sonnet": {
+          "contextWindow": 262144
+        }
+      }
+    },
     "deepseek": {
       "modelOverrides": {
         "deepseek-flash": {
