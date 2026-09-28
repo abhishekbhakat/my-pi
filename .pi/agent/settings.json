@@ -13,6 +13,7 @@
     "openrouter/meta/muse-spark-1.3": "max",
     "mistral/zai-glm-5-3": "low",
     "mistral-vibe-cli/glm-5.3": "low",
+    "claude-code-cli/sonnet": "high",
     "opencode/space-bunny-free": "low"
   },
   "steeringMode": "all",
@@ -30,6 +31,7 @@
     "inferx/glm-5.3-flash",
     "inferx/deepseek-v4.1-flash",
     "claude-code-cli/opus",
+    "claude-code-cli/sonnet",
     "mistral-vibe-cli/default",
     "mistral-vibe-cli/glm-5.3",
     "google/gemini-3.8-flash",
