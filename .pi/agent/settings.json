@@ -15,14 +15,15 @@
     "mistral/zai-glm-5-3": "low",
     "mistral-vibe-cli/glm-5.3": "low",
     "claude-code-cli/sonnet": "high",
-    "opencode/space-bunny-free": "low"
+    "opencode/space-bunny-free": "low",
+    "runinfra/glm-5-3-flash": "low"
   },
   "steeringMode": "all",
   "followUpMode": "all",
   "enableInstallTelemetry": true,
   "defaultProjectTrust": "always",
-  "defaultProvider": "openai",
-  "defaultModel": "gpt-6.1-sol",
+  "defaultProvider": "runinfra",
+  "defaultModel": "glm-5-3-flash",
   "enabledModels": [
     "kimi-coding/k3-256k",
     "kimi-coding/kimi-for-coding",
@@ -39,7 +40,8 @@
     "deepseek/deepseek-flash",
     "grok-cli/grok-4.5",
     "openai/gpt-6.1-sol",
-    "openai/gpt-6-astra"
+    "openai/gpt-6-astra",
+    "runinfra/glm-5-3-flash"
   ],
   "showCacheMissNotices": true,
   "terminal": {
