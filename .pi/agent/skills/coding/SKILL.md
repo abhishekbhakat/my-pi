@@ -90,6 +90,7 @@ Success bar: agent does the small ask plus the adjacent steps you would have don
 ## Verification
 
 - Narrowest check that catches the class of bug. Test real payload shapes, not vibes.
+- Repo hygiene: run [references/repo-eval-checklist.md](references/repo-eval-checklist.md) when auditing a repo or finishing a large change.
 - Agent fixes CI failures before reporting done.
 - Big outputs go to files; report paths, not dumps.
 
