@@ -217,7 +217,7 @@ export async function executeCapability(
 	const prompt = buildCapabilityPrompt(input.task, context);
 
 	const fast = fastWireState();
-	const serviceTier = model.provider === "openai-codex" && fast?.enabled ? "priority" : undefined;
+	const serviceTier = (model.provider === "openai" || model.provider === "openai-codex") && fast?.enabled ? "priority" : undefined;
 	fast?.remember?.(model.provider, model.id);
 
 	onUpdate?.({

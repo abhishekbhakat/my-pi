@@ -241,11 +241,17 @@ function updateStatus(ctx: ExtensionContext, state: WrapState): void {
 function statusMessage(state: WrapState, ctx: ExtensionContext): string {
 	const session = ctx.model ? `${ctx.model.provider}/${ctx.model.id}` : "no-model";
 	const source = envOverride() === undefined ? "config" : "PI_CODEX_FAST";
-	const scope = ctx.model?.provider === CODEX
+	const provider = ctx.model?.provider;
+	const scope = provider === CODEX
 		? `Session ${session} uses Codex Fast.`
-		: `Session ${session} is not Codex. Fast applies only to ${CODEX} requests (chat or tools like patch-reviewer).`;
-	if (!state.enabled) return `OpenAI Fast mode is off (${source}). ${scope} New Codex connections only.`;
-	return `OpenAI Fast mode is on (${source}). ${scope} ${lastWireLabel(state)}. originator=${ORIGINATOR}, ${HINT}=${routingHint(wireModel(state))}. /restart after toggle if a Codex socket is already open.`;
+		: provider === "openai"
+			? `Session ${session} requests service_tier=${TIER}. Server determines actual tier.`
+			: `Session ${session} is outside Fast scope. Fast applies to openai and ${CODEX} requests, including capability tools.`;
+	if (!state.enabled) return `OpenAI Fast mode is off (${source}). ${scope}`;
+	const wire = provider === CODEX
+		? ` ${lastWireLabel(state)}. originator=${ORIGINATOR}, ${HINT}=${routingHint(wireModel(state))}.`
+		: "";
+	return `OpenAI Fast mode is on (${source}). ${scope}${wire} /restart after toggle if a Codex socket is already open.`;
 }
 
 export default function fastModeExtension(pi: ExtensionAPI) {
@@ -259,13 +265,17 @@ export default function fastModeExtension(pi: ExtensionAPI) {
 		rememberCodex(event.model.provider, event.model.id);
 		updateStatus(ctx, wrapState());
 	});
-	pi.on("before_provider_request", (_event, ctx) => {
+	pi.on("before_provider_request", (event, ctx) => {
 		if (ctx.model?.provider === CODEX) rememberCodex(ctx.model.provider, ctx.model.id);
-		updateStatus(ctx, wrapState());
+		const state = wrapState();
+		updateStatus(ctx, state);
+		if (!state.enabled || ctx.model?.provider !== "openai") return;
+		if (!event.payload || typeof event.payload !== "object" || Array.isArray(event.payload)) return;
+		return { ...event.payload, service_tier: TIER };
 	});
 
 	pi.registerCommand("fast", {
-		description: "Toggle ChatGPT Codex Fast mode (originator + routing hint)",
+		description: "Toggle OpenAI priority tier and ChatGPT Codex Fast mode",
 		getArgumentCompletions: (prefix) =>
 			["on", "off", "status"].filter((item) => item.startsWith(prefix.toLowerCase())).map((item) => ({ value: item, label: item })),
 		handler: async (args, ctx) => {
