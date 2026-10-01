@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.99.1",
+  "lastChangelogVersion": "0.99.2",
   "theme": "everforest",
   "quietStartup": true,
   "hideThinkingBlock": false,
@@ -16,14 +16,18 @@
     "mistral-vibe-cli/glm-5.3": "low",
     "claude-code-cli/sonnet": "high",
     "opencode/space-bunny-free": "low",
-    "runinfra/glm-5-3-flash": "low"
+    "runinfra/glm-5-3-flash": "low",
+    "vercel-ai-gateway/zai/glm-5.3-flash": "low"
   },
   "steeringMode": "all",
   "followUpMode": "all",
   "enableInstallTelemetry": true,
   "defaultProjectTrust": "always",
-  "defaultProvider": "runinfra",
-  "defaultModel": "glm-5-3-flash",
+  "defaultProvider": "vercel-ai-gateway",
+  "defaultModel": "zai/glm-5.3-flash",
+  "defaultTools": [
+    "+codemode"
+  ],
   "enabledModels": [
     "kimi-coding/k3-256k",
     "kimi-coding/kimi-for-coding",
@@ -41,7 +45,10 @@
     "grok-cli/grok-4.5",
     "openai/gpt-6.1-sol",
     "openai/gpt-6-astra",
-    "runinfra/glm-5-3-flash"
+    "runinfra/glm-5-3-flash",
+    "grok-cli/grok-4.7",
+    "vercel-ai-gateway/zai/glm-5.3-flash",
+    "vercel-ai-gateway/zai/glm-5.3-fast"
   ],
   "showCacheMissNotices": true,
   "terminal": {

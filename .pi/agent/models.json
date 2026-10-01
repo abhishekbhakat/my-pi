@@ -549,6 +549,16 @@
           }
         }
       }
+    },
+    "vercel-ai-gateway": {
+      "modelOverrides": {
+        "zai/glm-5.3-flash": {
+          "contextWindow": 262144
+        },
+        "zai/glm-5.3-fast": {
+          "contextWindow": 262144
+        }
+      }
     }
   }
 }

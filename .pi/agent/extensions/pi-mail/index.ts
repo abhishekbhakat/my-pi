@@ -1,6 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
 import { Type } from "@sinclair/typebox";
+import { registerUserMail } from "./user-mail/index.ts";
 import {
 	ackMail,
 	getAgentDirPath,
@@ -32,6 +33,8 @@ function formatAge(sentAt: number): string {
 }
 
 export default function piMailExtension(pi: ExtensionAPI) {
+	registerUserMail(pi);
+
 	pi.registerMessageRenderer(MAIL_CUSTOM_TYPE, (message, options, theme) => {
 		const head = theme.fg("accent", "[mail] ");
 		return new Text(head + String(message.content), options.outputPad, 0);

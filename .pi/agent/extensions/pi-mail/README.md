@@ -31,10 +31,27 @@ flag. Check `inbox` when you start work and when you stall.
 
 ```text
 pi-mail/
-  index.ts            Extension entry, registers mail tool and message renderer
-  mailbox.ts          Queue, list, resolve, ack, TTL
+  index.ts            Extension entry, registers mail + user_mail tools and renderer
+  mailbox.ts          Agent mailbox: queue, list, resolve, ack, TTL
   resolver.ts         Live-candidate pick for diagnostics (send path never calls it)
+  user-mail/          User-facing mail over the local network (issue #5)
+    index.ts          pi wiring: command, tool dispatch, renderer
+    session/          Election cache, srv chip, formatting
+    identity.ts       username + alias, mail ids
+    protocol.ts       Ports, wire types, validators
+    client.ts         HTTP client to the network server
+    discovery/        UDP query (clients) and responder (server)
+    election.ts       Find or claim the one server per network
+    mailbox/          Receiving: shared store, mirror sync, inbox, read
+    outbox/           Sending: target resolution, envelope post
+    server/           Only loaded by the election winner: routes, registry,
+                      rate limit, node:http plumbing
+
+See user-mail/DESIGN.md for the protocol and lifecycle.
 ```
+
+`mail` stays session-to-session on one machine. `user_mail` targets users
+across the LAN so a team can leave passive messages for each other.
 
 ## Limits
 
