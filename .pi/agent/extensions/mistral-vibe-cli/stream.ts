@@ -13,6 +13,7 @@ import {
 } from "@earendil-works/pi-ai";
 import { buildVibeArgs, describeStreamError, reprThinkingMode, requestTimeoutMs, STDERR_LIMIT, vibeBin, vibeEnv, VibeIncompleteResponseError } from "./cli.ts";
 import { bridgeContext, buildEmptyTurnPrompt, buildPrompt, buildRetryPrompt, firstInvalidToolCall, parseJsonOutput, parseToolCalls, repairToolArguments, safeJson, type BridgeContext } from "./prompt.ts";
+import { publishTurnStats, readTurnStats, type VibeTurnStats } from "./stats.ts";
 
 // Capability calls are marked by capability-tools metadata. They decide their
 // own context and must never see tool-call syntax: their answers would be
@@ -32,9 +33,27 @@ function emptyUsage(): AssistantMessage["usage"] {
 	};
 }
 
-// `vibe -p --output json` carries no token accounting; estimate like the
-// claude-code-pi fallback so Pi's usage display stays populated.
-function applyUsage(model: Model<Api>, output: AssistantMessage, prompt: string, responseText: string) {
+// `vibe -p --output json` carries no token accounting. Prefer the real provider
+// counts Vibe writes to its session log after the run; fall back to a chars/4
+// estimate only when that file is missing. Reasoning counts as generated output.
+function applyUsage(
+	model: Model<Api>,
+	output: AssistantMessage,
+	prompt: string,
+	responseText: string,
+	thinkingText = "",
+	stats?: VibeTurnStats | null,
+) {
+	if (stats && stats.completionTokens > 0) {
+		output.usage.input = stats.promptTokens;
+		output.usage.output = stats.completionTokens;
+		output.usage.cacheRead = stats.cachedTokens;
+		output.usage.cacheWrite = 0;
+		output.usage.totalTokens = stats.promptTokens + stats.completionTokens + stats.cachedTokens;
+		calculateCost(model, output.usage);
+		return;
+	}
+	responseText = `${thinkingText}${responseText}`;
 	output.usage.input = Math.max(1, Math.ceil(prompt.length / 4));
 	output.usage.output = Math.max(1, Math.ceil((responseText || " ").length / 4));
 	output.usage.totalTokens = output.usage.input + output.usage.output;
@@ -171,7 +190,9 @@ export function streamVibeCli(
 				throw new VibeIncompleteResponseError("vibe -p returned only reasoning twice, with no visible answer or tool call. Try a shorter prompt or another Vibe model.");
 			}
 
-			applyUsage(model, output, prompt, parsed.text);
+			const turnStats = readTurnStats(parsed.sessionId);
+			applyUsage(model, output, prompt, parsed.text, parsed.thinking, turnStats);
+			publishTurnStats(turnStats);
 			if (parsed.thinking) {
 				const thinkingIndex = output.content.length;
 				output.content.push({ type: "thinking", thinking: parsed.thinking });

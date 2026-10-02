@@ -2,9 +2,9 @@
 
 Source of truth for this machine's [pi](https://github.com/badlogic/pi-mono) agent config. Edit files under `.pi/agent/` here, then install them into the live `~/.pi/agent` tree.
 
-The `pi` CLI is bun global. `make install` runs `scripts/setup-bun.mjs` (install bun from bun.sh if missing, prepend `~/.bun/bin` for that process), uninstalls npm global `@earendil-works/pi-coding-agent` if present, then `bun install -g` when the bun copy is missing. Config copy still uses Node. Extension `node_modules` use bun when bun is available, else npm.
+The `pi` CLI is bun global. `make install` runs `scripts/setup-bun.mjs` (install bun from bun.sh if missing, prepend `~/.bun/bin` for that process), uninstalls npm global `@earendil-works/pi-coding-agent` if present, then `bun install -g` when the bun copy is missing. Config copy still uses Node. Extension `node_modules` use bun when bun is available, else npm. Live config path is `~/.pi/agent`.
 
-`rpi` is the Rust port, built from the `vendor/pi_agent_rust` submodule (source pin tracked by git). `make install` also ensures rustup (`make rust-toolchain`), builds it with the submodule's pinned nightly, and installs the binary as `~/.local/bin/rpi` (`make rust-install`; `make rust-uninstall` removes it; `make install-bun` skips the Rust build). Both CLIs read the same `~/.pi/agent`. `make install` first runs `make restore-bun-pi`, which undoes the earlier vendor-installer layout that replaced bun's `pi` with the Rust binary.
+`make install` first runs `make restore-bun-pi`, which undoes any earlier vendor-installer layout that replaced bun's `pi` with a Rust binary.
 
 Standalone bun bootstrap:
 

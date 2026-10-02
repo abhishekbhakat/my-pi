@@ -135,6 +135,8 @@ export type ParsedVibeOutput = {
 	text: string;
 	thinking: string;
 	isError: boolean;
+	/** Session id Vibe stamped on every entry; used to find its stats file. */
+	sessionId?: string;
 };
 
 type VibeEntry = {
@@ -143,6 +145,7 @@ type VibeEntry = {
 	source?: string;
 	generationStatus?: string;
 	text?: string;
+	sessionId?: string;
 	content?: Array<{ type?: string; text?: string; thinking?: string }>;
 };
 
@@ -175,8 +178,10 @@ export function parseJsonOutput(stdout: string, reprThinking: "auto" | "off" = "
 	const entries: VibeEntry[] = Array.isArray(parsed) ? (parsed as VibeEntry[]) : [parsed as VibeEntry];
 	const texts: string[] = [];
 	const thoughts: string[] = [];
+	let sessionId: string | undefined;
 	let failed = entries.length === 0;
 	for (const entry of entries) {
+		if (!sessionId && typeof entry?.sessionId === "string") sessionId = entry.sessionId;
 		if (entry?.type === "error" || entry?.generationStatus === "error") {
 			failed = true;
 			const { text } = entryText(entry);
@@ -196,7 +201,7 @@ export function parseJsonOutput(stdout: string, reprThinking: "auto" | "off" = "
 		if (split.thinking) thoughts.push(split.thinking);
 	}
 	if (texts.length === 0 && thoughts.length === 0) failed = true;
-	return { text: texts.join("\n"), thinking: thoughts.join("\n\n"), isError: failed };
+	return { text: texts.join("\n"), thinking: thoughts.join("\n\n"), isError: failed, sessionId };
 }
 
 // Complete <pi_tool_call>...</pi_tool_call> blocks, plus a trailing

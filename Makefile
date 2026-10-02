@@ -1,13 +1,9 @@
-# my-pi — install / sync live ~/.pi config; bun TypeScript `pi` + Rust `rpi`
+# my-pi — install / sync live ~/.pi config; bun TypeScript `pi`
 #
 #   make help
 #   make install                       (bun pi + config copy + pi update)
 #   make install ARGS="-h HOST"        (set models.json proxy host)
 #   make install-bun                   (same as install, minus the bun-pi restore step)
-#   make rpi-install                   (ensure toolchain; build + install Rust rpi)
-#   make rust-toolchain                (ensure cargo via rustup)
-#   make rust-install                  (build + install Rust rpi only)
-#   make rust-uninstall                (remove Rust rpi)
 #   make restore-bun-pi                (undo the old vendor-installer takeover of `pi`)
 #   make config-install                (repo .pi/agent -> ~/.pi/agent only)
 #   make sync                          (live ~/.pi/agent -> repo .pi/agent)
@@ -20,19 +16,11 @@ SHELL := /bin/sh
 
 CLI := node scripts/pi.mjs
 
-PI_RUST_DIR := vendor/pi_agent_rust
 PI_PKG := @earendil-works/pi-coding-agent
 BUN_HOME := $(or $(BUN_INSTALL),$(HOME)/.bun)
 BUN_BIN := $(BUN_HOME)/bin
-RPI_DEST ?= $(HOME)/.local/bin
-RPI_BIN := $(RPI_DEST)/rpi
 
-# rustup shims: ~/.cargo/bin (rustup.rs install) and/or brew keg path (brew rustup
-# keeps cargo/rustc proxies in its opt dir, unlinked from /opt/homebrew/bin).
-RUSTUP_BIN := $(shell brew --prefix rustup 2>/dev/null)/bin
-export PATH := $(HOME)/.cargo/bin:$(RUSTUP_BIN):$(PATH)
-
-.PHONY: help install install-bun restore-bun-pi rpi-install rust-toolchain rust-install rust-uninstall config-install sync setup test-setup
+.PHONY: help install install-bun restore-bun-pi config-install sync setup test-setup
 
 help:
 	@printf '%s\n' \
@@ -41,13 +29,8 @@ help:
 		'Targets' \
 		'  make help                 Show this help (default)' \
 		'  make install              Bun pi: setup bun, migrate npm -> bun, copy config,' \
-		'                            pi update + pi update --extensions (no Rust build)' \
+		'                            pi update + pi update --extensions' \
 		'  make install-bun          Same as install, minus the bun-pi restore step' \
-		'  make rpi-install          Ensure rust toolchain; build vendor/pi_agent_rust;' \
-		'                            install as ~/.local/bin/rpi' \
-		'  make rust-toolchain       Install rustup toolchain if cargo missing' \
-		'  make rust-install         Build vendor/pi_agent_rust; install as ~/.local/bin/rpi' \
-		'  make rust-uninstall       Remove ~/.local/bin/rpi' \
 		'  make restore-bun-pi       Give `pi` back to bun after the old vendor-installer takeover' \
 		'  make config-install       Copy repo .pi/agent -> ~/.pi/agent only' \
 		'  make sync                 Copy live ~/.pi/agent -> repo .pi/agent' \
@@ -62,7 +45,6 @@ help:
 		'                                      pin branch name; plain make setup auto-creates pi-install-<ddmmyyyy>' \
 		'  make setup ARGS="--help"            setup usage' \
 		'  make test-setup ARGS="00-harness"   run one Docker case' \
-		'  make rpi-install RPI_DEST=DIR      install rpi into DIR (default ~/.local/bin)' \
 		'' \
 		'Or call Node directly (same on macOS, Linux, Windows):' \
 		'  node scripts/pi.mjs install [--config-only] [-h HOST]' \
@@ -70,9 +52,7 @@ help:
 		'  node scripts/pi.mjs setup --create-branch NAME' \
 		'' \
 		'Notes' \
-		'  `pi` is the bun global TypeScript CLI; `rpi` is the Rust build. Both use ~/.pi/agent.' \
-		'  rpi builds with the nightly pinned in vendor/pi_agent_rust/rust-toolchain.toml;' \
-		'  rustup auto-installs it on first build.' \
+		'  `pi` is the bun global TypeScript CLI; config lives under ~/.pi/agent.' \
 		'  auth.json: api_key merge both ways; oauth home -> repo on sync only.' \
 		'  After install, run /reload or /restart inside pi.' \
 		'  setup needs a TTY; refuses on main/master/detached unless --create-branch NAME.' \
@@ -84,14 +64,7 @@ install: restore-bun-pi install-bun
 		'' \
 		'Install complete.' \
 		'  pi:  bun TypeScript CLI ($(BUN_BIN)/pi)' \
-		'  Run /reload or /restart inside pi.' \
-		'  rpi not touched; run make rpi-install to build + install it.'
-
-rpi-install: rust-toolchain rust-install
-	@printf '%s\n' \
-		'' \
-		'rpi install complete.' \
-		'  rpi: Rust build of vendor/pi_agent_rust ($(RPI_BIN))'
+		'  Run /reload or /restart inside pi.'
 
 install-bun:
 	$(CLI) install $(ARGS)
@@ -127,35 +100,6 @@ restore-bun-pi:
 	if grep -qs '^# pi_agent_rust installer state' "$$state"; then \
 	  rm -f "$$state" && echo "Removed vendor installer state: $$state"; \
 	fi
-
-rust-toolchain:
-	@if command -v cargo >/dev/null 2>&1; then \
-	  echo "cargo present: $$(cargo --version)"; \
-	else \
-	  command -v rustup >/dev/null 2>&1 || { \
-	    command -v brew >/dev/null 2>&1 || { echo 'ERROR: cargo and brew both missing. Install rustup: https://rustup.rs'; exit 1; }; \
-	    echo 'Installing rustup via brew...'; \
-	    brew install rustup; \
-	  }; \
-	  echo 'Installing stable toolchain (creates ~/.cargo/bin shims)...'; \
-	  rustup toolchain install stable; \
-	  rustup default stable; \
-	fi
-	@command -v cargo >/dev/null 2>&1 || { echo 'ERROR: cargo still missing after rustup setup'; exit 1; }
-
-# cd into the submodule so rustup applies its pinned rust-toolchain.toml;
-# --target-dir keeps CARGO_TARGET_DIR / cargo config from moving the artifact.
-# Copy then rename: overwriting a running binary in place can get it killed on
-# macOS (code-signing cache).
-rust-install:
-	@test -f $(PI_RUST_DIR)/Cargo.toml || git submodule update --init $(PI_RUST_DIR)
-	cd $(PI_RUST_DIR) && cargo build --release --locked --bin pi --target-dir target
-	@mkdir -p "$(RPI_DEST)"
-	@cp $(PI_RUST_DIR)/target/release/pi "$(RPI_BIN).tmp" && chmod 755 "$(RPI_BIN).tmp" && mv -f "$(RPI_BIN).tmp" "$(RPI_BIN)"
-	@echo "Installed $(RPI_BIN): $$("$(RPI_BIN)" --version 2>/dev/null | head -1)"
-
-rust-uninstall:
-	rm -f "$(RPI_BIN)"
 
 config-install:
 	$(CLI) install --config-only $(ARGS)
