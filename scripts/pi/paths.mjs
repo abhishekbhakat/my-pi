@@ -20,7 +20,7 @@ export const TEXT_NAME = new Set([
   "LICENSE", "README", "Makefile", ".gitignore", ".gitattributes", ".npmrc", ".editorconfig",
 ]);
 
-export const INSTALL_ROOT = ["settings.json", "models.json", "SYSTEM.md", "deciders.json"];
+export const INSTALL_ROOT = ["settings.json", "models.json", "models-store.json", "SYSTEM.md", "deciders.json", "AGENTS.md"];
 export const SYNC_ROOT = [
   "settings.json", "models.json", "models-store.json",
   "SYSTEM.md", "deciders.json",

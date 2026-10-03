@@ -20,7 +20,7 @@ PI_PKG := @earendil-works/pi-coding-agent
 BUN_HOME := $(or $(BUN_INSTALL),$(HOME)/.bun)
 BUN_BIN := $(BUN_HOME)/bin
 
-.PHONY: help install install-bun restore-bun-pi config-install sync setup test-setup
+.PHONY: help install install-bun restore-bun-pi config-install sync setup test-setup dist release
 
 help:
 	@printf '%s\n' \
@@ -36,6 +36,8 @@ help:
 		'  make sync                 Copy live ~/.pi/agent -> repo .pi/agent' \
 		'  make setup                Interactive provider/auth bootstrap on a local git branch' \
 		'  make test-setup           Build Docker image from filtered tar; run setup cases' \
+		'  make dist                  Build pi-setup binaries with embedded snapshot' \
+		'  make release               Publish a GitHub release: snapshot + binaries' \
 		'' \
 		'Pass-through flags via ARGS=' \
 		'  make install ARGS="-h HOST"         set models.json proxy host' \
@@ -122,3 +124,12 @@ test-setup:
 	[ -f "$$CTX/tests/setup/Dockerfile" ] || { echo "ERROR: tests/setup/Dockerfile missing from context" >&2; exit 1; }; \
 	docker build -t my-pi-setup-test -f "$$CTX/tests/setup/Dockerfile" "$$CTX"; \
 	docker run --rm --network none my-pi-setup-test $(ARGS)
+
+dist:
+	node scripts/dist/build.mjs $(ARGS)
+
+# Clean tree + pushed HEAD, build all default targets, publish a GitHub
+# release (v<sha> tag, snapshot + binaries) via scripts/dist/release.mjs.
+# Binary users update with `pi-setup update`; the tag doubles as version.
+release:
+	node scripts/dist/release.mjs $(ARGS)

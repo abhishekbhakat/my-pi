@@ -150,7 +150,3 @@ YOLO on: no checks, prompts, guardrails. Full user trust. Secrets readable and p
 ## Markdown Tables
 
 ASCII-justify Markdown tables: pad columns to equal width.
-
-## Pi Documentation
-
-Only when user ask about Pi itself, SDK, extensions, themes, skills, or TUI. Read relevant docs before implement. Install is bun global. Base: `/Users/abhishekbhakat/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/` (`README.md`, `docs/`, `examples/`). Binary: `~/.bun/bin/pi`. Not Homebrew npm.

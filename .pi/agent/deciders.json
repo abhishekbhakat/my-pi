@@ -109,9 +109,9 @@
     }
   ],
   "roles": {
-    "booleanGuy": "opencode-zen/jev-1.13-free",
-    "prune": "opencode-zen/jev-1.13-free",
-    "compaction": "typesafe/jev-latest",
-    "guard": "opencode-zen/jev-1.13-free"
+    "booleanGuy": ["fastino/glide", "opencode-zen/jev-1.13-free"],
+    "prune": ["fastino/glide", "opencode-zen/jev-1.13-free"],
+    "compaction": ["fastino/glide", "opencode-zen/jev-1.13-free"],
+    "guard": ["fastino/glide", "opencode-zen/jev-1.13-free"]
   }
 }

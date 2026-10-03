@@ -60,7 +60,7 @@ those agents.
 | Exact word, quote, symbol, key, path, filename, regex, exhaustive hits | Native `grep` / `rg`, or `zg query --rg` |
 | Wording or location unknown; semantic / fuzzy / relationship / why / cross-file synthesis | `zg query` (hybrid) |
 | Known anchors plus broader context | `zg query` first, then native grep on the hits |
-| Open-world fact, news, web | octen-search / tinyfish — not zg |
+| Open-world fact, news, web | tinyfish — not zg |
 
 Concept probe with no exact anchor: **one** focused `zg query`, stop if hits
 are irrelevant. Do not spam rephrases.

@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 
 export const STATUS_TIMEOUT_MS = 4_000;
 export const REQUEST_TIMEOUT_MS = 5 * 60_000;
@@ -45,8 +45,37 @@ export function requestTimeoutMs(): number {
 }
 
 // The prompt travels over stdin: transcripts can exceed argv limits.
+// --legacy-harness arrived with Vibe 2.25.8's unified harness: newer CLIs need
+// the pin so Vibe never executes tools itself, while older CLIs (legacy-only,
+// e.g. the last musl builds) reject the flag outright. Probe once per process;
+// MISTRAL_VIBE_CLI_LEGACY_HARNESS=on|off overrides the probe.
+let legacyPinMemo: boolean | undefined;
+
+export function vibeSupportsLegacyPin(): boolean {
+	const override = process.env.MISTRAL_VIBE_CLI_LEGACY_HARNESS?.trim().toLowerCase();
+	if (override === "on") return true;
+	if (override === "off") return false;
+	if (legacyPinMemo !== undefined) return legacyPinMemo;
+	let supported = true;
+	try {
+		const result = spawnSync(vibeBin(), ["--version"], { encoding: "utf8" });
+		const match = `${result.stdout ?? ""}${result.stderr ?? ""}`.match(/(\d+)\.(\d+)\.(\d+)/);
+		if (match) {
+			const [major, minor, patch] = [Number(match[1]), Number(match[2]), Number(match[3])];
+			supported = major > 2 || (major === 2 && (minor > 25 || (minor === 25 && patch >= 8)));
+		}
+	} catch {
+		// Probe failed; keep the pin so failures stay loud on new CLIs.
+	}
+	legacyPinMemo = supported;
+	return supported;
+}
+
 export function buildVibeArgs(): string[] {
-	return ["-p", "--legacy-harness", "--enabled-tools", TOOL_NONE, "--output", "json", "--max-turns", "1"];
+	const args = ["-p"];
+	if (vibeSupportsLegacyPin()) args.push("--legacy-harness");
+	args.push("--enabled-tools", TOOL_NONE, "--output", "json", "--max-turns", "1");
+	return args;
 }
 
 export function runCapture(
