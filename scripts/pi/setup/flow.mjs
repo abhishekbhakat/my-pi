@@ -9,6 +9,12 @@ import {
   resolveCapabilityTargets,
 } from "./capabilities.mjs";
 import { collectProviders } from "./collect.mjs";
+import {
+  applyDeciderPlan,
+  describeDeciderPlan,
+  loadDecidersRegistry,
+  resolveDeciderTargets,
+} from "./deciders.mjs";
 import { loadSetupInputs } from "./inputs.mjs";
 import { describePersistSummary, persistSetup, printPostSetupHints } from "./persist.mjs";
 import { orderProviders } from "./providers.mjs";
@@ -61,6 +67,7 @@ export async function setup(flags) {
   const inputs = loadSetupInputs(REPO_AGENT);
   const order = orderProviders(inputs.settings.enabledModels);
   const capSources = loadCapabilitySources(REPO_AGENT);
+  const deciderRegistry = loadDecidersRegistry(REPO_AGENT);
 
   const gate = branchGate(REPO_ROOT, flags.createBranch ?? "auto");
   console.log(gate.created ? `Created branch ${gate.branch}.` : `On branch ${gate.branch}.`);
@@ -120,14 +127,26 @@ export async function setup(flags) {
     const capEdits = planCapabilityEdits(capSources, capTargets);
     console.log(describeCapabilityPlan(capTargets, capEdits));
 
+    let deciderPlan = null;
+    let deciderContents = null;
+    if (deciderRegistry) {
+      deciderPlan = await resolveDeciderTargets({ registry: deciderRegistry, auth: inputs.auth, prompter });
+      console.log(describeDeciderPlan(deciderPlan));
+      for (const [provider, key] of deciderPlan.keys) staged.apiKeys.set(provider, key);
+      deciderContents = applyDeciderPlan(deciderRegistry, deciderPlan);
+    } else {
+      console.log("Phase 5: deciders.json missing; skipping decision-model setup.");
+    }
+
     const report = persistSetup({
       agentDir: REPO_AGENT,
       staged,
       settingsPlan,
       settingsText: inputs.settingsText,
       capEdits,
+      deciderContents,
     });
-    console.log(describePersistSummary({ gate, staged, order, capTargets, report }));
+    console.log(describePersistSummary({ gate, staged, order, capTargets, deciderPlan, report }));
     try {
       runInstall = await prompter.askYesNo("Apply config install now (repo .pi/agent -> ~/.pi/agent)?");
     } catch (error) {

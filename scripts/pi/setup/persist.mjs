@@ -28,7 +28,7 @@ function assertUnderAgentDir(agentDir, filePath) {
   return rel.split(path.sep).join("/");
 }
 
-export function persistSetup({ agentDir, staged, settingsPlan, settingsText, capEdits }) {
+export function persistSetup({ agentDir, staged, settingsPlan, settingsText, capEdits, deciderContents }) {
   /** @type {{ path: string, contents: string, mode?: number, rel: string }[]} */
   const writes = [];
   const unchanged = [];
@@ -70,6 +70,16 @@ export function persistSetup({ agentDir, staged, settingsPlan, settingsText, cap
     unchanged.push(".pi/agent/settings.json");
   }
 
+  if (deciderContents) {
+    const decidersPath = path.join(agentDir, "deciders.json");
+    const prevDeciders = exists(decidersPath) ? fs.readFileSync(decidersPath, "utf8") : null;
+    if (deciderContents !== prevDeciders) {
+      writes.push({ path: decidersPath, contents: deciderContents, rel: ".pi/agent/deciders.json" });
+    } else {
+      unchanged.push(".pi/agent/deciders.json");
+    }
+  }
+
   for (const edit of capEdits) {
     const rel = assertUnderAgentDir(agentDir, edit.path);
     const live = fs.readFileSync(edit.path, "utf8");
@@ -91,7 +101,7 @@ export function persistSetup({ agentDir, staged, settingsPlan, settingsText, cap
   };
 }
 
-export function describePersistSummary({ gate, staged, order, capTargets, report }) {
+export function describePersistSummary({ gate, staged, order, capTargets, deciderPlan, report }) {
   const enabled = order.filter((p) => staged.enabled.has(p)).join(",") || "(none)";
   const skipped = staged.skipped.length
     ? staged.skipped.map((s) => `${s.provider}(${s.reason})`).join(",")
@@ -106,6 +116,9 @@ export function describePersistSummary({ gate, staged, order, capTargets, report
     `  skipped: ${skipped}`,
     `  oauth-pending: ${pending}`,
     `  capabilities: timeline=${capTargets.timeline}; scout/commit=${capTargets.scout}; coach=${capTargets.coach}; reviewer=${capTargets.reviewer}`,
+    deciderPlan
+      ? `  deciders: booleanGuy=${deciderPlan.roles.booleanGuy}; prune=${deciderPlan.roles.prune}; compaction=${deciderPlan.roles.compaction}; guard=${deciderPlan.roles.guard}`
+      : "  deciders: skipped",
     `  ${authLine}`,
     `  written: ${report.written.join(", ") || "(none)"}`,
     "  Review with git diff; auth.json is gitignored. Do not commit secrets.",

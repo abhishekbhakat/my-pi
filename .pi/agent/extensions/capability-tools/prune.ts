@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { JEV_API_KEY, JEV_MODEL, JEV_URL } from "../shared/jev-zen";
+import { askDeciders } from "../shared/deciders/index.ts";
 import { collectSerializedConversation } from "./context";
 import type { CapabilityDef } from "./types";
 
@@ -91,7 +91,7 @@ export function applyCapabilityPrune(pi: ExtensionAPI, defs: CapabilityDef[]): v
 		if (cached && Date.now() - cached.at < CACHE_MS) {
 			prune = cached.prune;
 		} else {
-			const p = await noulPruneProbability(JEV_API_KEY, def, task, questionsSummary(event.input), conversation, ctx.signal);
+			const p = await noulPruneProbability(def, task, questionsSummary(event.input), conversation, ctx.signal);
 			if (p === null) return;
 			prune = p >= THRESHOLD;
 			cacheSet(ck, prune);
@@ -109,57 +109,36 @@ export function applyCapabilityPrune(pi: ExtensionAPI, defs: CapabilityDef[]): v
 }
 
 async function noulPruneProbability(
-	apiKey: string,
 	def: CapabilityDef,
 	task: string,
 	questions: string,
 	conversation: string,
 	parentSignal?: AbortSignal,
 ): Promise<number | null> {
-	const controller = new AbortController();
-	const timer = setTimeout(() => controller.abort(), FETCH_MS);
-	const onParentAbort = () => controller.abort();
-	parentSignal?.addEventListener("abort", onParentAbort, { once: true });
-
 	const taskSlice = task.slice(0, 4000);
-	try {
-		const response = await fetch(JEV_URL, {
-			method: "POST",
-			headers: {
-				Authorization: `Bearer ${apiKey}`,
-				"Content-Type": "application/json",
+	const result = await askDeciders(
+		"prune",
+		{
+			task: taskSlice,
+			questions,
+			tool: def.toolName,
+			purpose: def.description,
+			conversation,
+		},
+		{
+			prune: {
+				type: "noul",
+				instructions:
+					`Decide only whether to prune this ${def.toolName} call from the current turn. ` +
+					`Helper task: ${task.slice(0, 1500) || "(none)"}. Return true to prune, false to keep.`,
+				criteria: {
+					true: "Prune this helper call from the current turn.",
+					false: "Keep this helper call for the current turn.",
+				},
 			},
-			body: JSON.stringify({
-				model: JEV_MODEL,
-				state: {
-					task: taskSlice,
-					questions,
-					tool: def.toolName,
-					purpose: def.description,
-					conversation,
-				},
-				questions: {
-					prune: {
-						type: "noul",
-						instructions:
-							`Decide only whether to prune this ${def.toolName} call from the current turn. ` +
-							`Helper task: ${task.slice(0, 1500) || "(none)"}. Return true to prune, false to keep.`,
-						criteria: {
-							true: "Prune this helper call from the current turn.",
-							false: "Keep this helper call for the current turn.",
-						},
-					},
-				},
-			}),
-			signal: controller.signal,
-		});
-		if (response.status === 401 || response.status === 422 || !response.ok) return null;
-		const body = await response.json() as { answers?: { prune?: unknown } };
-		return noulProb(body.answers?.prune) ?? null;
-	} catch {
-		return null;
-	} finally {
-		clearTimeout(timer);
-		parentSignal?.removeEventListener("abort", onParentAbort);
-	}
+		},
+		{ signal: parentSignal, timeoutMs: FETCH_MS },
+	);
+	if (!result.ok) return null;
+	return noulProb(result.answers.prune) ?? null;
 }

@@ -19,7 +19,7 @@ Two nouls:
 1. `violates_guardrails` — does the command break policy?
 2. `user_explicitly_requested` — did that user message clearly ask for this command?
 
-If the user score is at least 0.85, the command is allowed. Else if the guardrails score is at least 0.85, Damage Control asks for confirmation. Unavailable or invalid Jev answers also ask; they never count as low risk. Commands that look like they contain credentials are not sent to Jev (treated as unavailable → ask). The API key lives in `../shared/jev-zen.ts`.
+If the user score is at least 0.85, the command is allowed. Else if the guardrails score is at least 0.85, Damage Control asks for confirmation. Unavailable or invalid Jev answers also ask; they never count as low risk. Commands that look like they contain credentials are not sent to Jev (treated as unavailable → ask). The decider model and API key come from `../../deciders.json` (role `guard`) and `auth.json` via the shared decider layer in `../shared/deciders/`.
 
 ## Commands
 

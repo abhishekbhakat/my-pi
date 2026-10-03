@@ -1,5 +1,5 @@
 import { basename } from "node:path";
-import { JEV_API_KEY, JEV_MODEL, JEV_URL } from "../shared/jev-zen";
+import { askDeciders } from "../shared/deciders/index.ts";
 import { isKnownReadOnlyGit } from "./git";
 
 const REQUEST_MS = 5_000;
@@ -94,37 +94,23 @@ function readScores(answers: unknown): RiskScores | null {
 export async function reviewSemanticRisk(
 	command: string,
 	cwd: string,
-	options: { apiKey?: string; fetcher?: typeof fetch; lastUserPrompt?: string } = {},
+	options: { fetcher?: typeof fetch; lastUserPrompt?: string } = {},
 ): Promise<SemanticReview> {
 	if (command.length > MAX_COMMAND_LENGTH) return { status: "unavailable", reason: "command exceeds review limit" };
 	if (SECRET_ARGUMENT.test(command)) return { status: "unavailable", reason: "command contains a likely credential" };
-	const apiKey = options.apiKey ?? JEV_API_KEY;
-	if (!apiKey) return { status: "unavailable", reason: "Jev API key is unavailable" };
 
 	const lastUserPrompt = (options.lastUserPrompt ?? "").slice(0, MAX_USER_PROMPT_LENGTH);
-	const controller = new AbortController();
-	const timer = setTimeout(() => controller.abort(), REQUEST_MS);
 	try {
-		const response = await (options.fetcher ?? fetch)(JEV_URL, {
-			method: "POST",
-			headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-			body: JSON.stringify({
-				state: {
-					command,
-					cwd,
-					guardrails: GUARDRAILS,
-					last_user_prompt: lastUserPrompt,
-				},
-				model: JEV_MODEL,
-				questions: RISK_QUESTIONS,
-			}),
-			signal: controller.signal,
-		});
-		if (!response.ok) return { status: "unavailable", reason: `Jev returned HTTP ${response.status}` };
-		const body = (await response.json()) as { model?: unknown; answers?: unknown };
-		const scores = readScores(body.answers);
-		if (!scores) return { status: "unavailable", reason: "Jev returned an invalid answer" };
-		const model = typeof body.model === "string" ? body.model : JEV_MODEL;
+		const result = await askDeciders(
+			"guard",
+			{ command, cwd, guardrails: GUARDRAILS, last_user_prompt: lastUserPrompt },
+			RISK_QUESTIONS,
+			{ timeoutMs: REQUEST_MS, fetcher: options.fetcher },
+		);
+		if (!result.ok) return { status: "unavailable", reason: result.message };
+		const scores = readScores(result.answers);
+		if (!scores) return { status: "unavailable", reason: "decider returned an invalid answer" };
+		const model = result.model;
 
 		if (scores.user_explicitly_requested >= REVIEW_THRESHOLD) {
 			return { status: "clear", scores, model, allowedByUserRequest: true };
@@ -142,16 +128,14 @@ export async function reviewSemanticRisk(
 		}
 		return { status: "clear", scores, model };
 	} catch {
-		return { status: "unavailable", reason: "Jev request failed or timed out" };
-	} finally {
-		clearTimeout(timer);
+		return { status: "unavailable", reason: "decider request failed or timed out" };
 	}
 }
 
 export async function assessSemanticRisk(
 	command: string,
 	cwd: string,
-	options: { apiKey?: string; fetcher?: typeof fetch; lastUserPrompt?: string } = {},
+	options: { fetcher?: typeof fetch; lastUserPrompt?: string } = {},
 ): Promise<SemanticRisk | null> {
 	const review = await reviewSemanticRisk(command, cwd, options);
 	return review.status === "risk" ? review.risk : null;

@@ -39,6 +39,7 @@ Examples:
 - global instructions: `.pi/agent/AGENTS.md`
 - system replacement: `.pi/agent/SYSTEM.md`
 - settings/models: `.pi/agent/settings.json`, `.pi/agent/models.json`, etc.
+- decision models: `.pi/agent/deciders.json` (Jev/Clef/GLiDE/pplx registry for boolean guy, pruning, guards)
 
 After changing source files, run `make install`. Install also merges repo `.pi/agent/auth.json` into `~/.pi/agent/auth.json` for `api_key` entries only (repo keys override, live-only keys stay). OAuth entries (`type: oauth`) never install from repo into live home.
 

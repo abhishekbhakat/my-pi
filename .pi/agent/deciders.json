@@ -1,0 +1,117 @@
+{
+  "providers": {
+    "typesafe": {
+      "adapter": "systemone",
+      "baseUrl": "https://api.typesafe.ai/v1/systemone",
+      "authProvider": "typesafe",
+      "authHeader": "bearer"
+    },
+    "opencode-zen": {
+      "adapter": "systemone",
+      "baseUrl": "https://opencode.ai/zen/v1/systemone",
+      "authProvider": "opencode-zen",
+      "authHeader": "bearer"
+    },
+    "perplexity": {
+      "adapter": "systemone",
+      "baseUrl": "https://api.perplexity.ai/v1/decisions",
+      "authProvider": "perplexity",
+      "authHeader": "bearer"
+    },
+    "fastino": {
+      "adapter": "systemone",
+      "baseUrl": "https://api.fastino.ai/v1/systemone",
+      "authProvider": "fastino",
+      "authHeader": "x-api-key"
+    },
+    "cloudflare": {
+      "adapter": "clef",
+      "baseUrl": "https://api.cloudflare.com/client/v4/accounts/{accountId}/ai/run",
+      "authProvider": "cloudflare",
+      "authHeader": "bearer",
+      "accountId": "e48495d77adfee73cc559a69cce0ca47"
+    }
+  },
+  "models": [
+    {
+      "id": "opencode-zen/jev-1.13-free",
+      "provider": "opencode-zen",
+      "model": "jev-1.13-free",
+      "kinds": [
+        "noul",
+        "choice",
+        "score"
+      ],
+      "maxQuestions": 16,
+      "timeoutMs": 0
+    },
+    {
+      "id": "typesafe/jev-latest",
+      "provider": "typesafe",
+      "model": "jev-latest",
+      "kinds": [
+        "noul",
+        "choice",
+        "score"
+      ],
+      "maxQuestions": 16,
+      "timeoutMs": 10000
+    },
+    {
+      "id": "perplexity/pplx-decider-v1-27b",
+      "provider": "perplexity",
+      "model": "pplx-decider-v1-27b",
+      "kinds": [
+        "noul",
+        "choice",
+        "score"
+      ],
+      "maxQuestions": 64,
+      "timeoutMs": 30000
+    },
+    {
+      "id": "fastino/glide",
+      "provider": "fastino",
+      "model": "fastino/GLiDE",
+      "kinds": [
+        "noul",
+        "choice",
+        "score"
+      ],
+      "maxQuestions": 64,
+      "timeoutMs": 30000
+    },
+    {
+      "id": "cloudflare/clef",
+      "provider": "cloudflare",
+      "model": "clef",
+      "urlModel": "@cf/cloudflare/clef",
+      "kinds": [
+        "noul",
+        "choice",
+        "score"
+      ],
+      "maxQuestions": 64,
+      "timeoutMs": 10000
+    },
+    {
+      "id": "cloudflare/clef-flash",
+      "provider": "cloudflare",
+      "model": "clef-flash",
+      "urlModel": "@cf/cloudflare/clef-flash",
+      "kinds": [
+        "noul",
+        "choice",
+        "score"
+      ],
+      "maxQuestions": 64,
+      "timeoutMs": 5000
+    }
+  ],
+  "roles": {
+    "booleanGuy": "opencode-zen/jev-1.13-free",
+    "prune": "opencode-zen/jev-1.13-free",
+    "compaction": "typesafe/jev-latest",
+    "guard": "opencode-zen/jev-1.13-free"
+  }
+}

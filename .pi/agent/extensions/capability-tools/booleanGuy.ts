@@ -1,6 +1,7 @@
 import { Type } from "@sinclair/typebox";
 import type { AgentToolUpdateCallback, ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { JEV_API_KEY, JEV_MODEL, JEV_URL } from "../shared/jev-zen";
+import { askDeciders, deciderModelLabel } from "../shared/deciders/index.ts";
+import type { WireQuestions } from "../shared/deciders/types.ts";
 import { DEFAULT_IGNORE_PATHS } from "./definitions";
 import { buildCapabilityContext } from "./context";
 import type { CapabilityContextBundle, CapabilityDef, CapabilityToolInput } from "./types";
@@ -24,11 +25,11 @@ export const BOOLEAN_GUY_DEF: CapabilityDef = {
 	name: "boolean-guy",
 	toolName: "boolean_guy",
 	label: "Boolean Guy",
-	description: "Ask Jev 1.13 Free through OpenCode Zen structured Noul/Choice/Score questions over capability context. Jev returns typed judgments and probabilities only, not explanations. The calling agent supplies questions and decides thresholds.",
-	model: JEV_MODEL,
+	description: "Ask the configured decision model (Jev, Clef, GLiDE, or pplx-decider) structured Noul/Choice/Score questions over capability context. Returns typed judgments and probabilities only, not explanations. The calling agent supplies questions and decides thresholds.",
+	model: deciderModelLabel("booleanGuy"),
 	systemPrompt: "",
 	file: "booleanGuy.ts",
-	promptSnippet: "Get typed yes/no, choice, and score judgments from Jev 1.13 Free (no explanations).",
+	promptSnippet: "Get typed yes/no, choice, and score judgments from the configured decision model (no explanations).",
 	promptGuidelines: [
 		"Supply questions yourself; Jev returns raw noul/choice/score only, no explanations",
 	],
@@ -163,11 +164,11 @@ function buildState(task: string, bundle: CapabilityContextBundle, extraState?: 
 		state[key] = value;
 		total += key.length + value.length;
 	};
-	addField("git_status", section(bundle, "Git Status"));
-	addField("conversation", section(bundle, "Recent Conversation"));
-	addField("git_diff", section(bundle, "Git Diff"));
-	addField("tree", section(bundle, "Workspace Tree"));
-	addField("timeline", section(bundle, "Action Timeline"));
+	addField("git_status", section(bundle, "Git Status"), CAPS.git_status);
+	addField("conversation", section(bundle, "Recent Conversation"), CAPS.conversation);
+	addField("git_diff", section(bundle, "Git Diff"), CAPS.git_diff);
+	addField("tree", section(bundle, "Workspace Tree"), CAPS.tree);
+	addField("timeline", section(bundle, "Action Timeline"), CAPS.timeline);
 	{
 		const room = Math.max(0, CAPS.stateTotal - total);
 		const budget = Math.min(CAPS.filesTotal, room);
@@ -228,60 +229,18 @@ export async function executeBooleanGuy(
 	const questions = toSystemOneQuestions(input.questions);
 
 	onUpdate?.({
-		content: [{ type: "text", text: `Calling OpenCode Zen ${JEV_MODEL} (${input.questions.length} questions)...` }],
+		content: [{ type: "text", text: `Calling ${deciderModelLabel("booleanGuy")} (${input.questions.length} questions)...` }],
 		details: { status: "running", capability: "boolean_guy" },
 	});
 
-	let response: Response;
-	try {
-		response = await fetch(JEV_URL, {
-			method: "POST",
-			headers: {
-				Authorization: `Bearer ${JEV_API_KEY}`,
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({ state, model: JEV_MODEL, questions }),
-			signal,
-		});
-	} catch (error) {
-		const aborted = signal?.aborted || (error instanceof Error && error.name === "AbortError");
-		return fail(aborted ? "timeout" : "http", aborted ? "Request aborted." : "OpenCode Zen request failed.");
-	}
-
-	if (response.status === 401) {
-		return fail("unauthorized", "OpenCode Zen 401. Check the hardcoded key in jev-zen.ts.");
-	}
-
-	const rawText = await response.text();
-	let body: { model?: string; answers?: unknown; usage?: unknown; detail?: unknown };
-	try {
-		body = JSON.parse(rawText) as typeof body;
-	} catch {
-		return fail("http", `OpenCode Zen returned non-JSON (HTTP ${response.status}).`);
-	}
-
-	if (response.status === 422) {
-		const detail = Array.isArray(body.detail)
-			? (body.detail as Array<{ type?: string; loc?: unknown }>).map((item) => ({ type: item.type, loc: item.loc }))
-			: { type: "unprocessable" };
-		return fail("unprocessable", JSON.stringify(detail));
-	}
-
-	if (!response.ok) {
-		const detailType = body.detail && typeof body.detail === "object"
-			? String((body.detail as { error_type?: string }).error_type ?? "")
-			: "";
-		if (detailType === "max_tokens_exceeded") {
-			return fail("state-too-large", "Jev max_tokens_exceeded even after state caps. Fewer paths or narrower includes.");
-		}
-		return fail("http", `OpenCode Zen HTTP ${response.status}${detailType ? ` ${detailType}` : ""}.`);
-	}
+	const result = await askDeciders("booleanGuy", state, questions as unknown as WireQuestions, { signal });
+	if (!result.ok) return fail(result.code, result.message);
 
 	const payload = {
 		ok: true,
-		model: body.model ?? JEV_MODEL,
-		usage: body.usage ?? null,
-		answers: body.answers ?? {},
+		model: result.model,
+		usage: result.usage ?? null,
+		answers: result.answers,
 	};
 	return {
 		content: [{ type: "text" as const, text: JSON.stringify(payload, null, 2) }],
