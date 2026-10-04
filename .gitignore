@@ -2,6 +2,8 @@
 
 .pi/agent/bin/
 .pi/agent/sessions/
+node_modules/
+package-lock.json
 .pi/agent/extensions/node_modules/
 .pi/agent/extensions/package-lock.json
 .pi/agent/skills/youtrack/youtrack-auth.json

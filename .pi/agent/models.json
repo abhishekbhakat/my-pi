@@ -125,6 +125,9 @@
         },
         "z-ai/glm-5.3": {
           "contextWindow": 262144
+        },
+        "inclusionai/ling-3.1-flash": {
+          "contextWindow": 262144
         }
       }
     },

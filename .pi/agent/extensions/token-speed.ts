@@ -2,7 +2,8 @@
  * Token Speed - footer extension.
  *
  * Replaces default footer with same content plus `TOK/s : <rate>` right-aligned
- * at the very right corner of the pwd line.
+ * at the very right corner of the pwd line. Session id is right-aligned on
+ * the statuses line two below (merged from the old session-id.ts footer).
  *
  * Rate = last assistant message output tokens / seconds from message_start
  * to message_end. Tool time between messages is not included. Blank until
@@ -164,13 +165,27 @@ export default function (pi: ExtensionAPI) {
 					];
 
 					const statuses = footerData.getExtensionStatuses();
-					if (statuses.size > 0) {
-						const text = Array.from(statuses.entries())
+					const statusText = statuses.size > 0
+						? Array.from(statuses.entries())
 							.sort(([a], [b]) => a.localeCompare(b))
 							.map(([, v]) => v.replace(/[\r\n\t]/g, " ").trim())
-							.join(" ");
-						lines.push(truncateToWidth(text, width, "..."));
+							.join(" ")
+						: "";
+					// Session id right-aligned on this line, statuses left (old session-id.ts line 3).
+					const sessionId = ctx.sessionManager.getSessionId?.() ?? "";
+					let lastLine: string | null = null;
+					if (sessionId) {
+						const leftW = visibleWidth(statusText);
+						const idW = visibleWidth(sessionId);
+						if (leftW + MIN_PAD + idW <= width) {
+							lastLine = statusText + " ".repeat(width - leftW - idW) + sessionId;
+						} else {
+							lastLine = truncateToWidth((statusText ? statusText + "  " : "") + sessionId, width, "...");
+						}
+					} else if (statusText) {
+						lastLine = statusText;
 					}
+					if (lastLine) lines.push(truncateToWidth(theme.fg("dim", lastLine), width, "..."));
 					return lines.map((l) => truncateToWidth(l, width, "..."));
 				},
 			};

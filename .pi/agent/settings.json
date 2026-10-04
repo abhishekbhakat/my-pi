@@ -18,14 +18,16 @@
     "opencode/space-bunny-free": "low",
     "opencode/longcat-2.5-preview-free": "low",
     "opencode/ling-3.1-flash-free": "low",
-    "runinfra/glm-5-3-flash": "low"
+    "runinfra/glm-5-3-flash": "low",
+    "openrouter/z-ai/glm-5.3": "low",
+    "openrouter/inclusionai/ling-3.1-flash": "low"
   },
   "steeringMode": "all",
   "followUpMode": "all",
   "enableInstallTelemetry": true,
   "defaultProjectTrust": "always",
-  "defaultProvider": "opencode",
-  "defaultModel": "space-bunny-free",
+  "defaultProvider": "openrouter",
+  "defaultModel": "z-ai/glm-5.3",
   "defaultTools": [
     "+codemode"
   ],
@@ -49,7 +51,9 @@
     "openai/gpt-6.1-sol",
     "openai/gpt-6-astra",
     "runinfra/glm-5-3-flash",
-    "grok-cli/grok-4.7"
+    "grok-cli/grok-4.7",
+    "openrouter/z-ai/glm-5.3",
+    "openrouter/inclusionai/ling-3.1-flash"
   ],
   "showCacheMissNotices": true,
   "terminal": {

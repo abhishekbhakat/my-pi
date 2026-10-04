@@ -1,0 +1,11 @@
+services:
+  app:
+    build: .
+    env_file: .env
+    volumes:
+      - session:/data
+    stop_grace_period: 20s
+    deploy:
+      replicas: 1
+volumes:
+  session:
