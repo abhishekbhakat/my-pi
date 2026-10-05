@@ -39,7 +39,7 @@ const BRIDGE_COMMIT_RULES = `Commit rules (they override any commit-format instr
 - Before staging or committing files, judge whether the change helps other users: run the tree tool (maxDepth 2) for repo structure, then ask the boolean_guy tool (SystemOne decision model) a noul question whose context includes the tree output and the changed file paths, e.g. "do these changes help other users of this repo, or are they personal/local-only?". Treat probability >= 0.5 as yes. Stage and commit only on yes; on no, tell the user the judgment and do not stage.
 - For the message, call the commit_message tool and use its one-line output verbatim in \`git commit -m "<message>"\`. When commit_message is not among the available tools, write the one-line summary yourself.`;
 
-function bridgeInstructions(tools: Tool[]): string {
+export function bridgeSystemPrompt(tools: Tool[]): string {
 	return tools.length > 0
 		? `${BRIDGE_BASE}\n\n${BRIDGE_TOOLS}\n\n${BRIDGE_COMMIT_RULES}`
 		: `${BRIDGE_BASE}\n\n${BRIDGE_NO_TOOLS}`;
@@ -125,7 +125,7 @@ export function bridgeContext(context: TranscriptContext): BridgeContext {
 }
 
 export function buildPrompt(context: BridgeContext): string {
-	const sections: string[] = [bridgeInstructions(context.tools)];
+	const sections: string[] = [];
 	if (context.systemPrompt?.trim()) {
 		sections.push(`# Pi system prompt\n\n${context.systemPrompt}`);
 	}
@@ -135,12 +135,14 @@ export function buildPrompt(context: BridgeContext): string {
 	} else {
 		sections.push("# Conversation transcript\n\n(no prior messages)");
 	}
-	sections.push(
-		context.tools.length > 0
-			? "Now produce the next assistant message for Pi."
-			: "Now produce the next assistant message for Pi as plain text only. No tool calls.",
-	);
+	sections.push(footerReminder(context.tools));
 	return sections.join("\n\n---\n\n");
+}
+
+function footerReminder(tools: Tool[]): string {
+	return tools.length > 0
+		? "Now produce the next assistant message for Pi. Tool calls only via <pi_tool_call>{\"name\":\"...\",\"arguments\":{...}}</pi_tool_call> blocks: valid JSON, no fences, no other tool-call syntax."
+		: "Now produce the next assistant message for Pi as plain text only. No tool calls, no tool-call syntax.";
 }
 
 function assistantText(message: Message): string {
@@ -181,13 +183,11 @@ export function buildDeltaPrompt(
 			? "(no new Pi messages; continue from the Claude Code session.)"
 			: delta.map(serializeMessage).join("\n\n---\n\n");
 	const sections = [
-		bridgeInstructions(context.tools),
 		...(context.tools.length > 0 ? [`# Available Pi tools\n\n${serializeTools(context.tools)}`] : []),
 		"# New messages since last Claude Code turn",
 		body,
-		context.tools.length > 0
-			? "Produce the next assistant message for Pi. Prior turns already live in this Claude Code session."
-			: "Produce the next assistant message for Pi as plain text only. No tool calls. Prior turns already live in this Claude Code session.",
+		"Prior turns already live in this Claude Code session.",
+		footerReminder(context.tools),
 	];
 	return sections.join("\n\n---\n\n");
 }

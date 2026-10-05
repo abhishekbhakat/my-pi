@@ -15,6 +15,7 @@ import {
 import { buildClaudeArgs, claudeBin, claudeEnv, describeStreamError, requestTimeoutMs, STDERR_LIMIT, type SessionArgMode } from "./cli.ts";
 import {
 	bridgeContext,
+	bridgeSystemPrompt,
 	buildDeltaPrompt,
 	buildPrompt,
 	buildStreamJsonInput,
@@ -182,6 +183,7 @@ export function streamClaudeCode(
 					sessionMode: mirror!.mode,
 					claudeSessionId: mirror!.record?.claudeSessionId,
 					sessionName: mirror!.record ? `pi:${mirror!.record.piSessionId.slice(0, 8)}` : undefined,
+					systemPrompt: bridgeSystemPrompt(mirror!.bridge.tools),
 				}),
 				{
 					stdio: ["pipe", "pipe", "pipe"],

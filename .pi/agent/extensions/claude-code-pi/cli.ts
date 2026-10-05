@@ -104,6 +104,7 @@ export function buildClaudeArgs(options: {
 	sessionMode?: SessionArgMode;
 	claudeSessionId?: string;
 	sessionName?: string;
+	systemPrompt?: string;
 }): string[] {
 	const args = ["-p", "--model", options.modelId, "--permission-mode", "dontAsk", "--tools", ""];
 	const mode = options.sessionMode ?? "none";
@@ -115,6 +116,10 @@ export function buildClaudeArgs(options: {
 		args.push("--session-id", options.claudeSessionId);
 	}
 	if (options.sessionName) args.push("-n", options.sessionName);
+	if (options.systemPrompt) {
+		args.push("--system-prompt", options.systemPrompt);
+		args.push("--system-prompt-snapshot", "off");
+	}
 	args.push(...effortArgs(options.reasoning, options.thinkingLevelMap));
 	args.push(...thinkingDisplayArgs(options.reasoning));
 	args.push("--output-format", "stream-json", "--verbose");

@@ -26,6 +26,8 @@ claude-code-pi/
 
 Claude Code tools stay off (`--tools ""`). When Pi offers tools, the bridge teaches `<pi_tool_call>` blocks and Pi executes them. Tool-free callers (capability helpers, cache warmup) get a plain-text bridge and never parse `<pi_tool_call>` into `toolUse`.
 
+Bridge rules are sent with `--system-prompt` (full replace) on every invocation, replacing Claude Code's harness prompt. The per-turn user prompt carries only the Pi system prompt, the current tool list, the transcript, and a one-line footer reminding the `<pi_tool_call>` format. Snapshot default `on` records the first render per conversation; passing the flag every turn keeps post-compact renders ours.
+
 Thinking: Pi's level maps to `--effort`. When a level is on, the bridge also passes the hidden `--thinking-display summarized`. Without it, `claude -p` stream-json returns signature-only thinking blocks with empty text, so Pi has nothing to show.
 
 ## Env

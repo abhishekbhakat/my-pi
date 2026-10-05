@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Extensions for pi coding agent",
   "dependencies": {
+    "@earendil-works/chord": "1.0.3",
+    "@earendil-works/pi-ai": "1.0.3",
+    "@earendil-works/pi-durable": "1.0.3",
     "@google/genai": "^1.0.0",
     "marked": "^18.0.14",
     "shlex": "^3.0.0"
