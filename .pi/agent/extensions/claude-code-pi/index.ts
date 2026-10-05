@@ -55,17 +55,26 @@ function statusLines(status?: CliStatus): string[] {
 	return lines;
 }
 
-export default function claudeCodePiExtension(pi: ExtensionAPI) {
+export default async function claudeCodePiExtension(pi: ExtensionAPI) {
 	registeredModels = configuredModels(process.env.CLAUDE_CODE_PI_MODELS);
 	effortLevels = detectEffortLevels();
+	const status = await checkCliStatus();
+	lastCliStatus = status;
+	if (!status.ok) {
+		// CLI missing or unusable: register no provider so this extension stays inert.
+		pi.registerCommand("claude-code-pi", {
+			description: "Claude Code CLI provider status and setup help (provider disabled: `claude` not usable)",
+			handler: async (_args: string, ctx: any) => {
+				for (const line of statusLines(status)) ctx.ui.notify(line, "warning");
+				ctx.ui.notify(setupGuidance(status.detail ?? status.summary), "warning");
+			},
+		});
+		return;
+	}
 	registerClaudeProvider(pi);
 
 	pi.on("session_start", async (_event: any, ctx: any) => {
 		setActivePiSessionId(ctx.sessionManager.getSessionId());
-		lastCliStatus = await checkCliStatus();
-		if (!lastCliStatus.ok) {
-			ctx.ui.notify(`claude-code-pi: ${setupGuidance(lastCliStatus.detail ?? lastCliStatus.summary)}`, "warning");
-		}
 	});
 
 	pi.on("session_shutdown", async () => {

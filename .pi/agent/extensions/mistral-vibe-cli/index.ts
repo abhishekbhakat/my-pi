@@ -50,16 +50,22 @@ function statusLines(status?: CliStatus): string[] {
 	return lines;
 }
 
-export default function mistralVibeCliExtension(pi: ExtensionAPI) {
+export default async function mistralVibeCliExtension(pi: ExtensionAPI) {
 	registeredModels = configuredModels(process.env.MISTRAL_VIBE_CLI_MODELS);
+	const status = await checkCliStatus();
+	lastCliStatus = status;
+	if (!status.ok) {
+		// CLI missing or unusable: register no provider so this extension stays inert.
+		pi.registerCommand("mistral-vibe-cli", {
+			description: "Mistral Vibe CLI provider status and setup help (provider disabled: `vibe` not usable)",
+			handler: async (_args: string, ctx: any) => {
+				for (const line of statusLines(status)) ctx.ui.notify(line, "warning");
+				ctx.ui.notify(setupGuidance(status.detail ?? status.summary), "warning");
+			},
+		});
+		return;
+	}
 	registerVibeProvider(pi);
-
-	pi.on("session_start", async (_event: any, ctx: any) => {
-		lastCliStatus = await checkCliStatus();
-		if (!lastCliStatus.ok) {
-			ctx.ui.notify(`mistral-vibe-cli: ${setupGuidance(lastCliStatus.detail ?? lastCliStatus.summary)}`, "warning");
-		}
-	});
 
 	pi.registerCommand("mistral-vibe-cli", {
 		description: "Mistral Vibe CLI provider status and setup help",

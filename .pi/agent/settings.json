@@ -27,8 +27,8 @@
   "followUpMode": "all",
   "enableInstallTelemetry": true,
   "defaultProjectTrust": "always",
-  "defaultProvider": "openrouter",
-  "defaultModel": "z-ai/glm-5.3",
+  "defaultProvider": "vibe",
+  "defaultModel": "zai-glm-5-3",
   "defaultTools": [
     "+codemode"
   ],
