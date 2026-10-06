@@ -29,6 +29,10 @@ Claude Code tools stay off (`--tools ""`). When Pi offers tools, the bridge teac
 
 Bridge rules are sent with `--system-prompt` (full replace) on every invocation, replacing Claude Code's harness prompt. The per-turn user prompt carries only the Pi system prompt, the current tool list, the transcript, and a one-line footer reminding the tool-call block format. Snapshot default `on` records the first render per conversation; passing the flag every turn keeps post-compact renders ours.
 
+## /claude-refresh
+
+`/claude-refresh` rotates the Claude Code session UUID for the active Pi session, resets the mirror's sync state, and deletes the old session's transcript file under `<configDir>/projects/<munged-cwd>/<uuid>.jsonl` (default `~/.claude`). The next model turn runs in seed mode: a brand-new Claude Code session with the full current Pi transcript. Use it after reverting work in Pi (for example with `/undo`) when the mirrored Claude session should forget everything, including its own stray state. Nothing is left behind on disk. Sibling files (for example the project `memory` directory) are never touched, and automatic reseeds (session loss, prefix breaks) rotate without deleting so Claude Code keeps its own history for those paths.
+
 Thinking: Pi's level maps to `--effort`. When a level is on, the bridge also passes the hidden `--thinking-display summarized`. Without it, `claude -p` stream-json returns signature-only thinking blocks with empty text, so Pi has nothing to show.
 
 ## Env

@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { buildThinkingLevelMap, checkCliStatus, claudeBin, detectEffortLevels, setupGuidance, type CliStatus } from "./cli.ts";
 import { API_ID, configuredModels, PROVIDER_ID, providerModels, type ClaudeCodeModelInfo } from "./models.ts";
-import { getActivePiSessionId, loadRecord, setActivePiSessionId } from "./sessions.ts";
+import { deleteClaudeSessionFile, getActivePiSessionId, loadRecord, reseedRecord, setActivePiSessionId } from "./sessions.ts";
 import { streamClaudeCode } from "./stream.ts";
 
 export { PROVIDER_ID } from "./models.ts";
@@ -73,6 +73,32 @@ export default async function claudeCodePiExtension(pi: ExtensionAPI) {
 	}
 	registerClaudeProvider(pi);
 
+	pi.registerCommand("claude-refresh", {
+		description: "Drop the mirrored Claude Code session; next model turn seeds a fresh one",
+		handler: async (_args: string, ctx: any) => {
+			const piId = getActivePiSessionId();
+			if (!piId) {
+				ctx.ui.notify("No active Pi session; nothing to refresh.", "warning");
+				return;
+			}
+			const record = await loadRecord(piId);
+			if (!record) {
+				ctx.ui.notify("No Claude Code mirror for this session yet; the next turn seeds one anyway.", "info");
+				return;
+			}
+			if (!record.initialized) {
+				ctx.ui.notify("Mirror never seeded; the next turn already starts a fresh Claude session.", "info");
+				return;
+			}
+			const removed = await deleteClaudeSessionFile(record.claudeSessionId, record.cwd);
+			const next = await reseedRecord(piId, record.cwd);
+			ctx.ui.notify(
+				`Dropped Claude Code session ${record.claudeSessionId}${removed ? ` and deleted its transcript (${removed})` : " (no transcript file found)"}. Next model turn seeds session ${next.claudeSessionId} with the full Pi transcript.`,
+				"info",
+			);
+		},
+	});
+
 	pi.on("session_start", async (_event: any, ctx: any) => {
 		setActivePiSessionId(ctx.sessionManager.getSessionId());
 	});
@@ -119,6 +145,7 @@ export default async function claudeCodePiExtension(pi: ExtensionAPI) {
 				ctx.ui.notify("Set CLAUDE_CODE_PI_BIN to override the claude executable.", "info");
 				ctx.ui.notify("Set CLAUDE_CODE_PI_MODELS for comma-separated Claude Code model aliases.", "info");
 				ctx.ui.notify("Pi session id maps to ~/.pi/agent/claude-code-pi/sessions/<id>.json", "info");
+				ctx.ui.notify("Run /claude-refresh to drop the mirrored Claude Code session and seed a fresh one next turn.", "info");
 				return;
 			}
 			ctx.ui.notify(`Unknown /claude-code-pi subcommand: ${sub}. Try /claude-code-pi help`, "warning");

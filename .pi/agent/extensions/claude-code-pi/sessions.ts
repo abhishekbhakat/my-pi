@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { homedir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import type { Message } from "@earendil-works/pi-ai";
 
 let activePiSessionId: string | undefined;
@@ -169,4 +169,22 @@ export async function reseedRecord(piSessionId: string, cwd: string): Promise<Se
 	};
 	await saveRecord(record);
 	return record;
+}
+
+/** Claude Code stores sessions at <configDir>/projects/<munged-cwd>/<uuid>.jsonl. */
+export function claudeProjectDir(cwd: string): string {
+	const configured = process.env.CLAUDE_CONFIG_DIR?.trim();
+	const configRoot = configured ? (isAbsolute(configured) ? configured : resolve(process.cwd(), configured)) : join(homedir(), ".claude");
+	return join(configRoot, "projects", cwd.replace(/[/\\]+/g, "-"));
+}
+
+/** Deletes the Claude Code session transcript for a mirror UUID. Returns the removed path, or undefined when absent. */
+export async function deleteClaudeSessionFile(claudeSessionId: string, cwd: string): Promise<string | undefined> {
+	const target = join(claudeProjectDir(cwd), `${sanitizeId(claudeSessionId)}.jsonl`);
+	try {
+		await rm(target);
+	} catch {
+		return undefined;
+	}
+	return target;
 }
