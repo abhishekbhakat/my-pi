@@ -13,6 +13,7 @@ import {
 	type TranscriptContext,
 } from "@earendil-works/pi-ai";
 import { hashText } from "./sessions.ts";
+import { parseBlockToolCalls, renderBlockCall } from "./blockCall.ts";
 
 const BRIDGE_BASE = `# Pi/Claude Code CLI bridge instructions
 
@@ -21,17 +22,26 @@ The extension invokes Claude Code with \`claude -p\` for each model turn.
 Claude Code's own tools are disabled with \`--tools ""\`; Pi, not Claude Code, executes real file, shell, network, and MCP actions.`;
 
 const BRIDGE_TOOLS = `If you need Pi to run a tool, output only one or more tool-call blocks and no prose:
-<pi_tool_call>{"name":"tool_name","arguments":{}}</pi_tool_call>
+
+\`\`\`pi-tool-call
+name: bash
+arguments:
+  command: |
+    STS=$(aws sts get-caller-identity --profile dev --query Arn --output text 2>&1)
+    echo "sts=$STS"
+  timeout: 240
+\`\`\`
 
 Rules for Pi tool calls:
-- Use only tools listed in the "Available Pi tools" section.
-- The JSON inside <pi_tool_call> must be valid JSON with "name" and "arguments" fields.
-- Do not wrap tool calls in Markdown fences.
+- The block body is YAML with two fields: \`name\` (tool name) and \`arguments\` (mapping).
+- Multiline string values (shell commands, file contents) go in a \`|\` block scalar. Write them verbatim: no JSON escaping, no quote-escaping, no \\n.
+- Use only tools listed in the "Available Pi tools" section. Keep argument names and types exactly as the tool schema lists them.
+- Do not wrap the block in anything else.
 - If you can answer without a tool, answer normally in plain text.
-- After Pi returns tool results, continue from the transcript and either answer or request another Pi tool call.`;
+- After Pi returns tool results, continue from the transcript and either answer or emit another tool-call block.`;
 
 const BRIDGE_NO_TOOLS = `No tools are available for this turn.
-Do not emit <pi_tool_call> blocks, XML tool tags, or any function-call syntax.
+Do not emit \`\`\`pi-tool-call blocks, XML tool tags, or any function-call syntax.
 Answer in plain text only.`;
 
 const BRIDGE_COMMIT_RULES = `Commit rules (they override any commit-format instruction from the underlying CLI):
@@ -80,7 +90,7 @@ export function serializeMessage(message: Message): string {
 		: message.content.map((part: TextContent | ToolCall | { type: "thinking"; thinking: string }) => {
 				if (part.type === "text") return part.text;
 				if (part.type === "thinking") return `<thinking>${part.thinking}</thinking>`;
-				return `<pi_tool_call>${safeJson({ name: part.name, arguments: part.arguments })}</pi_tool_call>`;
+				return renderBlockCall(part.name, part.arguments);
 			});
 	return `ASSISTANT:\n${parts.join("\n")}`;
 }
@@ -141,7 +151,7 @@ export function buildPrompt(context: BridgeContext): string {
 
 function footerReminder(tools: Tool[]): string {
 	return tools.length > 0
-		? "Now produce the next assistant message for Pi. Tool calls only via <pi_tool_call>{\"name\":\"...\",\"arguments\":{...}}</pi_tool_call> blocks: valid JSON, no fences, no other tool-call syntax."
+		? 'Now produce the next assistant message for Pi. Tool calls only via ```pi-tool-call fenced YAML blocks: `name` plus `arguments`, `|` block scalar for multiline values.'
 		: "Now produce the next assistant message for Pi as plain text only. No tool calls, no tool-call syntax.";
 }
 
@@ -283,7 +293,12 @@ function parseToolCallJson(raw: string): Array<{ name: string; arguments: Record
 }
 
 export function parseToolCalls(text: string): Array<{ name: string; arguments: Record<string, any> }> {
+	const trimmed = text.trim();
+	const calls = parseBlockToolCalls(trimmed);
+	// Legacy <pi_tool_call> tags stay parseable so live sessions mid-conversation
+	// and any model that reverts to the old format keep working.
 	const tagRegex = /<pi_tool_call>([\s\S]*?)<\/pi_tool_call>/g;
-	const matches = [...text.trim().matchAll(tagRegex)];
-	return matches.flatMap((match) => parseToolCallJson(match[1] ?? ""));
+	const matches = [...trimmed.matchAll(tagRegex)];
+	calls.push(...matches.flatMap((match) => parseToolCallJson(match[1] ?? "")));
+	return calls;
 }
