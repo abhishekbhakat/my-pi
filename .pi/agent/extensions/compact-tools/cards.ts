@@ -1,4 +1,4 @@
-import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
+import { truncateToWidth, visibleWidth, wrapTextWithAnsi } from "@earendil-works/pi-tui";
 import {
 	BOLD,
 	CYAN,
@@ -72,6 +72,17 @@ function expandedLines(name: ToolName, args: Record<string, unknown>, result: an
 	return out;
 }
 
+function wrapLine(line: string, width: number): string[] {
+	const max = Math.max(1, width);
+	if (visibleWidth(line) <= max) return [line];
+	const indentWidth = visibleWidth(INDENT);
+	if (max <= indentWidth + 4) return [truncateToWidth(line, max, "…")];
+	const wrapped = wrapTextWithAnsi(line, max - indentWidth);
+	return wrapped.map((segment, index) =>
+		index === 0 ? segment : `${INDENT}${segment}`,
+	);
+}
+
 function fitToolLine(line: string, width: number): string {
 	const max = Math.max(1, width);
 	if (visibleWidth(line) <= max) return line;
@@ -87,10 +98,16 @@ function fitToolLine(line: string, width: number): string {
 export class WidthAwareLines {
 	private readonly source: string[] | (() => string[]);
 	private readonly background?: (text: string) => string;
+	private readonly wrap: boolean;
 
-	constructor(source: string[] | (() => string[]), background?: (text: string) => string) {
+	constructor(
+		source: string[] | (() => string[]),
+		background?: (text: string) => string,
+		opts: { wrap?: boolean } = {},
+	) {
 		this.source = source;
 		this.background = background;
+		this.wrap = opts.wrap ?? false;
 	}
 
 	invalidate(): void {}
@@ -98,14 +115,18 @@ export class WidthAwareLines {
 	render(width: number): string[] {
 		const max = Math.max(1, width);
 		const lines = typeof this.source === "function" ? this.source() : this.source;
-		return lines.map((line) => {
-			const fitted = fitToolLine(line, max);
-			if (!this.background) return fitted;
-			const padded = fitted + " ".repeat(Math.max(0, max - visibleWidth(fitted)));
+		return lines.flatMap((line) => {
+			const fitted = this.wrap
+				? wrapLine(line, max)
+				: [fitToolLine(line, max)];
+			return fitted.map((piece) => {
+			if (!this.background) return piece;
+			const padded = piece + " ".repeat(Math.max(0, max - visibleWidth(piece)));
 			return padded
 				.split(RESET)
 				.map((segment) => this.background!(`${segment}${RESET}`))
 				.join("");
+		});
 		});
 	}
 }
@@ -132,6 +153,6 @@ export function buildToolBlock(
 		: `${INDENT}${DIM}${detail}${RESET} ${DIM}→${RESET} ${summary}`;
 
 	const lines = [`${GUTTER} ${mark} ${color}${icon} ${BOLD}${name}${RESET}`, line2];
-	if (expanded && !isPartial) lines.push(...expandedLines(name, args, result));
+	if (expanded) lines.push(...expandedLines(name, args, result));
 	return lines;
 }

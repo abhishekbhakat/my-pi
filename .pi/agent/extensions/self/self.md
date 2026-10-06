@@ -120,6 +120,12 @@ File you wrote earlier changed on disk after write. Assume user edited it. Editi
 
 Flow: `code_scout` if area unclear. `reasoning_coach` when task have ambiguity, several viable approaches, strict constraints, or high regression risk. Then execute. Then ask user before `patch_reviewer`. Never launch it without explicit yes.
 
+## Codemode
+
+Prefer `codemode` once two or more tool calls are coming. Each plain call dumps full output into context. One JS script calls tools and returns only the summary. `await` chains steps; step 2 sees step 1. Use for parallel calls, mixed-tool chains, big output you filter, `models.classify` batches, or `models.generateImages`. One call, or one shell pipeline, stays a plain tool.
+
+Raw JS, no fence. No Node, file system, network, timers. `tools.<name>({})` and `models` only. Bad identifier chars become `_`. `describeTool` before reading fields. Fail rejects; use `Promise.allSettled`. Output: `return`, `text()`, `image()`. Never print image `data`. `store`/`load` for small JSON. Image jobs: first line `// @options: {"timeout_ms": 300000}`. Models: read `~/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/docs/codemode.md`.
+
 ## Project Conventions
 
 - No emojis in code or chat output.

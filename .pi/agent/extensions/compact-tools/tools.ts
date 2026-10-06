@@ -122,32 +122,49 @@ export function registerCompactTools(pi: ExtensionAPI): void {
 				if (!context?.isPartial) return new Container();
 				const id = context.toolCallId;
 				const started = ensureTimer(id, () => context.invalidate());
+				const expanded = context.expanded ?? false;
+				const lines = buildToolBlock(
+					name,
+					(args ?? {}) as Record<string, unknown>,
+					{},
+					{
+						isPartial: true,
+						expanded,
+						elapsedMs: Date.now() - started,
+					},
+				);
 				return new WidthAwareLines(
-					() =>
-						buildToolBlock(name, (args ?? {}) as Record<string, unknown>, {}, {
-							isPartial: true,
-							elapsedMs: Date.now() - started,
-						}),
+					() => lines,
 					(text) => theme.bg("toolPendingBg", text),
+					{ wrap: expanded },
 				);
 			},
 			renderResult(result, options, theme, context) {
-				if (options?.isPartial) return new Container();
+				const expanded = options?.expanded ?? false;
+				if (options?.isPartial && !expanded) return new Container();
 				const isError = context?.isError ?? result?.isError ?? false;
 				const id = context?.toolCallId;
-				stopTimer(id);
+				if (options?.isPartial) {
+					ensureTimer(id ?? "", () => context?.invalidate?.());
+				} else {
+					stopTimer(id);
+				}
+				const started = startedAtByCallId.get(id ?? "");
 				const lines = buildToolBlock(
 					name,
 					(context?.args ?? {}) as Record<string, unknown>,
 					result,
 					{
 						isError,
-						expanded: options?.expanded ?? false,
-						elapsedMs: elapsedFor(id, result),
+						isPartial: options?.isPartial ?? false,
+						expanded,
+						elapsedMs: started === undefined ? 0 : Math.max(0, Date.now() - started),
 					},
 				);
-				return new WidthAwareLines(lines, (text) =>
-					theme.bg(isError ? "toolErrorBg" : "toolSuccessBg", text),
+				return new WidthAwareLines(
+					lines,
+					(text) => theme.bg(isError ? "toolErrorBg" : "toolSuccessBg", text),
+					{ wrap: expanded },
 				);
 			},
 		});
