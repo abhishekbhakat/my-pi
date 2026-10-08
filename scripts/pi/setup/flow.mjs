@@ -32,7 +32,6 @@ import {
   promptThinkingLevel,
 } from "./settings-plan.mjs";
 import { probeClaude, updateClaude } from "../toolchain/claude.mjs";
-import { install } from "../transfer/install.mjs";
 
 export function parseSetupArgs(argv) {
   const flags = {};
@@ -63,14 +62,16 @@ No git branch is created. Setup:
   2. Writes personalized files under .pi/agent
   3. Saves a diff as untracked userprofile.patch at the repo root
   4. Restores tracked .pi/agent files to HEAD (auth.json stays)
-  5. Optionally runs install, which applies userprofile.patch in a temp staging dir
+
+Does not install. Run make install afterward; that applies userprofile.patch
+in a temp staging dir, then copies to ~/.pi.
 
 Enabling claude-code-cli also requires an OpenRouter API key: Claude sometimes
 emits broken tool XML; Morph (morph/morph-v3-fast) repairs it so Pi can run
 tools. Needed even if you decline openrouter chat models.
 
-Needs a TTY. Never writes ~/.pi except via optional install.
-If install later cannot apply userprofile.patch, run make setup again.`);
+Needs a TTY. Never writes ~/.pi.
+If install cannot apply userprofile.patch, run make setup again.`);
 }
 
 export async function setup(_flags = {}) {
@@ -95,7 +96,6 @@ export async function setup(_flags = {}) {
     else console.log(`WARNING: Claude update failed (${upd.detail}); continuing.`);
   }
 
-  let runInstall = false;
   let staged = null;
   let patchInfo = null;
   const prompter = createPrompter();
@@ -168,24 +168,9 @@ export async function setup(_flags = {}) {
     );
 
     console.log(describePersistSummary({ gate, staged, order, capTargets, deciderPlan, report, patchInfo }));
-    try {
-      runInstall = await prompter.askYesNo("Apply config install now (repo .pi/agent -> ~/.pi/agent)?");
-    } catch (error) {
-      if (error instanceof SetupAbort && error.exitCode === 130) {
-        throw new SetupAbort("profile patch written; install skipped", 130);
-      }
-      throw error;
-    }
   } finally {
     prompter.close();
   }
 
-  if (runInstall) {
-    try {
-      install({ yes: false, prune: false, host: null, configOnly: true });
-    } catch (error) {
-      console.log(`WARNING: install failed: ${error?.message ?? error}`);
-    }
-  }
-  if (staged) printPostSetupHints(staged, runInstall);
+  if (staged) printPostSetupHints(staged);
 }

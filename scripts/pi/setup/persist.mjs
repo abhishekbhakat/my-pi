@@ -130,13 +130,12 @@ export function describePersistSummary({ gate, staged, order, capTargets, decide
   ].join("\n");
 }
 
-export function printPostSetupHints(staged, ranInstall) {
+export function printPostSetupHints(staged) {
   console.log("Personalization lives in userprofile.patch + .pi/agent/auth.json (both untracked).");
-  console.log("make install applies the patch in a temp staging dir, then copies to ~/.pi.");
+  console.log("Next: make install — applies userprofile.patch in a temp staging dir, then copies to ~/.pi.");
   console.log("If the patch stops applying after a pull, run make setup again.");
-  console.log("Run /reload or /restart inside pi to pick up changes.");
   for (const provider of staged.oauthPending) {
     console.log(`Run /login ${provider} inside pi.`);
   }
-  if (!ranInstall) console.log("Run make install to apply repo config to ~/.pi.");
+  console.log("After install, run /reload or /restart inside pi.");
 }

@@ -47,7 +47,7 @@ make setup
 - Escape hatch: `make install ARGS="--no-profile"`.
 - Yes/no prompts default to `n`. Existing keys kept on Enter. Keys never echoed.
 - Needs a TTY. `make setup ARGS="--help"` prints usage.
-- End offers optional install (default `n`), then `/reload` and `/login` hints.
+- Setup does not install. Next step is `make install` (applies `userprofile.patch`), then `/reload` in pi.
 
 Make does not forward bare flags, so pass options through `ARGS="..."`. Full behaviour is in [SPEC.md](SPEC.md).
 

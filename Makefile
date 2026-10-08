@@ -58,7 +58,7 @@ help:
 		'  After install, run /reload or /restart inside pi.' \
 		'  setup needs a TTY; writes userprofile.patch (gitignored), restores tracked .pi/agent.' \
 		'  install applies userprofile.patch in temp staging; on failure run make setup again.' \
-		'  setup never writes ~/.pi except via its optional install.' \
+		'  setup never writes ~/.pi; run make install to apply userprofile.patch.' \
 		'  test-setup needs Docker; never mounts host repo; secrets excluded by .gitignore.'
 
 install: restore-bun-pi install-bun
