@@ -5,11 +5,14 @@ export function isOauthEntry(value) {
 export const PROVIDER_PRIORITY = [
   "google",
   "claude-code-cli",
+  "mistral-vibe-cli",
   "openai-codex",
   "openrouter",
   "kimi-coding",
   "grok-cli",
 ];
+// Local CLI bridges: no API key in setup; auth is the CLI login on PATH.
+export const CLI_PROVIDERS = new Set(["claude-code-cli", "mistral-vibe-cli"]);
 // openai-codex is oauth in auth but classified as "codex" (Phase 1), so omit here.
 export const OAUTH_PROVIDERS = new Set(["kimi-coding", "grok-cli"]);
 export const CAPABILITY_PREFERRED = {
@@ -68,7 +71,7 @@ export function orderProviders(enabledModels) {
 
 /** @returns {"cli"|"codex"|"oauth"|"apikey"} */
 export function classifyProvider(provider, auth = {}) {
-  if (provider === "claude-code-cli") return "cli";
+  if (CLI_PROVIDERS.has(provider)) return "cli";
   if (provider === "openai-codex") return "codex";
   if (OAUTH_PROVIDERS.has(provider) || isOauthEntry(auth?.[provider])) return "oauth";
   return "apikey";

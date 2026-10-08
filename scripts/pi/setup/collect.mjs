@@ -6,6 +6,11 @@ import {
   providerBaseUrl,
 } from "./providers.mjs";
 
+/** Phase-1 CLI flags keyed by provider id. Others ask Enable without a key. */
+const PHASE1_CLI = {
+  "claude-code-cli": "wantClaude",
+};
+
 function openRouterKeyPresent(auth, staged) {
   if (staged.apiKeys.has("openrouter")) return true;
   if (hasApiKey(auth?.openrouter)) return true;
@@ -66,10 +71,19 @@ export async function collectProviders({
     if (!isOauthEntry(auth?.[provider])) staged.oauthPending.push(provider);
   };
 
+  const phase1 = { wantClaude, wantCodex };
+
   for (const provider of order) {
     const kind = classifyProvider(provider, auth);
     if (kind === "cli") {
-      if (wantClaude) staged.enabled.add(provider);
+      const flag = PHASE1_CLI[provider];
+      if (flag) {
+        if (phase1[flag]) staged.enabled.add(provider);
+        else staged.skipped.push({ provider, reason: "declined" });
+        continue;
+      }
+      const yes = await prompter.askYesNo(`Enable ${provider} (local CLI, no API key)?`);
+      if (yes) staged.enabled.add(provider);
       else staged.skipped.push({ provider, reason: "declined" });
       continue;
     }
