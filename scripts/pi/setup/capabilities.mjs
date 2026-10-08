@@ -219,25 +219,25 @@ export async function resolveCapabilityTargets({ kept, order, resolved, prompter
   const roles = ["timeline", "scout", "coach", "reviewer"];
   /** @type {Record<string, string>} */
   const targets = {};
-  const need = [];
-  for (const role of roles) {
-    const info = resolved[role];
-    if (info.ok) targets[role] = info.preferred;
-    else need.push(role);
-  }
-  if (!need.length) return targets;
 
   if (choices.length === 1) {
-    log(`Phase 4: only one enabled model; using ${choices[0]} for ${need.join(",")}`);
-    for (const role of need) targets[role] = choices[0];
+    log(`Phase 4: only one enabled model; using ${choices[0]} for timeline/scout/coach/reviewer`);
+    for (const role of roles) targets[role] = choices[0];
     return targets;
   }
 
-  log("Phase 4: preferred capability models unavailable; pick replacements.");
+  log("Phase 4: pick capability models (Enter keeps preferred when available).");
   let printed = false;
-  for (const role of need) {
-    const label = `${role === "scout" ? "scout/commit" : role} (preferred ${resolved[role].preferred} not enabled)`;
-    const idx = await prompter.askPick(label, choices, 0, { printChoices: !printed });
+  for (const role of roles) {
+    const preferred = resolved[role].preferred;
+    const defIdx = Math.max(0, choices.indexOf(preferred));
+    const roleLabel = role === "scout" ? "scout/commit" : role;
+    const hint = choices.includes(preferred)
+      ? `preferred ${preferred}`
+      : `preferred ${preferred} not enabled`;
+    const idx = await prompter.askPick(`${roleLabel} (${hint})`, choices, defIdx, {
+      printChoices: !printed,
+    });
     printed = true;
     targets[role] = choices[idx];
   }

@@ -16,8 +16,8 @@ export const CLI_PROVIDERS = new Set(["claude-code-cli", "mistral-vibe-cli"]);
 // openai-codex is oauth in auth but classified as "codex" (Phase 1), so omit here.
 export const OAUTH_PROVIDERS = new Set(["kimi-coding", "grok-cli"]);
 export const CAPABILITY_PREFERRED = {
-  timeline: "google/gemini-3.8-flash",
-  scout: "google/gemini-3.8-flash",
+  timeline: "claude-code-cli/haiku",
+  scout: "claude-code-cli/haiku",
   coach: "claude-code-cli/opus",
   reviewer: "claude-code-cli/opus",
 };

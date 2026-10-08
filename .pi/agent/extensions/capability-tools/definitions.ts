@@ -27,7 +27,7 @@ const DEFAULTS = {
 	includeChangedFiles: true,
 	includeTimeline: false,
 	timelineModel: "claude-code-cli/haiku",
-	timelineReasoningEffort: "low",
+	timelineReasoningEffort: "xhigh",
 	maxContextChars: 360000,
 	maxConversationChars: 40000,
 	maxTreeChars: 12000,

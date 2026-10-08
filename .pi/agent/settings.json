@@ -6,6 +6,7 @@
   "defaultThinkingLevel": "low",
   "modelThinkingLevels": {
     "claude-code-cli/haiku": "max",
+    "claude-code-cli/opus": "max",
     "claude-code-cli/sonnet": "high",
     "deepseek/deepseek-flash": "off",
     "inferx/deepseek-v4.1-flash": "low",

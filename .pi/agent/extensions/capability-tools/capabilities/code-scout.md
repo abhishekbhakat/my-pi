@@ -13,9 +13,9 @@ includeGitDiff: false
 includeChangedFiles: true
 includeTimeline: true
 timelineModel: claude-code-cli/haiku
-timelineReasoningEffort: low
+timelineReasoningEffort: xhigh
 maxContextChars: 360000
-reasoningEffort: low
+reasoningEffort: max
 ---
 You code exploration specialist.
 

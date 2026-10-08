@@ -77,9 +77,21 @@ export async function resolveDeciderTargets({ registry, auth, prompter, log = co
   }
 
   const keys = new Map();
-  const missing = [...keyAvailable.entries()].filter(([, ok]) => !ok).map(([name]) => name);
+  // Only ask for keys used by the roles just chosen — not every provider in the registry.
+  const selectedAuth = new Set();
+  for (const modelId of Object.values(roles)) {
+    const model = models.find((entry) => entry.id === modelId);
+    if (!model) continue;
+    const provider = registry.providers?.[model.provider];
+    selectedAuth.add(provider?.authProvider ?? model.provider);
+  }
+  const missing = [...selectedAuth].filter((name) => !keyAvailable.get(name));
   for (const authProvider of missing) {
-    const want = await prompter.askYesNo(`Add API key for decider provider ${authProvider} now?`);
+    const existing = authKeyAvailable(auth, authProvider);
+    if (existing) continue;
+    const want = await prompter.askYesNo(
+      `Add API key for decider provider ${authProvider} now? (needed by your picks; none on file)`,
+    );
     if (!want) continue;
     const key = await prompter.askSecret(`${authProvider} API key: `);
     if (key) keys.set(authProvider, key);
