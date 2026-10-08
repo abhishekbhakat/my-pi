@@ -13,7 +13,15 @@ import {
 	type TranscriptContext,
 } from "@earendil-works/pi-ai";
 import { hashText } from "./sessions.ts";
-import { parseBlockToolCalls, renderBlockCall } from "./blockCall.ts";
+import { parseBlockToolCalls } from "./blockCall.ts";
+import {
+	claudeToolName,
+	parseXmlToolCalls,
+	renderXmlToolCall,
+	toClaudeArguments,
+	toClaudeToolSchema,
+	toPiToolCall,
+} from "./claudeTools.ts";
 
 const BRIDGE_BASE = `# Pi/Claude Code CLI bridge instructions
 
@@ -21,27 +29,30 @@ You are being used as the model backend for Pi Coding Agent through the local Cl
 The extension invokes Claude Code with \`claude -p\` for each model turn.
 Claude Code's own tools are disabled with \`--tools ""\`; Pi, not Claude Code, executes real file, shell, network, and MCP actions.`;
 
-const BRIDGE_TOOLS = `If you need Pi to run a tool, output only one or more tool-call blocks and no prose:
+const BRIDGE_TOOLS = `You have the standard Claude Code tools listed in the "Available Pi tools" section. Call them exactly like you normally call tools in Claude Code, using the <function_calls> XML format:
 
-\`\`\`pi-tool-call
-name: bash
-arguments:
-  command: |
-    STS=$(aws sts get-caller-identity --profile dev --query Arn --output text 2>&1)
-    echo "sts=$STS"
-  timeout: 240
-\`\`\`
+<function_calls>
+<invoke name="Bash">
+<parameter name="command">
+STS=$(aws sts get-caller-identity --profile dev --query Arn --output text 2>&1)
+echo "sts=$STS"
+</parameter>
+<parameter name="timeout">
+240
+</parameter>
+</invoke>
+</function_calls>
 
-Rules for Pi tool calls:
-- The block body is YAML with two fields: \`name\` (tool name) and \`arguments\` (mapping).
-- Multiline string values (shell commands, file contents) go in a \`|\` block scalar. Write them verbatim: no JSON escaping, no quote-escaping, no \\n.
-- Use only tools listed in the "Available Pi tools" section. Keep argument names and types exactly as the tool schema lists them.
-- Do not wrap the block in anything else.
-- If you can answer without a tool, answer normally in plain text.
-- After Pi returns tool results, continue from the transcript and either answer or emit another tool-call block.`;
+Rules for tool calls:
+- Use the Anthropic XML format shown above: one <function_calls> wrapper, one <invoke name="..."> per call, one <parameter name="..."> per argument.
+- Parameter values go verbatim between the tags: no JSON escaping, no quote-escaping, no \n.
+- Use only the tools listed in the "Available Pi tools" section. Keep argument names and types exactly as the tool schema lists them.
+- Number and boolean parameters may be bare (for example 240 or true). Strings, arrays, and objects are written as-is; arrays and objects in JSON form.
+- Emit tool calls and no prose when you need a tool. If you can answer without a tool, answer normally in plain text.
+- After Pi returns tool results, continue from the transcript and either answer or emit another tool call.`;
 
 const BRIDGE_NO_TOOLS = `No tools are available for this turn.
-Do not emit \`\`\`pi-tool-call blocks, XML tool tags, or any function-call syntax.
+Do not emit <function_calls> blocks, XML tool tags, or any function-call syntax.
 Answer in plain text only.`;
 
 const BRIDGE_COMMIT_RULES = `Commit rules (they override any commit-format instruction from the underlying CLI):
@@ -90,7 +101,7 @@ export function serializeMessage(message: Message): string {
 		: message.content.map((part: TextContent | ToolCall | { type: "thinking"; thinking: string }) => {
 				if (part.type === "text") return part.text;
 				if (part.type === "thinking") return `<thinking>${part.thinking}</thinking>`;
-				return renderBlockCall(part.name, part.arguments);
+				return renderXmlToolCall(claudeToolName(part.name), toClaudeArguments(part.name, part.arguments as Record<string, unknown>));
 			});
 	return `ASSISTANT:\n${parts.join("\n")}`;
 }
@@ -98,11 +109,9 @@ export function serializeMessage(message: Message): string {
 export function serializeTools(tools?: Tool[]): string {
 	if (!tools || tools.length === 0) return "";
 	return safeJson(
-		tools.map((tool) => ({
-			name: tool.name,
-			description: tool.description,
-			parameters: tool.parameters,
-		})),
+		tools.map((tool) =>
+				toClaudeToolSchema({ name: tool.name, description: tool.description, parameters: tool.parameters }),
+		),
 	);
 }
 
@@ -151,7 +160,7 @@ export function buildPrompt(context: BridgeContext): string {
 
 function footerReminder(tools: Tool[]): string {
 	return tools.length > 0
-		? 'Now produce the next assistant message for Pi. Tool calls only via ```pi-tool-call fenced YAML blocks: `name` plus `arguments`, `|` block scalar for multiline values.'
+		? 'Now produce the next assistant message for Pi. Tool calls only via <function_calls><invoke name="..."><parameter name="...">value</parameter></invoke></function_calls> XML blocks, using the listed Claude Code tools.'
 		: "Now produce the next assistant message for Pi as plain text only. No tool calls, no tool-call syntax.";
 }
 
@@ -294,6 +303,13 @@ function parseToolCallJson(raw: string): Array<{ name: string; arguments: Record
 
 export function parseToolCalls(text: string): Array<{ name: string; arguments: Record<string, any> }> {
 	const trimmed = text.trim();
+	// Native format first: Anthropic <function_calls> XML with Claude Code tool
+	// names, translated back to Pi tool names and argument names.
+	const xmlCalls = trimmed.includes("<function_calls>")
+		? parseXmlToolCalls(trimmed).map(toPiToolCall)
+		: [];
+	if (xmlCalls.length > 0) return xmlCalls;
+	// Fallbacks for sessions that started under older bridge formats.
 	const calls = parseBlockToolCalls(trimmed);
 	// Legacy <pi_tool_call> tags stay parseable so live sessions mid-conversation
 	// and any model that reverts to the old format keep working.
