@@ -39,7 +39,7 @@ export const BOOLEAN_GUY_DEF: CapabilityDef = {
 	includeGitDiff: false,
 	includeChangedFiles: true,
 	includeTimeline: false,
-	timelineModel: "google/gemini-3.8-flash",
+	timelineModel: "claude-code-cli/haiku",
 	maxContextChars: 200000,
 	maxConversationChars: 20000,
 	maxTreeChars: 8000,

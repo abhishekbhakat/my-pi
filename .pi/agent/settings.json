@@ -1,10 +1,11 @@
 {
-  "lastChangelogVersion": "1.0.4",
+  "lastChangelogVersion": "1.1.0",
   "theme": "everforest",
   "quietStartup": true,
   "hideThinkingBlock": false,
   "defaultThinkingLevel": "low",
   "modelThinkingLevels": {
+    "claude-code-cli/haiku": "low",
     "claude-code-cli/sonnet": "high",
     "deepseek/deepseek-flash": "off",
     "inferx/deepseek-v4.1-flash": "low",
@@ -32,6 +33,7 @@
     "+codemode"
   ],
   "enabledModels": [
+    "claude-code-cli/haiku",
     "claude-code-cli/opus",
     "claude-code-cli/sonnet",
     "deepseek/deepseek-flash",

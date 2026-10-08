@@ -3,9 +3,9 @@
  * Local extensions run before package extensions, so this env is visible
  * when claude-code-pi calls configuredModels(process.env.CLAUDE_CODE_PI_MODELS).
  *
- * Fable is disabled: pinned Opus only, alongside sonnet.
+ * Fable is disabled: pinned Opus only, alongside sonnet and haiku.
  */
-const DEFAULT_MODELS = "sonnet,opus";
+const DEFAULT_MODELS = "sonnet,opus,haiku";
 const PIN = "opus";
 
 function normalizeModelsEnv(raw: string | undefined): string {

@@ -29,6 +29,13 @@ const DEFAULT_MODELS: ClaudeCodeModelInfo[] = [
 		reasoning: true,
 	},
 	{
+		id: "haiku",
+		name: "Claude Code Haiku alias",
+		contextWindow: DEFAULT_CONTEXT_WINDOW,
+		maxTokens: DEFAULT_MAX_TOKENS,
+		reasoning: true,
+	},
+	{
 		id: "fable",
 		name: "Claude Code Fable alias",
 		contextWindow: DEFAULT_CONTEXT_WINDOW,

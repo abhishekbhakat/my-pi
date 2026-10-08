@@ -12,7 +12,7 @@ includeGitStatus: true
 includeGitDiff: false
 includeChangedFiles: true
 includeTimeline: true
-timelineModel: google/gemini-3.8-flash
+timelineModel: claude-code-cli/haiku
 maxContextChars: 500000
 reasoningEffort: max
 ---

@@ -3,7 +3,7 @@ name: code-scout
 tool: code_scout
 label: Code Scout
 description: Use fast explorer model to map relevant code, call flow, and likely edit points.
-model: google/gemini-3.8-flash
+model: claude-code-cli/haiku
 promptSnippet: Explore codebase and return relevant files, symbols, call flow, and edit points
 promptGuidelines: Use this before editing unfamiliar areas|Prefer this when you only need repo map
 includeConversation: true
@@ -12,7 +12,7 @@ includeGitStatus: true
 includeGitDiff: false
 includeChangedFiles: true
 includeTimeline: true
-timelineModel: google/gemini-3.8-flash
+timelineModel: claude-code-cli/haiku
 timelineReasoningEffort: low
 maxContextChars: 360000
 reasoningEffort: low

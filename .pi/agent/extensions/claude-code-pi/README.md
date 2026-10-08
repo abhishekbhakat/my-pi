@@ -9,7 +9,7 @@ Each Pi session maps to one Claude Code session UUID. Map files live at `$PI_COD
 ```text
 claude-code-pi/
   index.ts      register provider, /claude-code-pi, session_start
-  models.ts     aliases (sonnet, opus, fable) and CLAUDE_CODE_PI_MODELS
+  models.ts     aliases (sonnet, opus, haiku, fable) and CLAUDE_CODE_PI_MODELS
   sessions.ts   Pi id ↔ Claude UUID, prefix hash, resume eligibility
   cli.ts        claude binary, argv (--session-id / --resume / stateless)
   blockCall.ts  ```pi-tool-call fenced YAML block parse/render
@@ -40,7 +40,7 @@ Thinking: Pi's level maps to `--effort`. When a level is on, the bridge also pas
 | Variable                      | Role                                      |
 | ----------------------------- | ----------------------------------------- |
 | `CLAUDE_CODE_PI_BIN`          | Claude executable. Default `claude`.      |
-| `CLAUDE_CODE_PI_MODELS`       | Aliases. Default `sonnet,opus,fable`.     |
+| `CLAUDE_CODE_PI_MODELS`       | Aliases. Default `sonnet,opus,haiku,fable`.     |
 | `CLAUDE_CODE_PI_TIMEOUT_MS`   | Per-turn timeout. Default 300000.         |
 | `CLAUDE_CODE_PI_CONTEXT_WINDOW` | Advertised window. Default 1000000.     |
 
