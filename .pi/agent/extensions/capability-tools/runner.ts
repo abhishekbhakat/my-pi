@@ -1,6 +1,7 @@
 import { stream as piAiStream } from "@earendil-works/pi-ai";
 import type { AgentToolUpdateCallback } from "@earendil-works/pi-coding-agent";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { cleanCommitMessage } from "./commitMessage";
 import { buildCapabilityContext, buildCapabilityPrompt } from "./context";
 import { appendCapabilityHistory } from "./history";
 import type { CapabilityDef, CapabilityToolInput } from "./types";
@@ -397,6 +398,15 @@ export async function executeCapability(
 		}
 
 		const sessionId = ctx.sessionManager.getSessionId();
+		// Haiku often prepends fluff or returns only a preface. Keep a conventional
+		// line when present; never hand the agent a throat-clearing sentence.
+		if (def.toolName === "commit_message" && text) {
+			const cleaned = cleanCommitMessage(text);
+			if (cleaned) text = cleaned;
+			else if (!/^No staged changes found\./.test(text.trim())) {
+				text = "commit_message produced no usable conventional commit line. Retry the tool.";
+			}
+		}
 		if (text) {
 			// A history write failure must not replace a good answer.
 			await appendCapabilityHistory(sessionId, def.toolName, input.task, text).catch(() => undefined);

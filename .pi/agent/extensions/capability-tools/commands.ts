@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { platform } from "node:os";
 import { copyToClipboard, type AgentToolUpdateCallback, type ExtensionAPI, type ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
-import { lexer, type Token } from "marked";
+import { cleanCommitMessage } from "./commitMessage";
 import { closeCapabilityPanel, setPanelEscape, showCapabilityPanel, updateCapabilityPanel } from "./panel";
 import { executeCapability } from "./runner";
 import type { CapabilityDef } from "./types";
@@ -17,51 +17,6 @@ function resultText(result: { content?: Array<{ type: string; text?: string }> }
 		.map((part) => part.text)
 		.join("\n")
 		.trim();
-}
-
-/** Plain text of one marked token. Code keeps its body; syntax does not. */
-function markdownPlain(token: Token): string {
-	if (token.type === "space" || token.type === "hr" || token.type === "br" || token.type === "def") return "";
-	if ((token.type === "code" || token.type === "codespan") && typeof token.text === "string") return token.text;
-	if (token.type === "list" && Array.isArray(token.items)) {
-		return token.items
-			.map((item: Token) => markdownPlain(item))
-			.filter((part: string) => part.length > 0)
-			.join("\n");
-	}
-	if ("tokens" in token && Array.isArray(token.tokens) && token.tokens.length > 0) {
-		return token.tokens.map((child) => markdownPlain(child)).join("");
-	}
-	if ("text" in token && typeof token.text === "string") return token.text;
-	return "";
-}
-
-/** Parse model markdown, then keep one pasteable commit line. */
-function cleanCommitMessage(text: string): string {
-	let plain = text;
-	try {
-		plain = lexer(text)
-			.map((token) => markdownPlain(token))
-			.filter((part) => part.trim().length > 0)
-			.join("\n");
-	} catch {
-		plain = text;
-	}
-	let line = plain.split(/\r?\n/).map((part) => part.trim()).find((part) => part.length > 0) ?? "";
-	for (let i = 0; i < 3 && line.length >= 2; i++) {
-		const first = line[0];
-		const last = line[line.length - 1];
-		if (
-			(first === '"' && last === '"') ||
-			(first === "'" && last === "'") ||
-			(first === "`" && last === "`")
-		) {
-			line = line.slice(1, -1).trim();
-		} else {
-			break;
-		}
-	}
-	return line.trim();
 }
 
 function resultStatus(result: { details?: unknown }): string {
