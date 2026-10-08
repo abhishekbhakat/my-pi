@@ -87,6 +87,32 @@ function scanSecrets(patchText, secrets) {
   }
 }
 
+function isAuthJsonPath(rel) {
+  const norm = rel.replace(/\\/g, "/");
+  return norm === `${AGENT_PREFIX}/auth.json` || norm.endsWith("/.pi/agent/auth.json");
+}
+
+/** Tracked diffs + untracked non-ignored files under .pi/agent, excluding auth.json. */
+function listAgentPathsForPatch(root) {
+  const changed = gitAt(root, ["diff", "--name-only", "HEAD", "--", AGENT_PREFIX]);
+  const untracked = gitAt(root, ["ls-files", "--others", "--exclude-standard", "--", AGENT_PREFIX]);
+  if (changed.status !== 0) {
+    throw new SetupAbort(`git diff --name-only failed: ${String(changed.stderr ?? "").trim()}`);
+  }
+  if (untracked.status !== 0) {
+    throw new SetupAbort(`git ls-files failed: ${String(untracked.stderr ?? "").trim()}`);
+  }
+  const paths = new Set();
+  for (const block of [changed.stdout, untracked.stdout]) {
+    for (const line of String(block ?? "").split("\n")) {
+      const rel = line.trim();
+      if (!rel || isAuthJsonPath(rel)) continue;
+      paths.add(rel);
+    }
+  }
+  return [...paths].sort();
+}
+
 /**
  * Diff working-tree .pi/agent against baseSha into /userprofile.patch.
  * auth.json is gitignored so it stays out. Restores nothing by itself.
@@ -107,16 +133,15 @@ export function writeProfilePatch({
     if (read.status !== 0) {
       throw new SetupAbort(`git read-tree failed: ${String(read.stderr ?? "").trim()}`);
     }
-    // Never put auth.json in the patch (gitignored in this repo; still exclude explicitly).
-    const add = runGit(
-      root,
-      ["add", "-A", "--", AGENT_PREFIX, `:(exclude)${AGENT_PREFIX}/auth.json`],
-      env,
-    );
-    if (add.status !== 0) {
-      throw new SetupAbort(`git add failed: ${String(add.stderr ?? "").trim()}`);
+    // Never pass auth.json to git add: it is gitignored and `git add -A -- .pi/agent`
+    // errors on ignored paths on some git versions. Stage only explicit non-auth paths.
+    const paths = listAgentPathsForPatch(root);
+    for (const file of paths) {
+      const add = runGit(root, ["add", "--", file], env);
+      if (add.status !== 0) {
+        throw new SetupAbort(`git add failed (${file}): ${String(add.stderr ?? "").trim()}`);
+      }
     }
-    runGit(root, ["rm", "-f", "--cached", "--ignore-unmatch", "--", `${AGENT_PREFIX}/auth.json`], env);
     const diff = runGit(root, ["diff", "--cached", "--binary", baseSha, "--", AGENT_PREFIX], env);
     if (diff.status !== 0) {
       throw new SetupAbort(`git diff failed: ${String(diff.stderr ?? "").trim()}`);
