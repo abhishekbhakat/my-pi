@@ -282,7 +282,7 @@
             "cacheWrite": 0
           },
           "thinkingLevelMap": {
-            "off": null,
+            "off": "off",
             "minimal": null,
             "low": "low",
             "medium": "medium",
