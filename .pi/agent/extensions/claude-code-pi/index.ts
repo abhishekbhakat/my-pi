@@ -1,6 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { buildThinkingLevelMap, checkCliStatus, claudeBin, detectEffortLevels, setupGuidance, type CliStatus } from "./cli.ts";
 import { API_ID, configuredModels, PROVIDER_ID, providerModels, type ClaudeCodeModelInfo } from "./models.ts";
+import { morphStatus, type MorphStatus } from "./morphRepair.ts";
 import { deleteClaudeSessionFile, getActivePiSessionId, loadRecord, reseedRecord, setActivePiSessionId } from "./sessions.ts";
 import { streamClaudeCode } from "./stream.ts";
 
@@ -12,6 +13,7 @@ export { buildPrompt, buildStreamJsonInput, parseStreamJsonOutput } from "./prom
 let registeredModels: ClaudeCodeModelInfo[] = configuredModels(process.env.CLAUDE_CODE_PI_MODELS);
 let effortLevels: string[] = [];
 let lastCliStatus: CliStatus | undefined;
+let lastMorphStatus: MorphStatus | undefined;
 
 function registerClaudeProvider(pi: ExtensionAPI) {
 	pi.registerProvider(PROVIDER_ID, {
@@ -37,6 +39,8 @@ function statusLines(status?: CliStatus): string[] {
 			: "Thinking: --effort levels not detected; CLI default effort used",
 		"Images: sent as base64 blocks via --input-format stream-json",
 		`Registered models: ${registeredModels.length}`,
+		lastMorphStatus?.summary
+			?? "Morph repair: run /claude-code-pi status (needs OpenRouter key when on)",
 	];
 
 	const current = status ?? lastCliStatus;
@@ -60,6 +64,7 @@ export default async function claudeCodePiExtension(pi: ExtensionAPI) {
 	effortLevels = detectEffortLevels();
 	const status = await checkCliStatus();
 	lastCliStatus = status;
+	lastMorphStatus = await morphStatus();
 	if (!status.ok) {
 		// CLI missing or unusable: register no provider so this extension stays inert.
 		pi.registerCommand("claude-code-pi", {
@@ -101,6 +106,9 @@ export default async function claudeCodePiExtension(pi: ExtensionAPI) {
 
 	pi.on("session_start", async (_event: any, ctx: any) => {
 		setActivePiSessionId(ctx.sessionManager.getSessionId());
+		if (lastMorphStatus?.enabled && !lastMorphStatus.ready) {
+			ctx.ui.notify(lastMorphStatus.summary, "warning");
+		}
 	});
 
 	pi.on("session_shutdown", async () => {
@@ -113,7 +121,9 @@ export default async function claudeCodePiExtension(pi: ExtensionAPI) {
 			const sub = args.trim().split(/\s+/).filter(Boolean)[0] ?? "status";
 			if (sub === "status") {
 				lastCliStatus = await checkCliStatus();
-				for (const line of statusLines(lastCliStatus)) ctx.ui.notify(line, lastCliStatus.ok ? "info" : "warning");
+				lastMorphStatus = await morphStatus();
+				const level = lastCliStatus.ok && lastMorphStatus.ready ? "info" : "warning";
+				for (const line of statusLines(lastCliStatus)) ctx.ui.notify(line, level);
 				const piId = getActivePiSessionId();
 				if (piId) {
 					const record = await loadRecord(piId);
@@ -144,6 +154,7 @@ export default async function claudeCodePiExtension(pi: ExtensionAPI) {
 				ctx.ui.notify("Usage: /claude-code-pi [status|models|test|help]", "info");
 				ctx.ui.notify("Set CLAUDE_CODE_PI_BIN to override the claude executable.", "info");
 				ctx.ui.notify("Set CLAUDE_CODE_PI_MODELS for comma-separated Claude Code model aliases.", "info");
+				ctx.ui.notify("Morph repair: OpenRouter key fixes broken Claude tool XML so Pi can run tools (make setup asks when enabling claude-code-cli).", "info");
 				ctx.ui.notify("Pi session id maps to ~/.pi/agent/claude-code-pi/sessions/<id>.json", "info");
 				ctx.ui.notify("Run /claude-refresh to drop the mirrored Claude Code session and seed a fresh one next turn.", "info");
 				return;

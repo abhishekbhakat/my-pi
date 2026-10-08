@@ -31,6 +31,8 @@ Claude Code tools stay off (`--tools ""`). When Pi offers tools, the bridge teac
 
 If the model emits broken tool XML (for example missing the opening `<function_calls>` tag) the local parser still extracts `<invoke>` blocks when it can. When invoke count still exceeds parsed calls, Morph (`morph/morph-v3-fast` via OpenRouter) rewrites the slice once; the result is accepted only when parameter values are verbatim substrings of the source. Morph is default on; set `CLAUDE_CODE_PI_MORPH_REPAIR=0` to disable.
 
+**OpenRouter key is required** for Morph. Why: `claude -p` sometimes emits broken tool XML (missing `<function_calls>`, etc.), so Pi cannot run tools; Morph rewrites that XML. `make setup` asks for the key whenever you enable claude-code-cli, even if you skip openrouter chat models. Without a key Morph stays enabled but inert (`/claude-code-pi status` warns). Key sources: `auth.json` `openrouter.key`, `OPENROUTER_API_KEY`, or `CLAUDE_CODE_PI_MORPH_API_KEY`.
+
 Bridge rules are sent with `--system-prompt` (full replace) on every invocation, replacing Claude Code's harness prompt. The per-turn user prompt carries only the Pi system prompt, the current tool list, the transcript, and a one-line footer reminding the tool-call block format. Snapshot default `on` records the first render per conversation; passing the flag every turn keeps post-compact renders ours.
 
 ## /claude-refresh

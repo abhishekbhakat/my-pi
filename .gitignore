@@ -1,5 +1,8 @@
 # PI
 
+# Personalization from `make setup`; applied by `make install`. Never commit.
+/userprofile.patch
+
 .pi/agent/bin/
 .pi/agent/sessions/
 node_modules/

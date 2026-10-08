@@ -29,7 +29,6 @@ AGENTS.md               rules for agents working in this repo
 
 You cap these models at 262144 in `.pi/agent/models.json` to reserve headroom for tool and reasoning overhead:
 
-- `runinfra/deepseek-v4-flash`
 - `runinfra/glm-5-3-flash`
 - `google/gemini-3.8-flash`
 
@@ -37,21 +36,18 @@ You cap these models at 262144 in `.pi/agent/models.json` to reserve headroom fo
 
 ## Setup
 
-Interactive bootstrap for a new machine or fresh clone. It asks which providers you use, stores API keys in repo `.pi/agent/auth.json` (gitignored, mode 600), rewrites `enabledModels`, and retargets capability-tool models when a preferred provider is off.
+Interactive bootstrap for a new machine or fresh clone. It asks which providers you use, stores API keys in repo `.pi/agent/auth.json` (gitignored, mode 600), and writes personalization as an untracked overlay:
 
 ```bash
-make setup                                  # auto-creates pi-install-<ddmmyyyy> if on main
-make setup ARGS="--create-branch <name>"   # or pin a branch name
+make setup
 ```
 
-- On `main`, `master`, or detached HEAD, plain `make setup` auto-creates a local branch `pi-install-<ddmmyyyy>` (suffixes `-2`, `-3`... if taken).
-- The branch is local only. Setup never pushes or sets an upstream.
-- Yes/no prompts default to `n`.
-- An existing key is kept if you press Enter.
-- Keys are never echoed.
-- Setup needs a TTY. `make setup ARGS="--help"` prints usage.
-- At the end it offers `make install` (default `n`), then prints `/reload` and `/login <provider>` hints.
-- After rebasing onto a newer `main`, capability files may conflict. Resolve them, then re-run setup.
+- **No lasting git branch.** Setup refuses if tracked `.pi/agent` files are dirty (`auth.json` ignored), applies your answers, writes `userprofile.patch` at the repo root (gitignored), then restores tracked `.pi/agent` files to `HEAD`. `auth.json` stays untracked.
+- `make install` copies through a temp staging dir and applies `userprofile.patch` there. Your checkout stays clean so you can `git pull` on main. If the patch no longer applies, install aborts and tells you to run `make setup` again.
+- Escape hatch: `make install ARGS="--no-profile"`.
+- Yes/no prompts default to `n`. Existing keys kept on Enter. Keys never echoed.
+- Needs a TTY. `make setup ARGS="--help"` prints usage.
+- End offers optional install (default `n`), then `/reload` and `/login` hints.
 
 Make does not forward bare flags, so pass options through `ARGS="..."`. Full behaviour is in [SPEC.md](SPEC.md).
 
@@ -103,4 +99,4 @@ Sync skips runtime files (`bin/`, `sessions/`, `node_modules`, `package-lock.jso
 
 ## Rules
 
-See [AGENTS.md](AGENTS.md). Short version: edit this repo (or run `make setup` on a local branch), run `make install`, then `/reload` in pi.
+See [AGENTS.md](AGENTS.md). Short version: edit this repo (or run `make setup` for `userprofile.patch`), run `make install`, then `/reload` in pi.

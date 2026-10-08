@@ -34,7 +34,7 @@ help:
 		'  make restore-bun-pi       Give `pi` back to bun after the old vendor-installer takeover' \
 		'  make config-install       Copy repo .pi/agent -> ~/.pi/agent only' \
 		'  make sync                 Copy live ~/.pi/agent -> repo .pi/agent' \
-		'  make setup                Interactive provider/auth bootstrap on a local git branch' \
+		'  make setup                Interactive provider/auth bootstrap; writes userprofile.patch' \
 		'  make test-setup           Build Docker image from filtered tar; run setup cases' \
 		'  make dist                  Build pi-setup binaries with embedded snapshot' \
 		'  make release               Publish a GitHub release: snapshot + binaries' \
@@ -43,9 +43,8 @@ help:
 		'  make install ARGS="-h HOST"         set models.json proxy host' \
 		'  make config-install ARGS="-h HOST"  same, config copy only' \
 		'  make sync ARGS="-p"                 prune repo files missing from live' \
-		'  make setup ARGS="--create-branch NAME"' \
-		'                                      pin branch name; plain make setup auto-creates pi-install-<ddmmyyyy>' \
 		'  make setup ARGS="--help"            setup usage' \
+		'  make install ARGS="--no-profile"    skip userprofile.patch' \
 		'  make test-setup ARGS="00-harness"   run one Docker case' \
 		'' \
 		'Or call Node directly (same on macOS, Linux, Windows):' \
@@ -57,8 +56,9 @@ help:
 		'  `pi` is the bun global TypeScript CLI; config lives under ~/.pi/agent.' \
 		'  auth.json: api_key merge both ways; oauth home -> repo on sync only.' \
 		'  After install, run /reload or /restart inside pi.' \
-		'  setup needs a TTY; refuses on main/master/detached unless --create-branch NAME.' \
-		'  setup writes repo .pi/agent only; never ~/.pi except via its optional install.' \
+		'  setup needs a TTY; writes userprofile.patch (gitignored), restores tracked .pi/agent.' \
+		'  install applies userprofile.patch in temp staging; on failure run make setup again.' \
+		'  setup never writes ~/.pi except via its optional install.' \
 		'  test-setup needs Docker; never mounts host repo; secrets excluded by .gitignore.'
 
 install: restore-bun-pi install-bun

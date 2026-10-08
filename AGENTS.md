@@ -43,6 +43,8 @@ Examples:
 
 After changing source files, run `make install`. Install also merges repo `.pi/agent/auth.json` into `~/.pi/agent/auth.json` for `api_key` entries only (repo keys override, live-only keys stay). OAuth entries (`type: oauth`) never install from repo into live home.
 
+`make setup` writes untracked `userprofile.patch` (personalization) and leaves tracked `.pi/agent` clean. `make install` applies that patch in a temp staging directory before copying to `~/.pi`. If the patch fails after a pull, run `make setup` again. Do not commit `userprofile.patch` or `auth.json`.
+
 ## Sync live config back into the repo
 
 To pull current live `~/.pi` state into this repository (reverse of install):

@@ -29,15 +29,21 @@ export { createPrompter, isInteractive, parsePick, parseYesNo } from "./pi/setup
 export { describeSettingsPlan, describeStaged, planSettings } from "./pi/setup/settings-plan.mjs";
 export { persistSetup } from "./pi/setup/persist.mjs";
 export { branchGate } from "./pi/setup/branch-gate.mjs";
+export {
+  setupRepoGate,
+  writeProfilePatch,
+  stageAgentWithProfile,
+} from "./pi/setup/profile-patch.mjs";
 export { probeClaude, updateClaude } from "./pi/toolchain/claude.mjs";
 
 function parseArgs(argv) {
-  const flags = { yes: false, prune: false, host: null, configOnly: false };
+  const flags = { yes: false, prune: false, host: null, configOnly: false, noProfile: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === "-y") flags.yes = true;
     else if (arg === "-p" || arg === "--prune" || arg === "-Prune") flags.prune = true;
     else if (arg === "--config-only") flags.configOnly = true;
+    else if (arg === "--no-profile") flags.noProfile = true;
     else if (arg === "-h") {
       flags.host = argv[i + 1];
       i += 1;
@@ -56,20 +62,23 @@ function printHelp() {
   console.log(`my-pi config CLI
 
 Usage:
-  node scripts/pi.mjs install [--config-only] [-h HOST]
+  node scripts/pi.mjs install [--config-only] [--no-profile] [-h HOST]
   node scripts/pi.mjs sync [-p]
-  node scripts/pi.mjs setup [--create-branch NAME] [--help]
+  node scripts/pi.mjs setup [--help]
   node scripts/pi.mjs help
 
 install  Copy repo .pi/agent -> ~/.pi/agent.
+         If userprofile.patch exists, apply it in a temp staging dir first.
          Default also manages the bun pi CLI (npm global removed, bun install -g if
          missing) and runs \`pi update\` + \`pi update --extensions\`.
          --config-only skips all CLI steps; used after the Rust pi is built
          (see make install / make config-install).
+         --no-profile ignores userprofile.patch.
 sync     Copy live ~/.pi/agent -> repo .pi/agent
-setup    Interactive provider/auth bootstrap on a local branch (see setup --help)
+setup    Interactive provider/auth bootstrap; writes userprofile.patch (see setup --help)
 
 --config-only  Config copy only; no bun CLI setup, no pi update
+--no-profile   Install without applying userprofile.patch
 -h HOST  Set models.json proxy origin on install
 -p       Prune repo files missing from live on sync
 -y       Accepted, unused (protected files always overwritten)

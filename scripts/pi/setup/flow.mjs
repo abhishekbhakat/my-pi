@@ -1,6 +1,5 @@
 import { die, SetupAbort } from "../errors.mjs";
-import { REPO_AGENT, REPO_ROOT } from "../paths.mjs";
-import { autoBranchName, branchGate } from "./branch-gate.mjs";
+import { REPO_AGENT, REPO_ROOT, PROFILE_PATCH } from "../paths.mjs";
 import {
   loadCapabilitySources,
   planCapabilityEdits,
@@ -20,6 +19,12 @@ import { describePersistSummary, persistSetup, printPostSetupHints } from "./per
 import { orderProviders } from "./providers.mjs";
 import { createPrompter, isInteractive } from "./prompts.mjs";
 import {
+  collectSecretsFromStaged,
+  restoreAgentTracked,
+  setupRepoGate,
+  writeProfilePatch,
+} from "./profile-patch.mjs";
+import {
   describeSettingsPlan,
   describeStaged,
   planSettings,
@@ -30,22 +35,17 @@ import { probeClaude, updateClaude } from "../toolchain/claude.mjs";
 import { install } from "../transfer/install.mjs";
 
 export function parseSetupArgs(argv) {
-  const flags = { createBranch: null, createBranchGiven: false };
+  const flags = {};
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === "--help") {
       printSetupHelp();
       process.exit(0);
     } else if (arg === "--create-branch") {
+      // Kept so old scripts do not die; branching removed.
       const name = argv[i + 1];
-      if (!name || name.startsWith("-")) {
-        flags.createBranch = autoBranchName();
-      } else {
-        i += 1;
-        flags.createBranch = name;
-      }
-      if (flags.createBranchGiven) die("--create-branch given more than once.");
-      flags.createBranchGiven = true;
+      if (name && !name.startsWith("-")) i += 1;
+      console.log("WARNING: --create-branch ignored; setup no longer keeps a git branch.");
     } else {
       die(`Unknown setup option ${arg}`);
     }
@@ -55,31 +55,37 @@ export function parseSetupArgs(argv) {
 
 export function printSetupHelp() {
   console.log(`Usage:
-  node scripts/pi.mjs setup [--create-branch [NAME]]
+  node scripts/pi.mjs setup
   make setup
 
-On main/master/detached HEAD, setup auto-creates a local branch pi-install-<ddmmyyyy>
-(-2, -3... if taken). --create-branch NAME pins a specific branch name.
+No git branch is created. Setup:
+  1. Refuses if tracked .pi/agent files are dirty (auth.json ignored)
+  2. Writes personalized files under .pi/agent
+  3. Saves a diff as untracked userprofile.patch at the repo root
+  4. Restores tracked .pi/agent files to HEAD (auth.json stays)
+  5. Optionally runs install, which applies userprofile.patch in a temp staging dir
 
---create-branch [NAME]  Pin branch name; bare flag or plain make setup auto-generates.
---help                  Show this help
+Enabling claude-code-cli also requires an OpenRouter API key: Claude sometimes
+emits broken tool XML; Morph (morph/morph-v3-fast) repairs it so Pi can run
+tools. Needed even if you decline openrouter chat models.
 
-Also asks for the default model and its thinking level (Enter keeps the current
-choice; a single enabled model is used without asking).
-
-Needs a TTY. Writes only repo .pi/agent files; never ~/.pi except via optional install.`);
+Needs a TTY. Never writes ~/.pi except via optional install.
+If install later cannot apply userprofile.patch, run make setup again.`);
 }
 
-export async function setup(flags) {
+export async function setup(_flags = {}) {
   if (!isInteractive()) throw new SetupAbort("setup needs an interactive terminal (TTY).");
-  // Load before any git write so a bad JSON never leaves an orphan branch.
   const inputs = loadSetupInputs(REPO_AGENT);
   const order = orderProviders(inputs.settings.enabledModels);
   const capSources = loadCapabilitySources(REPO_AGENT);
   const deciderRegistry = loadDecidersRegistry(REPO_AGENT);
 
-  const gate = branchGate(REPO_ROOT, flags.createBranch ?? "auto");
-  console.log(gate.created ? `Created branch ${gate.branch}.` : `On branch ${gate.branch}.`);
+  const gate = setupRepoGate(REPO_ROOT);
+  console.log(
+    gate.branch
+      ? `On branch ${gate.branch} (no new branch). base=${gate.baseSha.slice(0, 12)}`
+      : `Detached HEAD (no new branch). base=${gate.baseSha.slice(0, 12)}`,
+  );
 
   const claude = probeClaude();
   console.log(claude.found ? `Claude Code CLI: ${claude.version}` : "Claude Code CLI: not found on PATH");
@@ -91,6 +97,7 @@ export async function setup(flags) {
 
   let runInstall = false;
   let staged = null;
+  let patchInfo = null;
   const prompter = createPrompter();
   try {
     const wantClaude = await prompter.askYesNo(
@@ -113,17 +120,7 @@ export async function setup(flags) {
     });
     console.log(describeStaged(staged, order));
 
-    let settingsPlan;
-    try {
-      settingsPlan = planSettings(inputs.settings, staged, order);
-    } catch (error) {
-      if (error instanceof SetupAbort && error.message === "enable at least one provider" && gate.created) {
-        throw new SetupAbort(
-          `enable at least one provider (now on branch ${gate.branch}; re-run without --create-branch)`,
-        );
-      }
-      throw error;
-    }
+    const settingsPlan = planSettings(inputs.settings, staged, order);
     await promptDefaultModel({ settings: inputs.settings, plan: settingsPlan, order, prompter });
     await promptThinkingLevel({ settings: inputs.settings, plan: settingsPlan, prompter });
     console.log(describeSettingsPlan(settingsPlan, inputs.settings));
@@ -157,12 +154,25 @@ export async function setup(flags) {
       capEdits,
       deciderContents,
     });
-    console.log(describePersistSummary({ gate, staged, order, capTargets, deciderPlan, report }));
+
+    patchInfo = writeProfilePatch({
+      root: REPO_ROOT,
+      baseSha: gate.baseSha,
+      branch: gate.branch,
+      secrets: collectSecretsFromStaged(staged),
+      patchPath: PROFILE_PATCH,
+    });
+    restoreAgentTracked(REPO_ROOT);
+    console.log(
+      `Wrote ${PROFILE_PATCH} (${patchInfo.hunks} hunks). Restored tracked .pi/agent to HEAD; auth.json kept.`,
+    );
+
+    console.log(describePersistSummary({ gate, staged, order, capTargets, deciderPlan, report, patchInfo }));
     try {
       runInstall = await prompter.askYesNo("Apply config install now (repo .pi/agent -> ~/.pi/agent)?");
     } catch (error) {
       if (error instanceof SetupAbort && error.exitCode === 130) {
-        throw new SetupAbort("files already written; install skipped", 130);
+        throw new SetupAbort("profile patch written; install skipped", 130);
       }
       throw error;
     }

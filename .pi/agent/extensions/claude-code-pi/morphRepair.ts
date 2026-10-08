@@ -74,7 +74,7 @@ function buildMorphPrompt(broken: string): string {
 	].join("\n");
 }
 
-async function resolveOpenRouterKey(): Promise<string | undefined> {
+export async function resolveOpenRouterKey(): Promise<string | undefined> {
 	const fromEnv =
 		process.env.CLAUDE_CODE_PI_MORPH_API_KEY?.trim() ||
 		process.env.OPENROUTER_API_KEY?.trim();
@@ -88,6 +88,36 @@ async function resolveOpenRouterKey(): Promise<string | undefined> {
 	} catch {
 		return undefined;
 	}
+}
+
+export type MorphStatus = {
+	enabled: boolean;
+	ready: boolean;
+	model: string;
+	hasKey: boolean;
+	summary: string;
+};
+
+/** Setup/status helper: Morph is ready only when enabled and an OpenRouter key resolves. */
+export async function morphStatus(): Promise<MorphStatus> {
+	const enabled = morphRepairEnabled();
+	const model = morphModelId();
+	if (!enabled) {
+		return { enabled: false, ready: false, model, hasKey: false, summary: "Morph repair: off (CLAUDE_CODE_PI_MORPH_REPAIR)" };
+	}
+	const key = await resolveOpenRouterKey();
+	const hasKey = Boolean(key);
+	if (!hasKey) {
+		return {
+			enabled: true,
+			ready: false,
+			model,
+			hasKey: false,
+			summary:
+				`Morph repair: ON but no OpenRouter key (needed to rewrite broken Claude tool XML) — set auth.json openrouter.key, OPENROUTER_API_KEY, or re-run make setup`,
+		};
+	}
+	return { enabled: true, ready: true, model, hasKey: true, summary: `Morph repair: on (${model})` };
 }
 
 function extractContent(payload: unknown): string | undefined {
