@@ -58,7 +58,7 @@ export function containsBlockFence(text: string): boolean {
 	return /```pi-tool-call/.test(text);
 }
 
-/** True when the reply contains an Anthropic <function_calls> block, valid or not. */
+/** True when the reply contains Anthropic tool XML, valid or not. */
 export function containsXmlFunctionCalls(text: string): boolean {
-	return /<function_calls>/.test(text);
+	return /<invoke\b|<\/?function_calls>|<parameter\b/.test(text);
 }

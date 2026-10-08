@@ -305,9 +305,10 @@ export function parseToolCalls(text: string): Array<{ name: string; arguments: R
 	const trimmed = text.trim();
 	// Native format first: Anthropic <function_calls> XML with Claude Code tool
 	// names, translated back to Pi tool names and argument names.
-	const xmlCalls = trimmed.includes("<function_calls>")
-		? parseXmlToolCalls(trimmed).map(toPiToolCall)
-		: [];
+	// Gate on <invoke / function_calls (open or close): models often omit the
+	// opening <function_calls> while still emitting usable <invoke> blocks.
+	const looksXml = /<invoke\b|<\/?function_calls>/.test(trimmed);
+	const xmlCalls = looksXml ? parseXmlToolCalls(trimmed).map(toPiToolCall) : [];
 	if (xmlCalls.length > 0) return xmlCalls;
 	// Fallbacks for sessions that started under older bridge formats.
 	const calls = parseBlockToolCalls(trimmed);

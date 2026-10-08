@@ -165,7 +165,7 @@ export function parseXmlToolCalls(text: string): ParsedToolCall[] {
 	return calls;
 }
 
-/** True when the reply contains a function_calls block, well-formed or not. */
+/** True when the reply contains Anthropic tool XML, well-formed or not. */
 export function containsFunctionCalls(text: string): boolean {
-	return text.includes("<function_calls>");
+	return /<invoke\b|<\/?function_calls>|<parameter\b/.test(text);
 }

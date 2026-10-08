@@ -20,11 +20,11 @@ import {
 	buildPrompt,
 	buildStreamJsonInput,
 	parseStreamJsonOutput,
-	parseToolCalls,
 	safeJson,
 	selectSentMessages,
 	type BridgeContext,
 } from "./prompt.ts";
+import { parseToolCallsWithMorphRepair } from "./morphRepair.ts";
 import {
 	canResume,
 	ensureRecord,
@@ -282,9 +282,11 @@ export function streamClaudeCode(
 				stream.push({ type: "thinking_end", contentIndex: thinkingIndex, content: parsed.thinking, partial: output });
 			}
 			// Capability helpers and other tool-free callers get plain text only.
-			// Parsing <pi_tool_call> here would wipe the answer into stopReason toolUse.
+			// Parsing tool XML here would wipe the answer into stopReason toolUse.
 			const allowTools = !isCapabilityCall(options) && mirror.bridge.tools.length > 0;
-			const toolCalls = allowTools ? parseToolCalls(responseText) : [];
+			const toolCalls = allowTools
+				? await parseToolCallsWithMorphRepair(responseText, options?.signal)
+				: [];
 			if (toolCalls.length > 0) {
 				output.stopReason = "toolUse";
 				for (const call of toolCalls) {

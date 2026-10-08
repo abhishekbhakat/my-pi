@@ -8,13 +8,15 @@ Each Pi session maps to one Claude Code session UUID. Map files live at `$PI_COD
 
 ```text
 claude-code-pi/
-  index.ts      register provider, /claude-code-pi, session_start
-  models.ts     aliases (sonnet, opus, haiku, fable) and CLAUDE_CODE_PI_MODELS
-  sessions.ts   Pi id ↔ Claude UUID, prefix hash, resume eligibility
-  cli.ts        claude binary, argv (--session-id / --resume / stateless)
-  blockCall.ts  ```pi-tool-call fenced YAML block parse/render
-  prompt.ts     transcript dump, delta dump, tool-call block parse
-  stream.ts     streamSimple: pick seed vs resume vs stateless, spawn
+  index.ts        register provider, /claude-code-pi, session_start
+  models.ts       aliases (sonnet, opus, haiku, fable) and CLAUDE_CODE_PI_MODELS
+  sessions.ts     Pi id ↔ Claude UUID, prefix hash, resume eligibility
+  cli.ts          claude binary, argv (--session-id / --resume / stateless)
+  blockCall.ts    legacy ```pi-tool-call fenced YAML parse/render
+  claudeTools.ts  Anthropic <function_calls> XML parse/render + name maps
+  morphRepair.ts  OpenRouter Morph fallback for broken tool XML
+  prompt.ts       transcript dump, delta dump, tool-call parse
+  stream.ts       streamSimple: pick seed vs resume vs stateless, spawn
   README.md
 ```
 
@@ -25,7 +27,9 @@ claude-code-pi/
 3. Later turns whose message prefix matches that hash: `--resume <uuid>` and only new messages.
 4. Helper tools and `/undo` that do not match the prefix: `--no-session-persistence` and a full dump. The map file is left alone.
 
-Claude Code tools stay off (`--tools ""`). When Pi offers tools, the bridge teaches ```pi-tool-call fenced YAML blocks (see `blockCall.ts`) and Pi executes them. The fence body is YAML: `name` plus `arguments`; multiline strings (shell commands, file contents) are raw `|` block scalars, so no JSON or quote escaping is ever needed. Legacy `<pi_tool_call>` JSON tags still parse for sessions that started under the old format. Tool-free callers (capability helpers, cache warmup) get a plain-text bridge and never parse tool-call blocks into `toolUse`.
+Claude Code tools stay off (`--tools ""`). When Pi offers tools, the bridge teaches Anthropic `<function_calls><invoke>…` XML (Claude Code tool names) and Pi executes the translated calls. Legacy ```pi-tool-call YAML fences and `<pi_tool_call>` JSON tags still parse for older sessions. Tool-free callers (capability helpers, cache warmup) get a plain-text bridge and never parse tool-call blocks into `toolUse`.
+
+If the model emits broken tool XML (for example missing the opening `<function_calls>` tag) the local parser still extracts `<invoke>` blocks when it can. When invoke count still exceeds parsed calls, Morph (`morph/morph-v3-fast` via OpenRouter) rewrites the slice once; the result is accepted only when parameter values are verbatim substrings of the source. Morph is default on; set `CLAUDE_CODE_PI_MORPH_REPAIR=0` to disable.
 
 Bridge rules are sent with `--system-prompt` (full replace) on every invocation, replacing Claude Code's harness prompt. The per-turn user prompt carries only the Pi system prompt, the current tool list, the transcript, and a one-line footer reminding the tool-call block format. Snapshot default `on` records the first render per conversation; passing the flag every turn keeps post-compact renders ours.
 
@@ -37,12 +41,16 @@ Thinking: Pi's level maps to `--effort`. When a level is on, the bridge also pas
 
 ## Env
 
-| Variable                      | Role                                      |
-| ----------------------------- | ----------------------------------------- |
-| `CLAUDE_CODE_PI_BIN`          | Claude executable. Default `claude`.      |
-| `CLAUDE_CODE_PI_MODELS`       | Aliases. Default `sonnet,opus,haiku,fable`.     |
-| `CLAUDE_CODE_PI_TIMEOUT_MS`   | Per-turn timeout. Default 300000.         |
-| `CLAUDE_CODE_PI_CONTEXT_WINDOW` | Advertised window. Default 1000000.     |
+| Variable                        | Role                                                                 |
+| ------------------------------- | -------------------------------------------------------------------- |
+| `CLAUDE_CODE_PI_BIN`            | Claude executable. Default `claude`.                                 |
+| `CLAUDE_CODE_PI_MODELS`         | Aliases. Default `sonnet,opus,haiku,fable`.                          |
+| `CLAUDE_CODE_PI_TIMEOUT_MS`     | Per-turn timeout. Default 300000.                                    |
+| `CLAUDE_CODE_PI_CONTEXT_WINDOW` | Advertised window. Default 1000000.                                  |
+| `CLAUDE_CODE_PI_MORPH_REPAIR`   | Morph XML repair. Default on. Set `0`/`false`/`no`/`off` to disable. |
+| `CLAUDE_CODE_PI_MORPH_MODEL`    | OpenRouter Morph model. Default `morph/morph-v3-fast`.               |
+| `CLAUDE_CODE_PI_MORPH_TIMEOUT_MS` | Morph request timeout. Default 6000.                               |
+| `CLAUDE_CODE_PI_MORPH_API_KEY`  | Optional OpenRouter key override (else `OPENROUTER_API_KEY` / auth). |
 
 Before starting `claude`, the bridge removes Anthropic API key, auth token, base URL, custom header and Bedrock/Vertex/Foundry variables from the environment, so every turn uses the Claude Code login.
 
