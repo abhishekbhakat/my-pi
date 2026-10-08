@@ -109,9 +109,21 @@
     }
   ],
   "roles": {
-    "booleanGuy": ["fastino/glide", "opencode-zen/jev-1.13-free"],
-    "prune": ["fastino/glide", "opencode-zen/jev-1.13-free"],
-    "compaction": ["fastino/glide", "opencode-zen/jev-1.13-free"],
-    "guard": ["fastino/glide", "opencode-zen/jev-1.13-free"]
+    "booleanGuy": [
+      "opencode-zen/jev-1.13-free",
+      "fastino/glide"
+    ],
+    "prune": [
+      "opencode-zen/jev-1.13-free",
+      "fastino/glide"
+    ],
+    "compaction": [
+      "opencode-zen/jev-1.13-free",
+      "fastino/glide"
+    ],
+    "guard": [
+      "opencode-zen/jev-1.13-free",
+      "fastino/glide"
+    ]
   }
 }

@@ -7,7 +7,7 @@
   "modelThinkingLevels": {
     "claude-code-cli/haiku": "max",
     "claude-code-cli/opus": "max",
-    "claude-code-cli/sonnet": "high",
+    "claude-code-cli/sonnet": "xhigh",
     "deepseek/deepseek-flash": "off",
     "inferx/deepseek-v4.1-flash": "low",
     "inferx/glm-5.3-flash": "low",
@@ -28,8 +28,8 @@
   "followUpMode": "all",
   "enableInstallTelemetry": true,
   "defaultProjectTrust": "always",
-  "defaultProvider": "vibe",
-  "defaultModel": "zai-glm-5-3",
+  "defaultProvider": "claude-code-cli",
+  "defaultModel": "sonnet",
   "defaultTools": [
     "+codemode"
   ],
