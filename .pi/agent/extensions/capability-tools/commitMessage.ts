@@ -1,10 +1,14 @@
 import { lexer, type Token } from "marked";
 
-const COMMIT_TYPE_RE =
-	/^(feat|fix|refactor|docs|style|test|chore|perf|ci|build)(\([^)]+\))?:\s+\S/i;
+export const NO_STAGED_CHANGES_MESSAGE =
+	"No staged changes found. Stage files with `git add` first.";
 
-const PREAMBLE_RE =
-	/^(the staged|here(?:'s| is)|a fitting|based on|looking at|this change|i (?:would|will)|suggested? message|commit message)\b/i;
+const COMMIT_TYPE_RE =
+	/^(feat|fix|refactor|docs|style|test|chore|perf|ci|build|revert)(\([^)]+\))?!?:\s+\S/i;
+
+/** Reject conventional-looking lines whose description is still refusal/review prose. */
+const DESCRIPTION_REFUSAL_RE =
+	/^(?:feat|fix|refactor|docs|style|test|chore|perf|ci|build|revert)(?:\([^)]+\))?!?:\s+(?:i can(?:'|’)t|i cannot|i'?m unable|unable to|review of)\b/i;
 
 function markdownPlain(token: Token): string {
 	if ((token.type === "code" || token.type === "codespan") && typeof token.text === "string") return token.text;
@@ -41,6 +45,11 @@ function stripWrapQuotes(line: string): string {
 
 /** Keep one pasteable conventional commit line; drop haiku preamble fluff. */
 export function cleanCommitMessage(text: string): string {
+	const trimmed = text.trim();
+	if (trimmed === NO_STAGED_CHANGES_MESSAGE || trimmed.startsWith("No staged changes found.")) {
+		return NO_STAGED_CHANGES_MESSAGE;
+	}
+
 	let plain = text;
 	try {
 		plain = lexer(text)
@@ -56,16 +65,11 @@ export function cleanCommitMessage(text: string): string {
 		.map((part) => stripWrapQuotes(part))
 		.filter((part) => part.length > 0);
 
-	const conventional = lines.find((line) => COMMIT_TYPE_RE.test(line) && line.length <= 128);
-	if (conventional) return conventional;
-
-	const fallback =
-		lines.find(
-			(line) =>
-				line.length <= 128 &&
-				!PREAMBLE_RE.test(line) &&
-				!/:\s*$/.test(line) &&
-				!/^```/.test(line),
-		) ?? "";
-	return fallback;
+	const conventional = lines.find(
+		(line) =>
+			COMMIT_TYPE_RE.test(line) &&
+			line.length <= 128 &&
+			!DESCRIPTION_REFUSAL_RE.test(line),
+	);
+	return conventional ?? "";
 }

@@ -48,4 +48,6 @@ export interface CapabilityContextBundle {
 	sections: CapabilityContextSection[];
 	autoPaths: string[];
 	fileContents?: Record<string, string>;
+	/** True when commit_message found an empty staged index (skip model call). */
+	stagedEmpty?: boolean;
 }

@@ -1,7 +1,7 @@
 import { stream as piAiStream } from "@earendil-works/pi-ai";
 import type { AgentToolUpdateCallback } from "@earendil-works/pi-coding-agent";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { cleanCommitMessage } from "./commitMessage";
+import { cleanCommitMessage, NO_STAGED_CHANGES_MESSAGE } from "./commitMessage";
 import { buildCapabilityContext, buildCapabilityPrompt } from "./context";
 import { appendCapabilityHistory } from "./history";
 import type { CapabilityDef, CapabilityToolInput } from "./types";
@@ -215,6 +215,16 @@ export async function executeCapability(
 	});
 
 	const context = await buildCapabilityContext(pi, ctx, def, input, signal);
+	if (def.toolName === "commit_message" && context.stagedEmpty) {
+		return {
+			content: [{ type: "text", text: NO_STAGED_CHANGES_MESSAGE }],
+			details: {
+				status: "done",
+				capability: def.toolName,
+				paths: context.autoPaths,
+			},
+		};
+	}
 	const prompt = buildCapabilityPrompt(input.task, context);
 
 	const fast = fastWireState();
@@ -403,7 +413,7 @@ export async function executeCapability(
 		if (def.toolName === "commit_message" && text) {
 			const cleaned = cleanCommitMessage(text);
 			if (cleaned) text = cleaned;
-			else if (!/^No staged changes found\./.test(text.trim())) {
+			else if (text.trim() !== NO_STAGED_CHANGES_MESSAGE && !text.trim().startsWith("No staged changes found.")) {
 				text = "commit_message produced no usable conventional commit line. Retry the tool.";
 			}
 		}

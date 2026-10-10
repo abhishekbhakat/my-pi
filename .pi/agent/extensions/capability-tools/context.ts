@@ -843,6 +843,7 @@ export async function buildCapabilityContext(
 
 	const fixedSize = sectionsSize(sections);
 	let remaining = Math.max(0, promptBudget - fixedSize);
+	let stagedEmpty = false;
 
 	// Capability-shaped fill order for the remaining budget.
 	let pathBlocks: PathBlock[] = [];
@@ -893,13 +894,17 @@ export async function buildCapabilityContext(
 		const historyBudget = Math.min(4000, Math.max(0, remaining - 256));
 		const stagedBudget = Math.max(256, remaining - historyBudget);
 		const staged = await collectStagedDiff(pi, gitCwd, stagedBudget, signal);
+		stagedEmpty = staged === "";
 		sections.push({
 			title: "Git Diff",
 			content: staged || "[no staged changes]",
 		});
 		remaining = Math.max(0, promptBudget - sectionsSize(sections));
-		const history = await collectRecentCommits(pi, gitCwd, Math.min(historyBudget, remaining), signal);
-		if (history) sections.push({ title: "Recent Commits", content: history });
+		// Empty index: runner short-circuits before the model; skip history I/O.
+		if (!stagedEmpty) {
+			const history = await collectRecentCommits(pi, gitCwd, Math.min(historyBudget, remaining), signal);
+			if (history) sections.push({ title: "Recent Commits", content: history });
+		}
 	} else {
 		// code_scout and default: files first, then optional diff.
 		await fillPaths(remaining);
@@ -933,6 +938,7 @@ export async function buildCapabilityContext(
 		sections: budgeted.sections,
 		autoPaths: relativeAutoPaths,
 		fileContents,
+		stagedEmpty,
 	};
 }
 
