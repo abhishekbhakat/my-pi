@@ -1,7 +1,7 @@
 import type { ThinkingLevelMap } from "@earendil-works/pi-ai";
 
-export const PROVIDER_ID = "claude-code-cli";
-export const API_ID = "claude-code-cli-runner";
+export const PROVIDER_ID = "claude-code-sdk";
+export const API_ID = "claude-code-sdk-runner";
 export const DEFAULT_CONTEXT_WINDOW = 1_000_000;
 export const DEFAULT_MAX_TOKENS = 16_384;
 
@@ -54,8 +54,9 @@ function contextWindowOverride(): number | undefined {
 	return undefined;
 }
 
-export function configuredModels(raw: string | undefined): ClaudeCodeModelInfo[] {
-	const configured = raw
+export function configuredModels(raw?: string): ClaudeCodeModelInfo[] {
+	const source = raw ?? process.env.CLAUDE_CODE_SDK_MODELS ?? process.env.CLAUDE_CODE_PI_MODELS;
+	const configured = source
 		?.split(/[\s,]+/)
 		.map((part) => part.trim())
 		.filter(Boolean);
@@ -80,7 +81,7 @@ export function configuredModels(raw: string | undefined): ClaudeCodeModelInfo[]
 export function providerModels(models: ClaudeCodeModelInfo[], thinkingLevelMap?: ThinkingLevelMap) {
 	return models.map((model) => ({
 		id: model.id,
-		name: `${model.name} (Claude Code CLI)`,
+		name: `${model.name} (Claude Agent SDK)`,
 		reasoning: model.reasoning,
 		...(thinkingLevelMap ? { thinkingLevelMap } : {}),
 		input: ["text", "image"] as ("text" | "image")[],

@@ -1,3 +1,4 @@
+/** Session mirror: Pi id ↔ Claude UUID under ~/.pi/agent/claude-code-sdk/sessions/. */
 import { createHash, randomUUID } from "node:crypto";
 import { homedir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
@@ -46,7 +47,7 @@ export function getAgentDirPath(): string {
 }
 
 export function sessionsDir(agentDir = getAgentDirPath()): string {
-	return join(agentDir, "claude-code-pi", "sessions");
+	return join(agentDir, "claude-code-sdk", "sessions");
 }
 
 function recordPath(piSessionId: string, agentDir = getAgentDirPath()): string {
@@ -67,7 +68,9 @@ export function hashMessages(messages: Message[]): string {
 	hash.update(String(messages.length));
 	for (const message of messages) {
 		hash.update(message.role);
-		if ("content" in message) hash.update(typeof message.content === "string" ? message.content : JSON.stringify(message.content));
+		if ("content" in message) {
+			hash.update(typeof message.content === "string" ? message.content : JSON.stringify(message.content));
+		}
 	}
 	return hash.digest("hex");
 }
@@ -102,6 +105,7 @@ export async function saveRecord(record: SessionRecord): Promise<void> {
 export async function ensureRecord(piSessionId: string, cwd: string): Promise<SessionRecord> {
 	const existing = await loadRecord(piSessionId);
 	if (existing) return existing;
+	const now = Date.now();
 	const record: SessionRecord = {
 		version: RECORD_VERSION,
 		piSessionId,
@@ -111,8 +115,8 @@ export async function ensureRecord(piSessionId: string, cwd: string): Promise<Se
 		syncedHash: "",
 		systemHash: "",
 		cwd,
-		createdAt: Date.now(),
-		lastTurnAt: Date.now(),
+		createdAt: now,
+		lastTurnAt: now,
 	};
 	await saveRecord(record);
 	return record;
@@ -121,40 +125,36 @@ export async function ensureRecord(piSessionId: string, cwd: string): Promise<Se
 export function canResume(record: SessionRecord, messages: Message[]): boolean {
 	if (!record.initialized || record.syncedCount <= 0) return false;
 	if (messages.length < record.syncedCount) return false;
-	const prefix = messages.slice(0, record.syncedCount);
-	return hashMessages(prefix) === record.syncedHash;
+	return hashMessages(messages.slice(0, record.syncedCount)) === record.syncedHash;
 }
 
 export async function markSeeded(
 	record: SessionRecord,
 	messages: Message[],
 	systemPrompt: string | undefined,
-	lastMode: SessionRecord["lastMode"],
-	lastReplyText?: string,
-): Promise<SessionRecord> {
-	const next: SessionRecord = {
-		...record,
-		version: RECORD_VERSION,
-		initialized: true,
-		syncedCount: messages.length,
-		syncedHash: hashMessages(messages),
-		systemHash: hashSystemPrompt(systemPrompt),
-		lastReplyHash: lastReplyText ? hashText(lastReplyText) : undefined,
-		lastMode,
-		lastTurnAt: Date.now(),
-	};
-	await saveRecord(next);
-	return next;
+	mode: "seed" | "resume" | "none",
+	replyText?: string,
+): Promise<void> {
+	record.initialized = true;
+	record.syncedCount = messages.length;
+	record.syncedHash = hashMessages(messages);
+	record.systemHash = hashSystemPrompt(systemPrompt);
+	record.lastMode = mode;
+	record.lastTurnAt = Date.now();
+	if (replyText !== undefined) record.lastReplyHash = hashText(replyText);
+	await saveRecord(record);
 }
 
-// Record that this Pi session ran stateless, without touching sync state.
-export async function noteMode(piSessionId: string, mode: SessionRecord["lastMode"]): Promise<void> {
+export async function noteMode(piSessionId: string, mode: "none"): Promise<void> {
 	const record = await loadRecord(piSessionId);
 	if (!record) return;
-	await saveRecord({ ...record, lastMode: mode, lastTurnAt: Date.now() });
+	record.lastMode = mode;
+	record.lastTurnAt = Date.now();
+	await saveRecord(record);
 }
 
 export async function reseedRecord(piSessionId: string, cwd: string): Promise<SessionRecord> {
+	const now = Date.now();
 	const record: SessionRecord = {
 		version: RECORD_VERSION,
 		piSessionId,
@@ -164,27 +164,25 @@ export async function reseedRecord(piSessionId: string, cwd: string): Promise<Se
 		syncedHash: "",
 		systemHash: "",
 		cwd,
-		createdAt: Date.now(),
-		lastTurnAt: Date.now(),
+		createdAt: now,
+		lastTurnAt: now,
 	};
 	await saveRecord(record);
 	return record;
 }
 
-/** Claude Code stores sessions at <configDir>/projects/<munged-cwd>/<uuid>.jsonl. */
-export function claudeProjectDir(cwd: string): string {
-	const configured = process.env.CLAUDE_CONFIG_DIR?.trim();
-	const configRoot = configured ? (isAbsolute(configured) ? configured : resolve(process.cwd(), configured)) : join(homedir(), ".claude");
-	return join(configRoot, "projects", cwd.replace(/[/\\]+/g, "-"));
-}
-
-/** Deletes the Claude Code session transcript for a mirror UUID. Returns the removed path, or undefined when absent. */
-export async function deleteClaudeSessionFile(claudeSessionId: string, cwd: string): Promise<string | undefined> {
-	const target = join(claudeProjectDir(cwd), `${sanitizeId(claudeSessionId)}.jsonl`);
+/** Best-effort delete of Claude's on-disk transcript for this UUID. */
+export async function deleteClaudeSessionFile(
+	claudeSessionId: string,
+	cwd: string,
+): Promise<string | undefined> {
+	const home = process.env.CLAUDE_CONFIG_DIR?.trim() || join(homedir(), ".claude");
+	const munged = cwd.replace(/[^a-zA-Z0-9]/g, "-");
+	const candidate = join(home, "projects", munged, `${claudeSessionId}.jsonl`);
 	try {
-		await rm(target);
+		await rm(candidate, { force: true });
+		return candidate;
 	} catch {
 		return undefined;
 	}
-	return target;
 }

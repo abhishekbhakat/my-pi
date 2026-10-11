@@ -3,7 +3,7 @@ name: reasoning-coach
 tool: reasoning_coach
 label: Reasoning Coach
 description: Use strong reasoning model as lightweight planning partner for ambiguity, tradeoffs, constraints, next steps, and risk checks.
-model: claude-code-cli/opus
+model: claude-code-sdk/opus
 promptSnippet: "Get strategic read: plan, routed questions, risks, gate verdicts"
 promptGuidelines: Use this early when requirements, constraints, or tradeoffs are not obvious|Use this for multi-step work before committing to approach|Prefer this when better judgment matter more than more code reading
 includeConversation: true
@@ -12,7 +12,7 @@ includeGitStatus: true
 includeGitDiff: false
 includeChangedFiles: true
 includeTimeline: true
-timelineModel: claude-code-cli/haiku
+timelineModel: claude-code-sdk/haiku
 timelineReasoningEffort: xhigh
 maxContextChars: 500000
 reasoningEffort: max

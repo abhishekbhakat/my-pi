@@ -8,7 +8,7 @@ import {
 
 /** Phase-1 CLI flags keyed by provider id. Others ask Enable without a key. */
 const PHASE1_CLI = {
-  "claude-code-cli": "wantClaude",
+  "claude-code-sdk": "wantClaude",
 };
 
 function openRouterKeyPresent(auth, staged) {
@@ -20,7 +20,7 @@ function openRouterKeyPresent(auth, staged) {
 }
 
 /**
- * claude-code-pi Morph tool-call repair calls OpenRouter (morph/morph-v3-fast).
+ * claude-code-sdk Morph tool-call repair calls OpenRouter (morph/morph-v3-fast).
  * Require a key whenever Claude Code CLI models are enabled, even if the user
  * declined enabling openrouter as a chat provider.
  */
@@ -34,7 +34,7 @@ export async function ensureOpenRouterForMorph({
   if (!wantClaude) return;
   log("Why OpenRouter: claude -p sometimes emits broken tool XML (e.g. missing <function_calls>).");
   log("Pi then cannot run tools. Morph (morph/morph-v3-fast via OpenRouter) rewrites that XML once.");
-  log("This is not for chat models; it is only the claude-code-pi tool-call repair path.");
+  log("This is not for chat models; it is only the claude-code-sdk tool-call repair path.");
   if (openRouterKeyPresent(auth, staged)) {
     log("Morph repair: OpenRouter key already present — ok.");
     return;
@@ -43,7 +43,7 @@ export async function ensureOpenRouterForMorph({
   const secret = await prompter.askSecret("OpenRouter API key for Morph tool-call repair: ");
   if (!secret) {
     throw new SetupAbort(
-      "OpenRouter API key required when enabling claude-code-cli: without it Morph cannot fix broken tool XML. Re-run setup or set OPENROUTER_API_KEY.",
+      "OpenRouter API key required when enabling claude-code-sdk: without it Morph cannot fix broken tool XML. Re-run setup or set OPENROUTER_API_KEY.",
     );
   }
   staged.apiKeys.set("openrouter", secret);

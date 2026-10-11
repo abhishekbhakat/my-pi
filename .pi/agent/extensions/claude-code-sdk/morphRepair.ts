@@ -158,7 +158,7 @@ export async function repairToolXml(
 				Authorization: `Bearer ${key}`,
 				"Content-Type": "application/json",
 				"HTTP-Referer": "https://github.com/earendil-works/my-pi",
-				"X-Title": "claude-code-pi morph repair",
+				"X-Title": "claude-code-sdk morph repair",
 			},
 			body: JSON.stringify({
 				model: morphModelId(),

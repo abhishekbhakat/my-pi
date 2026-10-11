@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Extensions for pi coding agent",
   "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "0.3.296",
     "@earendil-works/chord": "1.0.3",
     "@earendil-works/pi-ai": "1.0.3",
     "@earendil-works/pi-durable": "1.0.3",

@@ -6,9 +6,9 @@
   "defaultThinkingLevel": "low",
   "modelThinkingLevels": {
     "grok-cli/grok-4.5": "high",
-    "claude-code-cli/haiku": "max",
-    "claude-code-cli/opus": "max",
-    "claude-code-cli/sonnet": "xhigh",
+    "claude-code-sdk/haiku": "max",
+    "claude-code-sdk/opus": "max",
+    "claude-code-sdk/sonnet": "xhigh",
     "deepseek/deepseek-flash": "off",
     "inferx/deepseek-v4.1-flash": "low",
     "inferx/glm-5.3-flash": "low",
@@ -29,15 +29,15 @@
   "followUpMode": "all",
   "enableInstallTelemetry": true,
   "defaultProjectTrust": "always",
-  "defaultProvider": "claude-code-cli",
+  "defaultProvider": "claude-code-sdk",
   "defaultModel": "sonnet",
   "defaultTools": [
     "+codemode"
   ],
   "enabledModels": [
-    "claude-code-cli/haiku",
-    "claude-code-cli/opus",
-    "claude-code-cli/sonnet",
+    "claude-code-sdk/haiku",
+    "claude-code-sdk/opus",
+    "claude-code-sdk/sonnet",
     "deepseek/deepseek-flash",
     "google/gemini-3.8-flash",
     "grok-cli/grok-4.5",

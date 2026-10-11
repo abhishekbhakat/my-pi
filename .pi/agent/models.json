@@ -38,7 +38,7 @@
         }
       ]
     },
-    "claude-code-cli": {
+    "claude-code-sdk": {
       "modelOverrides": {
         "sonnet": {
           "contextWindow": 262144

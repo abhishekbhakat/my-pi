@@ -4,7 +4,7 @@ export function isOauthEntry(value) {
 
 export const PROVIDER_PRIORITY = [
   "google",
-  "claude-code-cli",
+  "claude-code-sdk",
   "mistral-vibe-cli",
   "openai-codex",
   "openrouter",
@@ -12,14 +12,14 @@ export const PROVIDER_PRIORITY = [
   "grok-cli",
 ];
 // Local CLI bridges: no API key in setup; auth is the CLI login on PATH.
-export const CLI_PROVIDERS = new Set(["claude-code-cli", "mistral-vibe-cli"]);
+export const CLI_PROVIDERS = new Set(["claude-code-sdk", "mistral-vibe-cli"]);
 // openai-codex is oauth in auth but classified as "codex" (Phase 1), so omit here.
 export const OAUTH_PROVIDERS = new Set(["kimi-coding", "grok-cli"]);
 export const CAPABILITY_PREFERRED = {
-  timeline: "claude-code-cli/haiku",
-  scout: "claude-code-cli/haiku",
-  coach: "claude-code-cli/opus",
-  reviewer: "claude-code-cli/opus",
+  timeline: "claude-code-sdk/haiku",
+  scout: "claude-code-sdk/haiku",
+  coach: "claude-code-sdk/opus",
+  reviewer: "claude-code-sdk/opus",
 };
 
 export function providerOf(ref) {

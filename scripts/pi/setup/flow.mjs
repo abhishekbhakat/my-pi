@@ -66,7 +66,7 @@ No git branch is created. Setup:
 Does not install. Run make install afterward; that applies userprofile.patch
 in a temp staging dir, then copies to ~/.pi.
 
-Enabling claude-code-cli also requires an OpenRouter API key: Claude sometimes
+Enabling claude-code-sdk also requires an OpenRouter API key: Claude sometimes
 emits broken tool XML; Morph (morph/morph-v3-fast) repairs it so Pi can run
 tools. Needed even if you decline openrouter chat models.
 
@@ -101,13 +101,13 @@ export async function setup(_flags = {}) {
   const prompter = createPrompter();
   try {
     const wantClaude = await prompter.askYesNo(
-      "Do you have Claude Code CLI / want claude-code-cli models?",
+      "Do you have Claude Code / want claude-code-sdk models?",
     );
     const wantCodex = await prompter.askYesNo(
       "Do you have a Codex subscription (openai-codex oauth)?",
     );
     console.log(
-      `Phase 1: claude-code-cli=${wantClaude ? "yes" : "no"}, openai-codex=${wantCodex ? "yes" : "no"}`,
+      `Phase 1: claude-code-sdk=${wantClaude ? "yes" : "no"}, openai-codex=${wantCodex ? "yes" : "no"}`,
     );
 
     staged = await collectProviders({

@@ -3,7 +3,7 @@ name: code-scout
 tool: code_scout
 label: Code Scout
 description: Use fast explorer model to map relevant code, call flow, and likely edit points.
-model: claude-code-cli/haiku
+model: claude-code-sdk/haiku
 promptSnippet: Explore codebase and return relevant files, symbols, call flow, and edit points
 promptGuidelines: Use this before editing unfamiliar areas|Prefer this when you only need repo map|Pass concrete files or narrow dirs; dirs auto-expand to ~6 task-ranked files
 includeConversation: true
@@ -12,7 +12,7 @@ includeGitStatus: true
 includeGitDiff: false
 includeChangedFiles: true
 includeTimeline: true
-timelineModel: claude-code-cli/haiku
+timelineModel: claude-code-sdk/haiku
 timelineReasoningEffort: xhigh
 maxContextChars: 360000
 reasoningEffort: max

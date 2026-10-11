@@ -186,7 +186,7 @@ export async function checkCliStatus(): Promise<CliStatus> {
 
 export function setupGuidance(error: string): string {
 	return [
-		"claude-code-pi could not use the local Claude Code CLI.",
+		"claude-code-sdk could not use the local Claude Code CLI.",
 		`Reason: ${error}`,
 		"Install Claude Code, ensure `claude --version` works on PATH, authenticate Claude Code if needed, then reload Pi.",
 		"This provider never falls back to Anthropic SDK, HTTP APIs, or Pi built-in Claude providers; every request must go through `claude -p`.",
@@ -201,6 +201,6 @@ export function setupGuidance(error: string): string {
 export async function describeStreamError(error: unknown): Promise<string> {
 	const reason = error instanceof Error ? error.message : String(error);
 	const status = await checkCliStatus();
-	if (status.ok) return `claude-code-pi bridge error: ${reason}`;
+	if (status.ok) return `claude-code-sdk bridge error: ${reason}`;
 	return setupGuidance(status.detail ?? reason);
 }
