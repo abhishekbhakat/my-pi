@@ -31,6 +31,10 @@ export interface CapabilityDef {
 	expandFilesPerDir: number;
 	/** When true, one retry if the model opens with a no-tools/can't-read refusal. */
 	refusalRetry: boolean;
+	/** Opt-in in-process tools the scout may call (currently only "read"). */
+	scoutTools?: string[];
+	/** Max model rounds that may emit scout tool calls before a forced text report. */
+	maxToolRounds?: number;
 }
 
 export interface CapabilityToolInput {

@@ -139,6 +139,12 @@ export function parseCapabilityFile(filePath: string): CapabilityDef | null {
 			expandDirectories: asBool(frontmatter.expandDirectories, DEFAULTS.expandDirectories),
 			expandFilesPerDir: asNumber(frontmatter.expandFilesPerDir, DEFAULTS.expandFilesPerDir),
 			refusalRetry: asBool(frontmatter.refusalRetry, DEFAULTS.refusalRetry),
+			scoutTools: (() => {
+				const raw = asList(frontmatter.scoutTools).map((item) => item.toLowerCase());
+				const allowed = new Set(["read"]);
+				return dedupe(raw.filter((item) => allowed.has(item)));
+			})(),
+			maxToolRounds: Math.min(300, Math.max(1, asNumber(frontmatter.maxToolRounds, 300))),
 		};
 	} catch {
 		return null;

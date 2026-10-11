@@ -1,10 +1,12 @@
-import { stream as piAiStream } from "@earendil-works/pi-ai";
+import * as path from "node:path";
+import { stream as piAiStream, type Message, type Tool, type ToolCall } from "@earendil-works/pi-ai";
 import type { AgentToolUpdateCallback } from "@earendil-works/pi-coding-agent";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { cleanCommitMessage, NO_STAGED_CHANGES_MESSAGE } from "./commitMessage";
 import { buildCapabilityContext, buildCapabilityPrompt } from "./context";
 import { appendCapabilityHistory } from "./history";
 import { isRefusalPreamble } from "./refusal";
+import { buildScoutTools, executeScoutTool } from "./scoutTools";
 import { isHallucinatedToolAnswer } from "./toolish";
 import type { CapabilityDef, CapabilityToolInput } from "./types";
 
@@ -241,93 +243,107 @@ export async function executeCapability(
 		"PLAIN TEXT ONLY. Do not emit function calls, tool calls, XML tool tags, or <pi_tool_call> blocks.\n\n";
 
 	try {
-		// Route through composed provider so custom extension APIs
-		// (e.g. claude-code-cli-runner) resolve. Fall back to pi-ai
-		// direct stream only when provider missing.
 		const provider = ctx.modelRegistry.getProvider(model.provider);
-		const requestOptions = {
-			apiKey: auth.apiKey,
-			headers: auth.headers,
-			signal,
-			reasoningEffort: model.reasoning ? def.reasoningEffort : undefined,
-			serviceTier,
-			toolChoice: "none" as const,
-			metadata: { capability: def.toolName },
-		};
+		const scoutToolDefs = buildScoutTools(def.scoutTools ?? []);
+		const scoutEnabled = scoutToolDefs.length > 0;
+		const maxRounds = scoutEnabled ? (def.maxToolRounds ?? 300) : 1;
+		const scoutRoots = [
+			ctx.cwd,
+			...(input.paths ?? []).map((item) => path.resolve(ctx.cwd, item)),
+		];
 
-		const runOnce = async (userPrompt: string) => {
+		const streamTurn = async (
+			messages: Message[],
+			tools: Tool[],
+			toolChoice: "auto" | "none",
+			capabilityTools: boolean,
+			roundLabel: string,
+		) => {
+			const requestOptions = {
+				apiKey: auth.apiKey,
+				headers: auth.headers,
+				signal,
+				reasoningEffort: model.reasoning ? def.reasoningEffort : undefined,
+				serviceTier,
+				toolChoice,
+				metadata: {
+					capability: def.toolName,
+					capabilityTools,
+				},
+			};
 			const requestContext = {
 				systemPrompt: def.systemPrompt,
-				tools: [] as [],
-				messages: [
-					{
-						role: "user" as const,
-						content: [{ type: "text" as const, text: userPrompt }],
-						timestamp: Date.now(),
-					},
-				],
+				tools,
+				messages,
 			};
 			const eventStream = provider
 				? provider.stream(model, requestContext, requestOptions)
 				: piAiStream(model, requestContext, requestOptions);
 
-			// Drain stream so result() can settle. UI shows a 2-line live preview
-			// from text, or thinking while the model is still reasoning.
 			let lastPublish = 0;
 			let lastPreview = "";
 			for await (const event of eventStream) {
 				if (signal?.aborted) break;
-
 				const partial = "partial" in event ? event.partial : undefined;
 				if (!partial) continue;
-
 				const source = extractPartialStreamSource(partial);
 				if (!source) continue;
-
 				const preview = formatStreamingPreview(source, input.previewLines ?? 2);
 				if (!preview || preview === lastPreview) continue;
-
 				const now = Date.now();
-				// Throttle UI updates; always allow the first preview through.
 				if (lastPreview && now - lastPublish < 120) continue;
 				lastPublish = now;
 				lastPreview = preview;
-
 				onUpdate?.({
-					content: [{ type: "text", text: preview }],
+					content: [{ type: "text", text: `${roundLabel}${preview}` }],
 					details: {
 						status: "streaming",
 						streamKind: source.kind,
 						capability: def.toolName,
 						paths: context.autoPaths,
-						promptChars: userPrompt.length,
 					},
 				});
 			}
-
 			return await eventStream.result();
 		};
 
-		let response: Awaited<ReturnType<typeof runOnce>> | undefined;
+		let messages: Message[] = [
+			{
+				role: "user",
+				content: [{ type: "text", text: prompt }],
+				timestamp: Date.now(),
+			},
+		];
+		let response: Awaited<ReturnType<typeof streamTurn>> | undefined;
 		let text = "";
-		let userPrompt = prompt;
-		let attempt = 0;
 		let refusalRetried = false;
+		let toolRounds = 0;
+		let toolCalls = 0;
+		let totalToolChars = 0;
+		const MAX_TOOL_CHARS = 60_000;
+		const MAX_CALLS_PER_ROUND = 4;
 
-		while (attempt < 2) {
+		for (let round = 0; round < maxRounds; round++) {
+			const lastRound = round >= maxRounds - 1 || totalToolChars >= MAX_TOOL_CHARS;
+			const tools = scoutEnabled && !lastRound ? scoutToolDefs : [];
+			const toolChoice = tools.length > 0 ? "auto" : "none";
+			const roundLabel = scoutEnabled ? `round ${round + 1}/${maxRounds} · ` : "";
+
 			try {
-				response = await runOnce(userPrompt);
-				text = extractText(response);
+				response = await streamTurn(messages, tools, toolChoice, tools.length > 0, roundLabel);
 			} catch (error) {
 				const message = error instanceof Error ? error.message : "Capability call failed";
-				if (attempt === 0 && !signal?.aborted && isThrownToolish(message)) {
-					attempt = 1;
-					userPrompt = TEXT_ONLY_REMINDER + prompt;
-					onUpdate?.({
-						content: [{ type: "text", text: `${def.label}: tool-call throw, retrying once as plain text...` }],
-						details: { status: "running", capability: def.toolName, paths: context.autoPaths },
-					});
-					continue;
+				if (tools.length === 0 && !signal?.aborted && isThrownToolish(message)) {
+					messages = [
+						{
+							role: "user",
+							content: [{ type: "text", text: TEXT_ONLY_REMINDER + prompt }],
+							timestamp: Date.now(),
+						},
+					];
+					response = await streamTurn(messages, [], "none", false, roundLabel);
+					text = extractText(response);
+					break;
 				}
 				return {
 					content: [{
@@ -344,32 +360,81 @@ export async function executeCapability(
 				};
 			}
 
-			if (attempt === 0 && isToolishFailure(response, text) && !signal?.aborted) {
-				attempt = 1;
-				userPrompt = TEXT_ONLY_REMINDER + prompt;
-				onUpdate?.({
-					content: [{ type: "text", text: `${def.label}: tool-call failure, retrying once as plain text...` }],
-					details: { status: "running", capability: def.toolName, paths: context.autoPaths },
-				});
+			const calls = (response.content ?? []).filter(
+				(part): part is ToolCall => part.type === "toolCall",
+			);
+			const expectTools = tools.length > 0;
+
+			if (response.stopReason === "toolUse" && expectTools && calls.length > 0 && !lastRound) {
+				messages = [...messages, response];
+				toolRounds += 1;
+				for (const call of calls.slice(0, MAX_CALLS_PER_ROUND)) {
+					const result = await executeScoutTool(
+						call.name,
+						(call.arguments ?? {}) as Record<string, unknown>,
+						{ cwd: ctx.cwd, roots: scoutRoots },
+					);
+					toolCalls += 1;
+					totalToolChars += result.text.length;
+					messages.push({
+						role: "toolResult",
+						toolCallId: call.id,
+						toolName: call.name,
+						content: [{ type: "text", text: result.text }],
+						isError: result.isError,
+						timestamp: Date.now(),
+					});
+				}
+				if (totalToolChars >= MAX_TOOL_CHARS || round + 1 >= maxRounds - 1) {
+					messages.push({
+						role: "user",
+						content: [{
+							type: "text",
+							text: "Tool budget spent. Write the report now from Path Context and tool results. Start with ## Relevant Files.",
+						}],
+						timestamp: Date.now(),
+					});
+				}
 				continue;
 			}
+
+			text = extractText(response);
+
+			// Hallucinated tool markup only matters on text-only turns.
+			if (!expectTools && isToolishFailure(response, text) && !signal?.aborted) {
+				messages = [
+					{
+						role: "user",
+						content: [{ type: "text", text: TEXT_ONLY_REMINDER + prompt }],
+						timestamp: Date.now(),
+					},
+				];
+				response = await streamTurn(messages, [], "none", false, roundLabel);
+				text = extractText(response);
+			}
+
 			if (
-				attempt === 0 &&
 				def.refusalRetry &&
+				!refusalRetried &&
 				!signal?.aborted &&
 				(context.pathCodeFiles ?? 0) > 0 &&
 				isRefusalPreamble(text)
 			) {
-				attempt = 1;
 				refusalRetried = true;
-				userPrompt =
-					'Your previous reply claimed you cannot read the code. That is wrong: Path Context below contains the file contents. Produce the report from them now, starting with "## Relevant Files".\n\n' +
-					prompt;
-				onUpdate?.({
-					content: [{ type: "text", text: `${def.label}: refusal preamble, retrying once against Path Context...` }],
-					details: { status: "running", capability: def.toolName, paths: context.autoPaths },
-				});
-				continue;
+				messages = [
+					{
+						role: "user",
+						content: [{
+							type: "text",
+							text:
+								'Your previous reply claimed you cannot read the code. That is wrong: Path Context below contains the file contents. Produce the report from them now, starting with "## Relevant Files".\n\n' +
+								prompt,
+						}],
+						timestamp: Date.now(),
+					},
+				];
+				response = await streamTurn(messages, [], "none", false, roundLabel);
+				text = extractText(response);
 			}
 			break;
 		}
@@ -419,8 +484,6 @@ export async function executeCapability(
 		}
 
 		const sessionId = ctx.sessionManager.getSessionId();
-		// Haiku often prepends fluff or returns only a preface. Keep a conventional
-		// line when present; never hand the agent a throat-clearing sentence.
 		if (def.toolName === "commit_message" && text) {
 			const cleaned = cleanCommitMessage(text);
 			if (cleaned) text = cleaned;
@@ -429,7 +492,6 @@ export async function executeCapability(
 			}
 		}
 		if (text) {
-			// A history write failure must not replace a good answer.
 			await appendCapabilityHistory(sessionId, def.toolName, input.task, text).catch(() => undefined);
 		}
 
@@ -445,6 +507,8 @@ export async function executeCapability(
 				pathCodeFiles: context.pathCodeFiles ?? 0,
 				expandedFiles: context.expandedFiles ?? [],
 				refusalRetried,
+				toolRounds,
+				toolCalls,
 			},
 		};
 	} catch (error) {

@@ -281,9 +281,12 @@ export function streamClaudeCode(
 				stream.push({ type: "thinking_delta", contentIndex: thinkingIndex, delta: parsed.thinking, partial: output });
 				stream.push({ type: "thinking_end", contentIndex: thinkingIndex, content: parsed.thinking, partial: output });
 			}
-			// Capability helpers and other tool-free callers get plain text only.
-			// Parsing tool XML here would wipe the answer into stopReason toolUse.
-			const allowTools = !isCapabilityCall(options) && mirror.bridge.tools.length > 0;
+			// Capability helpers are text-only unless metadata.capabilityTools opts into
+			// a bounded scout tool loop (read). Parsing tool XML otherwise would wipe
+			// a prose answer into stopReason toolUse.
+			const allowTools =
+				mirror.bridge.tools.length > 0 &&
+				(!isCapabilityCall(options) || options?.metadata?.capabilityTools === true);
 			const toolCalls = allowTools
 				? await parseToolCallsWithMorphRepair(responseText, options?.signal)
 				: [];
