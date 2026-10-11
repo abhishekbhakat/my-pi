@@ -1,6 +1,7 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { convertToLlm, serializeConversation, type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { expandDirectory } from "./dirExpand";
 import { formatCapabilityHistory, loadCapabilityHistory } from "./history";
 import { collectActionTimeline } from "./timeline";
 import type { CapabilityContextBundle, CapabilityContextSection, CapabilityDef, CapabilityToolInput } from "./types";
@@ -12,6 +13,8 @@ interface PathBlock {
 	explicit: boolean;
 	kind: PathKind;
 	content: string;
+	expandedFrom?: string;
+	matched?: string[];
 }
 
 const STRUCTURED_EXTENSIONS = new Set([
@@ -251,7 +254,11 @@ function sectionsSize(sections: CapabilityContextSection[]): number {
 }
 
 function joinPathBlocks(blocks: PathBlock[]): string {
-	return blocks.map((block) => block.content).join("\n\n");
+	const hasBodies = blocks.some((block) => block.kind === "code" || block.kind === "structured");
+	const intro = hasBodies
+		? "File bodies below are reads of the workspace (numbered lines). Analyze them directly and cite path:line.\n\n"
+		: "";
+	return intro + blocks.map((block) => block.content).join("\n\n");
 }
 
 function pathDropScore(block: PathBlock): number {
@@ -706,6 +713,22 @@ async function renderPathBlock(
 	}
 }
 
+async function pushBudgetedBlock(
+	blocks: PathBlock[],
+	block: PathBlock,
+	used: number,
+	budgetChars: number,
+): Promise<{ blocks: PathBlock[]; used: number; full: boolean }> {
+	const remaining = budgetChars - used;
+	if (remaining < 128) return { blocks, used, full: true };
+	if (block.content.length > remaining) {
+		blocks.push({ ...block, content: truncateHead(block.content, remaining) });
+		return { blocks, used: used + remaining, full: true };
+	}
+	blocks.push(block);
+	return { blocks, used: used + block.content.length + 2, full: false };
+}
+
 async function collectPathBlocks(
 	pi: ExtensionAPI,
 	cwd: string,
@@ -714,8 +737,9 @@ async function collectPathBlocks(
 	def: CapabilityDef,
 	budgetChars: number,
 	signal?: AbortSignal,
-): Promise<PathBlock[]> {
-	if (autoPaths.length === 0 || budgetChars <= 0) return [];
+	task = "",
+): Promise<{ blocks: PathBlock[]; expandedFiles: string[] }> {
+	if (autoPaths.length === 0 || budgetChars <= 0) return { blocks: [], expandedFiles: [] };
 
 	// Explicit paths first, then auto-changed paths.
 	const ordered = [
@@ -724,14 +748,87 @@ async function collectPathBlocks(
 	];
 
 	const blocks: PathBlock[] = [];
+	const expandedFiles: string[] = [];
+	const seen = new Set<string>();
 	let used = 0;
+	let fileSlots = def.maxFiles;
+
+	let remainingDirs = 0;
+	if (def.expandDirectories) {
+		for (const targetPath of ordered) {
+			try {
+				if ((await fs.stat(targetPath)).isDirectory()) remainingDirs += 1;
+			} catch {
+				/* skip */
+			}
+		}
+	}
 
 	for (const targetPath of ordered) {
-		if (used >= budgetChars) break;
+		if (used >= budgetChars || fileSlots <= 0) break;
 		const remaining = budgetChars - used;
-		// Leave room for separators / headers.
 		if (remaining < 128) break;
 
+		let isDirectory = false;
+		try {
+			isDirectory = (await fs.stat(targetPath)).isDirectory();
+		} catch {
+			isDirectory = false;
+		}
+
+		if (def.expandDirectories && isDirectory) {
+			const perDir = Math.max(
+				1,
+				Math.min(def.expandFilesPerDir, Math.ceil(fileSlots / Math.max(1, remainingDirs))),
+			);
+			remainingDirs = Math.max(0, remainingDirs - 1);
+			const relativeDir = toWorkspaceRelative(cwd, targetPath);
+			const expanded = await expandDirectory(pi, cwd, targetPath, {
+				task,
+				perDir,
+				timeoutMs: 2500,
+				signal,
+			});
+
+			const listingBlock: PathBlock = {
+				relative: relativeDir,
+				explicit: explicitSet.has(targetPath),
+				kind: "directory",
+				content: `## ${relativeDir} (listing)\n${expanded.listing || "[empty directory]"}`,
+			};
+			const listed = await pushBudgetedBlock(blocks, listingBlock, used, budgetChars);
+			used = listed.used;
+			if (listed.full) break;
+
+			for (const file of expanded.files) {
+				if (fileSlots <= 0 || used >= budgetChars) break;
+				if (seen.has(file.abs)) continue;
+				seen.add(file.abs);
+				const fileBudget = Math.min(
+					def.maxCodeFileChars,
+					16_000,
+					Math.max(1024, Math.floor((budgetChars - used) / Math.max(1, fileSlots))),
+				);
+				const fileBlock = await renderPathBlock(pi, cwd, file.abs, true, def, fileBudget, signal);
+				if (fileBlock.kind === "skipped") continue;
+				const matched = file.matched.length > 0 ? `, matched: ${file.matched.join(", ")}` : "";
+				fileBlock.content = fileBlock.content.replace(
+					`## ${fileBlock.relative}`,
+					`## ${fileBlock.relative}  (auto from ${relativeDir}${matched})`,
+				);
+				fileBlock.expandedFrom = relativeDir;
+				fileBlock.matched = file.matched;
+				const pushed = await pushBudgetedBlock(blocks, fileBlock, used, budgetChars);
+				used = pushed.used;
+				expandedFiles.push(file.rel);
+				fileSlots -= 1;
+				if (pushed.full) break;
+			}
+			continue;
+		}
+
+		if (seen.has(targetPath)) continue;
+		seen.add(targetPath);
 		const block = await renderPathBlock(
 			pi,
 			cwd,
@@ -741,25 +838,14 @@ async function collectPathBlocks(
 			remaining,
 			signal,
 		);
-
-		// Skip empty-ish noise blocks when budget is tight.
 		if (!block.explicit && block.kind === "skipped") continue;
-
-		if (block.content.length > remaining) {
-			const truncated = {
-				...block,
-				content: truncateHead(block.content, remaining),
-			};
-			blocks.push(truncated);
-			used += truncated.content.length;
-			break;
-		}
-
-		blocks.push(block);
-		used += block.content.length + 2;
+		const pushed = await pushBudgetedBlock(blocks, block, used, budgetChars);
+		used = pushed.used;
+		if (block.kind === "code" || block.kind === "structured") fileSlots -= 1;
+		if (pushed.full) break;
 	}
 
-	return blocks;
+	return { blocks, expandedFiles };
 }
 
 export async function buildCapabilityContext(
@@ -858,9 +944,21 @@ export async function buildCapabilityContext(
 		}
 	};
 
+	let expandedFiles: string[] = [];
 	const fillPaths = async (budget: number) => {
 		if (budget <= 0 || autoPaths.length === 0) return;
-		pathBlocks = await collectPathBlocks(pi, ctx.cwd, autoPaths, explicitSet, def, budget, signal);
+		const collected = await collectPathBlocks(
+			pi,
+			ctx.cwd,
+			autoPaths,
+			explicitSet,
+			def,
+			budget,
+			signal,
+			input.task,
+		);
+		pathBlocks = collected.blocks;
+		expandedFiles = collected.expandedFiles;
 		if (pathBlocks.length > 0) {
 			sections.push({ title: "Path Context", content: joinPathBlocks(pathBlocks) });
 			remaining = Math.max(0, promptBudget - sectionsSize(sections));
@@ -934,11 +1032,17 @@ export async function buildCapabilityContext(
 		}
 	}
 
+	const pathCodeFiles = budgeted.pathBlocks.filter(
+		(block) => block.kind === "code" || block.kind === "structured",
+	).length;
+
 	return {
 		sections: budgeted.sections,
 		autoPaths: relativeAutoPaths,
 		fileContents,
 		stagedEmpty,
+		pathCodeFiles,
+		expandedFiles,
 	};
 }
 

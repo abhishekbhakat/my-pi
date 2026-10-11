@@ -6,7 +6,7 @@ const TIMELINE_CACHE_LIMIT = 24;
 const timelineCache = new Map<string, string>();
 
 const TIMELINE_SYSTEM_PROMPT = [
-	"You write compact action timelines for coding helper tools.",
+	"You write compact action timelines for coding helpers.",
 	"Use only facts present in the conversation.",
 	"Capture user requests, explored files or ideas, decisions, edits, rules, and the current unresolved task.",
 	"Return 4 to 8 numbered items. No intro. No speculation.",
@@ -85,8 +85,6 @@ export async function collectActionTimeline(
 						content: [{
 							type: "text",
 							text: [
-								"PLAIN TEXT ONLY. No function calls or tool syntax.",
-								"",
 								"## Current Helper Task",
 								task.trim(),
 								"",

@@ -4,6 +4,8 @@ import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-a
 import { cleanCommitMessage, NO_STAGED_CHANGES_MESSAGE } from "./commitMessage";
 import { buildCapabilityContext, buildCapabilityPrompt } from "./context";
 import { appendCapabilityHistory } from "./history";
+import { isRefusalPreamble } from "./refusal";
+import { isHallucinatedToolAnswer } from "./toolish";
 import type { CapabilityDef, CapabilityToolInput } from "./types";
 
 function splitModelRef(modelRef: string): { provider: string; modelId: string } | null {
@@ -83,16 +85,6 @@ function extractText(response: {
 const TOOLISH_PROVIDER_RE = /MALFORMED_FUNCTION_CALL|UNEXPECTED_TOOL_CALL|TOO_MANY_TOOL_CALLS/i;
 const FALLBACK_NO_RETRY =
 	"Proceed with read/grep/find; do not retry this helper blindly.";
-
-/** True when the whole answer is fake tool markup, not a prose mention of the tag. */
-function isHallucinatedToolAnswer(text: string): boolean {
-	const trimmed = text.trim();
-	if (!trimmed) return false;
-	if (/^(?:\s*<pi_tool_call>[\s\S]*?<\/pi_tool_call>\s*)+$/.test(trimmed)) return true;
-	if (!trimmed.includes("<pi_tool_call>")) return false;
-	const without = trimmed.replace(/<pi_tool_call>[\s\S]*?<\/pi_tool_call>/g, "").trim();
-	return without.length < 40;
-}
 
 function isThrownToolish(message: string): boolean {
 	return TOOLISH_PROVIDER_RE.test(message);
@@ -320,6 +312,7 @@ export async function executeCapability(
 		let text = "";
 		let userPrompt = prompt;
 		let attempt = 0;
+		let refusalRetried = false;
 
 		while (attempt < 2) {
 			try {
@@ -356,6 +349,24 @@ export async function executeCapability(
 				userPrompt = TEXT_ONLY_REMINDER + prompt;
 				onUpdate?.({
 					content: [{ type: "text", text: `${def.label}: tool-call failure, retrying once as plain text...` }],
+					details: { status: "running", capability: def.toolName, paths: context.autoPaths },
+				});
+				continue;
+			}
+			if (
+				attempt === 0 &&
+				def.refusalRetry &&
+				!signal?.aborted &&
+				(context.pathCodeFiles ?? 0) > 0 &&
+				isRefusalPreamble(text)
+			) {
+				attempt = 1;
+				refusalRetried = true;
+				userPrompt =
+					'Your previous reply claimed you cannot read the code. That is wrong: Path Context below contains the file contents. Produce the report from them now, starting with "## Relevant Files".\n\n' +
+					prompt;
+				onUpdate?.({
+					content: [{ type: "text", text: `${def.label}: refusal preamble, retrying once against Path Context...` }],
 					details: { status: "running", capability: def.toolName, paths: context.autoPaths },
 				});
 				continue;
@@ -431,6 +442,9 @@ export async function executeCapability(
 				paths: context.autoPaths,
 				promptChars: prompt.length,
 				stopReason: response.stopReason,
+				pathCodeFiles: context.pathCodeFiles ?? 0,
+				expandedFiles: context.expandedFiles ?? [],
+				refusalRetried,
 			},
 		};
 	} catch (error) {

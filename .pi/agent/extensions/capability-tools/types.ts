@@ -25,6 +25,12 @@ export interface CapabilityDef {
 	maxStructuredFileChars: number;
 	ignorePaths: string[];
 	reasoningEffort?: string;
+	/** When true, directory paths expand into ranked source files for Path Context. */
+	expandDirectories: boolean;
+	/** Max auto-picked files per expanded directory. */
+	expandFilesPerDir: number;
+	/** When true, one retry if the model opens with a no-tools/can't-read refusal. */
+	refusalRetry: boolean;
 }
 
 export interface CapabilityToolInput {
@@ -50,4 +56,8 @@ export interface CapabilityContextBundle {
 	fileContents?: Record<string, string>;
 	/** True when commit_message found an empty staged index (skip model call). */
 	stagedEmpty?: boolean;
+	/** Count of Path Context blocks that are real file bodies (kind code/structured). */
+	pathCodeFiles?: number;
+	/** Workspace-relative files auto-expanded from directories. */
+	expandedFiles?: string[];
 }

@@ -48,6 +48,9 @@ export const BOOLEAN_GUY_DEF: CapabilityDef = {
 	maxCodeFileChars: 12000,
 	maxStructuredFileChars: 12000,
 	ignorePaths: DEFAULT_IGNORE_PATHS,
+	expandDirectories: false,
+	expandFilesPerDir: 6,
+	refusalRetry: false,
 };
 
 const noulQuestion = Type.Object({

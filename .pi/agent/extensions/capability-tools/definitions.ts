@@ -37,6 +37,9 @@ const DEFAULTS = {
 	maxStructuredFileChars: 20000,
 	ignorePaths: DEFAULT_IGNORE_PATHS,
 	reasoningEffort: "high",
+	expandDirectories: false,
+	expandFilesPerDir: 6,
+	refusalRetry: false,
 };
 
 const extensionDir = path.dirname(fileURLToPath(import.meta.url));
@@ -133,6 +136,9 @@ export function parseCapabilityFile(filePath: string): CapabilityDef | null {
 			maxStructuredFileChars: asNumber(frontmatter.maxStructuredFileChars, DEFAULTS.maxStructuredFileChars),
 			ignorePaths: dedupe([...DEFAULTS.ignorePaths, ...extraIgnore]),
 			reasoningEffort: asString(frontmatter.reasoningEffort, DEFAULTS.reasoningEffort),
+			expandDirectories: asBool(frontmatter.expandDirectories, DEFAULTS.expandDirectories),
+			expandFilesPerDir: asNumber(frontmatter.expandFilesPerDir, DEFAULTS.expandFilesPerDir),
+			refusalRetry: asBool(frontmatter.refusalRetry, DEFAULTS.refusalRetry),
 		};
 	} catch {
 		return null;

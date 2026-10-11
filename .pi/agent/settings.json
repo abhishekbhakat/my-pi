@@ -5,6 +5,7 @@
   "hideThinkingBlock": false,
   "defaultThinkingLevel": "low",
   "modelThinkingLevels": {
+    "grok-cli/grok-4.5": "high",
     "claude-code-cli/haiku": "max",
     "claude-code-cli/opus": "max",
     "claude-code-cli/sonnet": "xhigh",
