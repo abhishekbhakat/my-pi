@@ -21,6 +21,10 @@ import { CustomEditor, type ExtensionAPI } from "@earendil-works/pi-coding-agent
 const STAR_CAP = 1000;
 
 export default function pasteStars(pi: ExtensionAPI) {
+	// `ui` only exists in interactive TUI mode. Headless/RPC loads skip this
+	// extension's behavior instead of failing the load.
+	if (!pi.ui) return;
+
 	pi.ui.setEditorComponent((tui, theme, keybindings) => {
 		const editor = new CustomEditor(tui, theme, keybindings);
 		const self = editor as unknown as {
