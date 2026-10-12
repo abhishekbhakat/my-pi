@@ -101,7 +101,7 @@ export function persistSetup({ agentDir, staged, settingsPlan, settingsText, cap
   };
 }
 
-export function describePersistSummary({ gate, staged, order, capTargets, deciderPlan, report, patchInfo }) {
+export function describePersistSummary({ gate, staged, order, capTargets, deciderPlan, report, profileInfo }) {
   const enabled = order.filter((p) => staged.enabled.has(p)).join(",") || "(none)";
   const skipped = staged.skipped.length
     ? staged.skipped.map((s) => `${s.provider}(${s.reason})`).join(",")
@@ -111,9 +111,9 @@ export function describePersistSummary({ gate, staged, order, capTargets, decide
     ? `auth.json: updated keys for ${report.authKeys.join(",")}`
     : "auth.json: unchanged";
   const where = gate.branch ? `branch ${gate.branch}` : "detached HEAD";
-  const patchLine = patchInfo
-    ? `userprofile.patch: ${patchInfo.hunks} hunks (${patchInfo.bytes} bytes)`
-    : "userprofile.patch: (not written)";
+  const profileLine = profileInfo
+    ? `userprofile.json: ${profileInfo.sections.join(", ") || "(empty)"} (${profileInfo.bytes} bytes)`
+    : "userprofile.json: (not written)";
   return [
     `Setup complete on ${where} (no lasting branch). base=${gate.baseSha?.slice?.(0, 12) ?? "?"}`,
     `  enabled: ${enabled}`,
@@ -124,16 +124,16 @@ export function describePersistSummary({ gate, staged, order, capTargets, decide
       ? `  deciders: booleanGuy=${deciderPlan.roles.booleanGuy}; prune=${deciderPlan.roles.prune}; compaction=${deciderPlan.roles.compaction}; guard=${deciderPlan.roles.guard}`
       : "  deciders: skipped",
     `  ${authLine}`,
-    `  ${patchLine}`,
+    `  ${profileLine}`,
     `  staged writes before restore: ${report.written.join(", ") || "(none)"}`,
-    "  Tracked .pi/agent restored to HEAD. Keep userprofile.patch untracked. Do not commit secrets.",
+    "  Tracked .pi/agent restored to HEAD. Keep userprofile.json untracked. Do not commit secrets.",
   ].join("\n");
 }
 
 export function printPostSetupHints(staged) {
-  console.log("Personalization lives in userprofile.patch + .pi/agent/auth.json (both untracked).");
-  console.log("Next: make install — applies userprofile.patch in a temp staging dir, then copies to ~/.pi.");
-  console.log("If the patch stops applying after a pull, run make setup again.");
+  console.log("Personalization lives in userprofile.json + .pi/agent/auth.json (both untracked).");
+  console.log("Next: make install — merges userprofile.json onto repo .pi/agent in a temp staging dir, then copies to ~/.pi.");
+  console.log("userprofile.json is plain JSON; edit it directly or re-run make setup to regenerate.");
   for (const provider of staged.oauthPending) {
     console.log(`Run /login ${provider} inside pi.`);
   }

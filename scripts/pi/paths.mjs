@@ -9,7 +9,9 @@ export const SCRIPT_DIR = SCRIPTS_DIR;
 export const REPO_ROOT = path.resolve(SCRIPTS_DIR, "..");
 export const HOME_AGENT = path.join(os.homedir(), ".pi", "agent");
 export const REPO_AGENT = path.join(REPO_ROOT, ".pi", "agent");
-/** Personalization overlay from `make setup`. Untracked; applied by install in a temp staging dir. */
+/** Personalization data from `make setup`. Untracked; merged by install in a temp staging dir. */
+export const USER_PROFILE = path.join(REPO_ROOT, "userprofile.json");
+/** Legacy personalization from the old patch-based setup flow. Ignored by install. */
 export const PROFILE_PATCH = path.join(REPO_ROOT, "userprofile.patch");
 export const SKIP_DIRS = new Set(["node_modules", ".git"]);
 

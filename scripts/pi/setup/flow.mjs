@@ -1,5 +1,5 @@
 import { die, SetupAbort } from "../errors.mjs";
-import { REPO_AGENT, REPO_ROOT, PROFILE_PATCH } from "../paths.mjs";
+import { REPO_AGENT, REPO_ROOT } from "../paths.mjs";
 import {
   loadCapabilitySources,
   planCapabilityEdits,
@@ -18,12 +18,13 @@ import { loadSetupInputs } from "./inputs.mjs";
 import { describePersistSummary, persistSetup, printPostSetupHints } from "./persist.mjs";
 import { orderProviders } from "./providers.mjs";
 import { createPrompter, isInteractive } from "./prompts.mjs";
+import { restoreAgentTracked, setupRepoGate } from "./branch-gate.mjs";
 import {
+  buildUserProfile,
   collectSecretsFromStaged,
-  restoreAgentTracked,
-  setupRepoGate,
-  writeProfilePatch,
-} from "./profile-patch.mjs";
+  removeLegacyProfilePatch,
+  writeUserProfile,
+} from "./user-profile.mjs";
 import {
   describeSettingsPlan,
   describeStaged,
@@ -60,18 +61,21 @@ export function printSetupHelp() {
 No git branch is created. Setup:
   1. Refuses if tracked .pi/agent files are dirty (auth.json ignored)
   2. Writes personalized files under .pi/agent
-  3. Saves a diff as untracked userprofile.patch at the repo root
+  3. Saves personalization data as untracked userprofile.json at the repo root
   4. Restores tracked .pi/agent files to HEAD (auth.json stays)
 
-Does not install. Run make install afterward; that applies userprofile.patch
-in a temp staging dir, then copies to ~/.pi.
+Does not install. Run make install afterward; that merges userprofile.json
+onto repo .pi/agent in a temp staging dir, then copies to ~/.pi.
+userprofile.json is plain JSON and safe to edit by hand; re-run make setup
+anytime to regenerate it.
 
 Enabling claude-code-sdk also requires an OpenRouter API key: Claude sometimes
 emits broken tool XML; Morph (morph/morph-v3-fast) repairs it so Pi can run
 tools. Needed even if you decline openrouter chat models.
 
 Needs a TTY. Never writes ~/.pi.
-If install cannot apply userprofile.patch, run make setup again.`);
+A bad or stale userprofile.json never breaks install: invalid sections warn
+and fall back to repo defaults.`);
 }
 
 export async function setup(_flags = {}) {
@@ -97,25 +101,19 @@ export async function setup(_flags = {}) {
   }
 
   let staged = null;
-  let patchInfo = null;
+  let profileInfo = null;
   const prompter = createPrompter();
   try {
     const wantClaude = await prompter.askYesNo(
       "Do you have Claude Code / want claude-code-sdk models?",
     );
-    const wantCodex = await prompter.askYesNo(
-      "Do you have a Codex subscription (openai-codex oauth)?",
-    );
-    console.log(
-      `Phase 1: claude-code-sdk=${wantClaude ? "yes" : "no"}, openai-codex=${wantCodex ? "yes" : "no"}`,
-    );
+    console.log(`Phase 1: claude-code-sdk=${wantClaude ? "yes" : "no"}`);
 
     staged = await collectProviders({
       order,
       auth: inputs.auth,
       models: inputs.models,
       wantClaude,
-      wantCodex,
       prompter,
     });
     console.log(describeStaged(staged, order));
@@ -155,19 +153,17 @@ export async function setup(_flags = {}) {
       deciderContents,
     });
 
-    patchInfo = writeProfilePatch({
-      root: REPO_ROOT,
-      baseSha: gate.baseSha,
-      branch: gate.branch,
+    profileInfo = writeUserProfile({
+      profile: buildUserProfile({ settingsPlan, deciderPlan, capTargets }),
       secrets: collectSecretsFromStaged(staged),
-      patchPath: PROFILE_PATCH,
     });
+    removeLegacyProfilePatch();
     restoreAgentTracked(REPO_ROOT);
     console.log(
-      `Wrote ${PROFILE_PATCH} (${patchInfo.hunks} hunks). Restored tracked .pi/agent to HEAD; auth.json kept.`,
+      `Wrote ${profileInfo.path} (${profileInfo.sections.join(", ")}; ${profileInfo.bytes} bytes). Restored tracked .pi/agent to HEAD; auth.json kept.`,
     );
 
-    console.log(describePersistSummary({ gate, staged, order, capTargets, deciderPlan, report, patchInfo }));
+    console.log(describePersistSummary({ gate, staged, order, capTargets, deciderPlan, report, profileInfo }));
   } finally {
     prompter.close();
   }

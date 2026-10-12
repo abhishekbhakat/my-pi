@@ -1,6 +1,8 @@
 # PI
 
 # Personalization from `make setup`; applied by `make install`. Never commit.
+/userprofile.json
+# Legacy artifact of the old patch-based setup flow; ignored until deleted.
 /userprofile.patch
 
 .pi/agent/bin/

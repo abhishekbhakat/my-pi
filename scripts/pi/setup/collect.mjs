@@ -55,7 +55,6 @@ export async function collectProviders({
   auth,
   models,
   wantClaude,
-  wantCodex,
   prompter,
   log = console.log,
 }) {
@@ -71,7 +70,7 @@ export async function collectProviders({
     if (!isOauthEntry(auth?.[provider])) staged.oauthPending.push(provider);
   };
 
-  const phase1 = { wantClaude, wantCodex };
+  const phase1 = { wantClaude };
 
   for (const provider of order) {
     const kind = classifyProvider(provider, auth);
@@ -88,12 +87,8 @@ export async function collectProviders({
       continue;
     }
     if (kind === "codex") {
-      if (wantCodex) {
-        staged.enabled.add(provider);
-        markPending(provider);
-      } else {
-        staged.skipped.push({ provider, reason: "declined" });
-      }
+      // openai-codex oauth is legacy: always skipped, no prompt.
+      staged.skipped.push({ provider, reason: "legacy" });
       continue;
     }
     if (kind === "oauth") {

@@ -5,7 +5,7 @@ import { die, SetupAbort } from "../errors.mjs";
 import { exists } from "../fs/read-write.mjs";
 import { copyDirReplace, rmTree } from "../fs/tree.mjs";
 import { HOME_AGENT, INSTALL_ROOT, REPO_AGENT, REPO_ROOT } from "../paths.mjs";
-import { stageAgentWithProfile } from "../setup/profile-patch.mjs";
+import { stageAgentTree } from "../setup/user-profile.mjs";
 import { ensureBunPiCli, extensionInstallSpec, updatePiAndExtensions } from "../toolchain/bun-cli.mjs";
 import { run } from "../toolchain/run.mjs";
 import { mergeAuth } from "./merge-auth.mjs";
@@ -20,7 +20,7 @@ export function install(flags) {
 
   let staged;
   try {
-    staged = stageAgentWithProfile({
+    staged = stageAgentTree({
       repoAgent: REPO_AGENT,
       noProfile: Boolean(flags.noProfile),
     });

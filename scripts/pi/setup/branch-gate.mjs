@@ -1,8 +1,10 @@
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
+import { REPO_ROOT } from "../paths.mjs";
 import { SetupAbort } from "../errors.mjs";
 
 const PROTECTED_BRANCHES = new Set(["main", "master"]);
+const AGENT_PREFIX = ".pi/agent";
 
 export function gitAt(root, args) {
   try {
@@ -98,4 +100,73 @@ export function branchGate(root, createBranch) {
     throw new SetupAbort(`git checkout -b ${name} failed: ${detail}`);
   }
   return { branch: name, created: true };
+}
+
+/** Refuse setup when tracked .pi/agent files are dirty (auth.json ignored). */
+export function assertCleanAgentTree(root = REPO_ROOT) {
+  const status = gitAt(root, ["status", "--porcelain", "-uall", "--", AGENT_PREFIX]);
+  if (status.status !== 0) {
+    throw new SetupAbort(`git status failed: ${String(status.stderr ?? "").trim() || "unknown"}`);
+  }
+  const dirty = String(status.stdout ?? "")
+    .split("\n")
+    .map((line) => line.trimEnd())
+    .filter(Boolean)
+    .filter((line) => {
+      const file = line.slice(3).trim();
+      const norm = file.replace(/^\.\//, "");
+      return norm !== `${AGENT_PREFIX}/auth.json` && !norm.endsWith("/auth.json");
+    });
+  if (dirty.length > 0) {
+    throw new SetupAbort(
+      `.pi/agent has uncommitted tracked changes; commit or stash them first so userprofile.json only contains your profile.\n${dirty.slice(0, 8).join("\n")}`,
+    );
+  }
+}
+
+export function headSha(root = REPO_ROOT) {
+  const rev = gitAt(root, ["rev-parse", "HEAD"]);
+  if (rev.status !== 0) throw new SetupAbort("cannot resolve HEAD");
+  return String(rev.stdout ?? "").trim();
+}
+
+function currentBranch(root = REPO_ROOT) {
+  const sym = gitAt(root, ["symbolic-ref", "--quiet", "HEAD"]);
+  if (sym.status !== 0) return null;
+  const full = String(sym.stdout ?? "").trim();
+  return full.startsWith("refs/heads/") ? full.slice("refs/heads/".length) : null;
+}
+
+/**
+ * Validate repo and clean agent tree. No branch create/delete.
+ * @returns {{ baseSha: string, branch: string | null }}
+ */
+export function setupRepoGate(root = REPO_ROOT) {
+  const top = gitAt(root, ["rev-parse", "--show-toplevel"]);
+  if (top.error || top.status !== 0) throw new SetupAbort(`not a git repository root: ${root}`);
+  let topReal;
+  let rootReal;
+  try {
+    topReal = fs.realpathSync(String(top.stdout ?? "").trim());
+    rootReal = fs.realpathSync(root);
+  } catch {
+    throw new SetupAbort(`not a git repository root: ${root}`);
+  }
+  if (topReal !== rootReal) throw new SetupAbort(`not a git repository root: ${root}`);
+  assertCleanAgentTree(root);
+  return { baseSha: headSha(root), branch: currentBranch(root) };
+}
+
+/** Put tracked .pi/agent files back to HEAD. Leaves untracked auth.json and userprofile.json. */
+export function restoreAgentTracked(root = REPO_ROOT) {
+  const result = gitAt(root, ["restore", "--source=HEAD", "--worktree", "--", AGENT_PREFIX]);
+  if (result.status !== 0) {
+    // Older git: checkout --
+    const fallback = gitAt(root, ["checkout", "HEAD", "--", AGENT_PREFIX]);
+    if (fallback.status !== 0) {
+      throw new SetupAbort(
+        `failed to restore tracked .pi/agent to HEAD: ${String(result.stderr || fallback.stderr || "").trim()}`,
+      );
+    }
+  }
 }

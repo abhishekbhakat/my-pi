@@ -28,12 +28,14 @@ export {
 export { createPrompter, isInteractive, parsePick, parseYesNo } from "./pi/setup/prompts.mjs";
 export { describeSettingsPlan, describeStaged, planSettings } from "./pi/setup/settings-plan.mjs";
 export { persistSetup } from "./pi/setup/persist.mjs";
-export { branchGate } from "./pi/setup/branch-gate.mjs";
+export { branchGate, setupRepoGate, restoreAgentTracked } from "./pi/setup/branch-gate.mjs";
 export {
-  setupRepoGate,
-  writeProfilePatch,
-  stageAgentWithProfile,
-} from "./pi/setup/profile-patch.mjs";
+  USER_PROFILE_VERSION,
+  applyUserProfile,
+  buildUserProfile,
+  stageAgentTree,
+  writeUserProfile,
+} from "./pi/setup/user-profile.mjs";
 export { probeClaude, updateClaude } from "./pi/toolchain/claude.mjs";
 
 function parseArgs(argv) {
@@ -68,17 +70,20 @@ Usage:
   node scripts/pi.mjs help
 
 install  Copy repo .pi/agent -> ~/.pi/agent.
-         If userprofile.patch exists, apply it in a temp staging dir first.
+         If userprofile.json exists, merge it onto the copy in a temp staging
+         dir first (settings, deciders, capability models). A missing or bad
+         profile never blocks install; affected sections fall back to repo
+         defaults with a warning.
          Default also manages the bun pi CLI (npm global removed, bun install -g if
          missing) and runs \`pi update\` + \`pi update --extensions\`.
          --config-only skips all CLI steps; used after the Rust pi is built
          (see make install / make config-install).
-         --no-profile ignores userprofile.patch.
+         --no-profile ignores userprofile.json.
 sync     Copy live ~/.pi/agent -> repo .pi/agent
-setup    Interactive provider/auth bootstrap; writes userprofile.patch (see setup --help)
+setup    Interactive provider/auth bootstrap; writes userprofile.json (see setup --help)
 
 --config-only  Config copy only; no bun CLI setup, no pi update
---no-profile   Install without applying userprofile.patch
+--no-profile   Install without applying userprofile.json
 -h HOST  Set models.json proxy origin on install
 -p       Prune repo files missing from live on sync
 -y       Accepted, unused (protected files always overwritten)

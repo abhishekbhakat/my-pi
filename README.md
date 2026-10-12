@@ -42,12 +42,12 @@ Interactive bootstrap for a new machine or fresh clone. It asks which providers 
 make setup
 ```
 
-- **No lasting git branch.** Setup refuses if tracked `.pi/agent` files are dirty (`auth.json` ignored), applies your answers, writes `userprofile.patch` at the repo root (gitignored), then restores tracked `.pi/agent` files to `HEAD`. `auth.json` stays untracked.
-- `make install` copies through a temp staging dir and applies `userprofile.patch` there. Your checkout stays clean so you can `git pull` on main. If the patch no longer applies, install aborts and tells you to run `make setup` again.
+- **No lasting git branch.** Setup refuses if tracked `.pi/agent` files are dirty (`auth.json` ignored), applies your answers, writes `userprofile.json` at the repo root (gitignored), then restores tracked `.pi/agent` files to `HEAD`. `auth.json` stays untracked.
+- `make install` copies through a temp staging dir and merges `userprofile.json` there (settings, deciders, capability models). Your checkout stays clean so you can `git pull` on main. A missing or malformed profile never blocks install; affected sections fall back to repo defaults with a warning. `userprofile.json` is plain JSON and safe to edit by hand; re-run `make setup` to regenerate it.
 - Escape hatch: `make install ARGS="--no-profile"`.
 - Yes/no prompts default to `n`. Existing keys kept on Enter. Keys never echoed.
 - Needs a TTY. `make setup ARGS="--help"` prints usage.
-- Setup does not install. Next step is `make install` (applies `userprofile.patch`), then `/reload` in pi.
+- Setup does not install. Next step is `make install` (applies `userprofile.json`), then `/reload` in pi.
 
 Make does not forward bare flags, so pass options through `ARGS="..."`. Full behaviour is in [SPEC.md](SPEC.md).
 
@@ -99,4 +99,4 @@ Sync skips runtime files (`bin/`, `sessions/`, `node_modules`, `package-lock.jso
 
 ## Rules
 
-See [AGENTS.md](AGENTS.md). Short version: edit this repo (or run `make setup` for `userprofile.patch`), run `make install`, then `/reload` in pi.
+See [AGENTS.md](AGENTS.md). Short version: edit this repo (or run `make setup` for `userprofile.json`), run `make install`, then `/reload` in pi.
