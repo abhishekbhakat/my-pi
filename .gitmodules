@@ -16,3 +16,6 @@
 [submodule ".pi/agent/skills/diagram-design"]
 	path = .pi/agent/skills/diagram-design
 	url = https://github.com/cathrynlavery/diagram-design.git
+[submodule ".pi/agent/skills/lightpanda-agent-skill"]
+	path = .pi/agent/skills/lightpanda-agent-skill
+	url = https://github.com/lightpanda-io/agent-skill

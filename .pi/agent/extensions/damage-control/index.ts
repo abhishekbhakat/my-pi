@@ -45,7 +45,7 @@ export default function (pi: ExtensionAPI) {
 					violationReason = `Guardrails violation (${semanticRisk.probability.toFixed(2)})`;
 					shouldAsk = true;
 				} else if (review.status === "unavailable") {
-					violationReason = `TypeSafe review unavailable: ${review.reason}`;
+					violationReason = `Decider review unavailable: ${review.reason}`;
 					shouldAsk = true;
 				}
 				const parsedCommands = parseShellCommand(command);
