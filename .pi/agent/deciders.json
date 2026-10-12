@@ -6,10 +6,10 @@
       "authProvider": "typesafe",
       "authHeader": "bearer"
     },
-    "opencode-zen": {
+    "hal-x": {
       "adapter": "systemone",
-      "baseUrl": "https://opencode.ai/zen/v1/systemone",
-      "authProvider": "opencode-zen",
+      "baseUrl": "https://api.hal-x.ai/v1/systemone",
+      "authProvider": "hal-x",
       "authHeader": "bearer"
     },
     "perplexity": {
@@ -34,9 +34,9 @@
   },
   "models": [
     {
-      "id": "opencode-zen/jev-1.13-free",
-      "provider": "opencode-zen",
-      "model": "jev-1.13-free",
+      "id": "hal-x/thx-01",
+      "provider": "hal-x",
+      "model": "thx-01",
       "kinds": [
         "noul",
         "choice",
@@ -109,21 +109,9 @@
     }
   ],
   "roles": {
-    "booleanGuy": [
-      "opencode-zen/jev-1.13-free",
-      "fastino/glide"
-    ],
-    "prune": [
-      "opencode-zen/jev-1.13-free",
-      "fastino/glide"
-    ],
-    "compaction": [
-      "opencode-zen/jev-1.13-free",
-      "fastino/glide"
-    ],
-    "guard": [
-      "opencode-zen/jev-1.13-free",
-      "fastino/glide"
-    ]
+    "booleanGuy": "hal-x/thx-01",
+    "prune": "hal-x/thx-01",
+    "compaction": "hal-x/thx-01",
+    "guard": "hal-x/thx-01"
   }
 }

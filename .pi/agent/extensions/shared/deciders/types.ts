@@ -1,6 +1,6 @@
 /**
  * Shared types for the decider layer: Jev-compatible decision models
- * (TypeSafe Jev, OpenCode Zen Jev, Cloudflare Clef, Fastino GLiDE,
+ * (HAL-X thx-01, TypeSafe Jev, Cloudflare Clef, Fastino GLiDE,
  * Perplexity pplx-decider). All speak the same state/questions wire format.
  */
 

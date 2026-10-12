@@ -1,5 +1,5 @@
 /**
- * One Jev-compatible HTTP call. Covers TypeSafe/OpenCode Zen SystemOne,
+ * One Jev-compatible HTTP call. Covers HAL-X/TypeSafe SystemOne,
  * Perplexity Decisions, Fastino GLiDE (same wire format), and Cloudflare
  * Clef (same format, response wrapped in { result, success }).
  */

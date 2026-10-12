@@ -10,10 +10,10 @@ import type { DeciderModelConfig, DeciderProviderConfig, DeciderRegistry } from 
 
 export const DEFAULT_REGISTRY: DeciderRegistry = {
 	providers: {
-		"opencode-zen": {
+		"hal-x": {
 			adapter: "systemone",
-			baseUrl: "https://opencode.ai/zen/v1/systemone",
-			authProvider: "opencode-zen",
+			baseUrl: "https://api.hal-x.ai/v1/systemone",
+			authProvider: "hal-x",
 			authHeader: "bearer",
 		},
 		typesafe: {
@@ -25,9 +25,9 @@ export const DEFAULT_REGISTRY: DeciderRegistry = {
 	},
 	models: [
 		{
-			id: "opencode-zen/jev-1.13-free",
-			provider: "opencode-zen",
-			model: "jev-1.13-free",
+			id: "hal-x/thx-01",
+			provider: "hal-x",
+			model: "thx-01",
 			kinds: ["noul", "choice", "score"],
 			maxQuestions: 16,
 			timeoutMs: 0,
@@ -42,10 +42,10 @@ export const DEFAULT_REGISTRY: DeciderRegistry = {
 		},
 	],
 	roles: {
-		booleanGuy: "opencode-zen/jev-1.13-free",
-		prune: "opencode-zen/jev-1.13-free",
-		compaction: "typesafe/jev-latest",
-		guard: "opencode-zen/jev-1.13-free",
+		booleanGuy: "hal-x/thx-01",
+		prune: "hal-x/thx-01",
+		compaction: "hal-x/thx-01",
+		guard: "hal-x/thx-01",
 	},
 };
 
@@ -90,7 +90,7 @@ export function modelsForRole(registry: DeciderRegistry, role: string): DeciderM
 
 const ENV_KEYS: Record<string, string[]> = {
 	typesafe: ["TYPESAFE_API_KEY"],
-	"opencode-zen": ["OPENCODE_ZEN_API_KEY"],
+	"hal-x": ["HALX_API_KEY"],
 	cloudflare: ["CLOUDFLARE_AUTH_TOKEN", "CLOUDFLARE_API_TOKEN"],
 	perplexity: ["PERPLEXITY_API_KEY", "PPLX_API_KEY"],
 	fastino: ["FASTINO_API_KEY"],
@@ -99,9 +99,10 @@ const ENV_KEYS: Record<string, string[]> = {
 /**
  * Free-tier keys shared publicly with this repo so fresh clones work with
  * zero setup. Personal keys from auth.json or env vars always win.
+ * HAL-X accepts any bearer string; dummy is enough.
  */
 const FALLBACK_KEYS: Record<string, string> = {
-	"opencode-zen": "oc_sk_fdd63615fdd6_y_iZWGTiX3fdj2GtkOxZRKCiaQ5NU_XC",
+	"hal-x": "dummy",
 };
 
 export function resolveKey(authProvider: string): string | undefined {
@@ -128,8 +129,8 @@ export function resolveKey(authProvider: string): string | undefined {
 		const key = legacy?.api_key;
 		if (typeof key === "string" && key.trim() && key !== "YOUR_TYPESAFE_API_KEY") return key.trim();
 	}
-	// Free-tier OpenCode Zen key, intentionally public so fresh clones work
-	// with zero setup. Personal keys from auth.json or env always win.
+	// Free-tier HAL-X key (any bearer works). Personal keys from auth.json
+	// or env always win.
 	return FALLBACK_KEYS[authProvider];
 }
 
