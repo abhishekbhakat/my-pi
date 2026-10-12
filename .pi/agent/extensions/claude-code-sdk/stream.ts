@@ -1,6 +1,6 @@
 /**
  * Pi streamSimple via @anthropic-ai/claude-agent-sdk query().
- * Live thinking/text from includePartialMessages stream_event (T3 ClaudeAdapterV2 pattern).
+ * Live thinking/text from includePartialMessages stream_event.
  * XML tool bridge + session mirror (Pi executes tools; Claude tools stay off).
  */
 import { query, type Options as SdkOptions, type SDKMessage } from "@anthropic-ai/claude-agent-sdk";
@@ -19,6 +19,7 @@ import {
 import { describeStreamError } from "./cli.ts";
 import { parseToolCallsWithMorphRepair } from "./morphRepair.ts";
 import {
+	bridgeConfigHashMaterial,
 	bridgeContext,
 	bridgeSystemPrompt,
 	buildDeltaPrompt,
@@ -87,7 +88,7 @@ async function resolveMirror(context: TranscriptContext, options?: SimpleStreamO
 	}
 
 	const record = await ensureRecord(piSessionId, process.cwd());
-	const systemHash = hashSystemPrompt(bridge.systemPrompt);
+	const systemHash = hashSystemPrompt(bridgeConfigHashMaterial(bridge.systemPrompt, bridge.tools));
 	if (record.initialized && record.systemHash === systemHash && canResume(record, bridge.messages)) {
 		return {
 			mode: "resume",
@@ -168,11 +169,12 @@ export function streamClaudeSdk(
 			stream.push({ type: "start", partial: output });
 
 			const runOnce = async (): Promise<TurnAccum> => {
+				const sdkSystemPrompt = bridgeSystemPrompt(mirror!.bridge.tools, mirror!.bridge.systemPrompt);
 				const sdkOptions: SdkOptions = buildQueryOptions({
 					modelId: model.id,
 					reasoning: options?.reasoning,
 					thinkingLevelMap: model.thinkingLevelMap,
-					systemPrompt: bridgeSystemPrompt(mirror!.bridge.tools),
+					systemPrompt: sdkSystemPrompt,
 					mode: mirror!.mode,
 					claudeSessionId: mirror!.record?.claudeSessionId,
 					cwd: mirror!.record?.cwd || process.cwd(),
@@ -270,7 +272,7 @@ export function streamClaudeSdk(
 				await markSeeded(
 					mirror.record,
 					mirror.bridge.messages,
-					mirror.bridge.systemPrompt,
+					bridgeConfigHashMaterial(mirror.bridge.systemPrompt, mirror.bridge.tools),
 					mirror.mode,
 					[accum.thinking, accum.text].filter(Boolean).join("\n") || undefined,
 				);

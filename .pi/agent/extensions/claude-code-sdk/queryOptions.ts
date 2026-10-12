@@ -1,8 +1,12 @@
 /**
  * Build Claude Agent SDK query() options.
- * Pattern copied from t3code ClaudeAdapterV2 buildQueryOptions:
  * pathToClaudeCodeExecutable, includePartialMessages, thinking adaptive+summarized,
  * effort, tools [], dontAsk, persistSession / sessionId / resume.
+ *
+ * System prompt matches the old CLI bridge: custom --system-prompt with
+ * --system-prompt-snapshot off so resume cannot keep a stale no-tools prompt.
+ * Built-in Claude tools stay disabled; Pi tools live in the system prompt and
+ * are executed by Pi after XML parse.
  */
 import type { EffortLevel, Options as SdkOptions, ThinkingConfig } from "@anthropic-ai/claude-agent-sdk";
 import type { ModelThinkingLevel, ThinkingLevelMap } from "@earendil-works/pi-ai";
@@ -23,6 +27,11 @@ export function mapEffort(
 export function buildThinkingConfig(level: ModelThinkingLevel | undefined): ThinkingConfig | undefined {
 	if (!level || level === "off") return { type: "disabled" };
 	return { type: "adaptive", display: "summarized" };
+}
+
+/** SDK systemPrompt shape matching CLI `--system-prompt` + `--system-prompt-snapshot off`. */
+export function toSdkSystemPrompt(prompt: string): NonNullable<SdkOptions["systemPrompt"]> {
+	return { type: "custom", prompt, snapshot: false };
 }
 
 export function buildQueryOptions(input: {
@@ -48,8 +57,9 @@ export function buildQueryOptions(input: {
 
 	return {
 		model: input.modelId,
-		systemPrompt: input.systemPrompt,
+		systemPrompt: toSdkSystemPrompt(input.systemPrompt),
 		tools: [],
+		settingSources: [],
 		permissionMode: "dontAsk",
 		includePartialMessages: true,
 		cwd: input.cwd,

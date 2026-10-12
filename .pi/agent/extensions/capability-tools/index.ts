@@ -7,23 +7,30 @@ import { applyCapabilityPrune } from "./prune";
 import { executeCapability } from "./runner";
 import type { CapabilityDef, CapabilityToolInput } from "./types";
 
-const CAPABILITY_INPUT_SCHEMA = Type.Object({
-	task: Type.String({ description: "Question, objective, or request for the helper capability" }),
-	paths: Type.Optional(Type.Array(Type.String({ description: "Relevant file or directory path" }))),
-	includeConversation: Type.Optional(Type.Boolean({ description: "Override the capability default for recent conversation context" })),
-	includeTree: Type.Optional(Type.Boolean({ description: "Override the capability default for workspace tree context" })),
-	includeDiff: Type.Optional(Type.Boolean({ description: "Override the capability default for git diff context" })),
-	includeTimeline: Type.Optional(Type.Boolean({ description: "Override the capability default for action timeline context" })),
-});
+const DEFAULT_PATHS_DESCRIPTION = "Relevant file or directory path";
+const SCOUT_PATHS_DESCRIPTION =
+	"File or directory path. Pass an absolute path when it is not under the session cwd. Relative paths resolve against cwd.";
+
+function capabilityInputSchema(pathsDescription: string) {
+	return Type.Object({
+		task: Type.String({ description: "Question, objective, or request for the helper capability" }),
+		paths: Type.Optional(Type.Array(Type.String({ description: pathsDescription }))),
+		includeConversation: Type.Optional(Type.Boolean({ description: "Override the capability default for recent conversation context" })),
+		includeTree: Type.Optional(Type.Boolean({ description: "Override the capability default for workspace tree context" })),
+		includeDiff: Type.Optional(Type.Boolean({ description: "Override the capability default for git diff context" })),
+		includeTimeline: Type.Optional(Type.Boolean({ description: "Override the capability default for action timeline context" })),
+	});
+}
 
 function registerCapabilityTool(pi: ExtensionAPI, def: CapabilityDef): void {
+	const pathsDescription = def.toolName === "code_scout" ? SCOUT_PATHS_DESCRIPTION : DEFAULT_PATHS_DESCRIPTION;
 	pi.registerTool({
 		name: def.toolName,
 		label: def.label,
 		description: def.description,
 		promptSnippet: def.promptSnippet ?? def.description,
 		promptGuidelines: def.promptGuidelines.length > 0 ? def.promptGuidelines : undefined,
-		parameters: CAPABILITY_INPUT_SCHEMA,
+		parameters: capabilityInputSchema(pathsDescription),
 		execute: async (_callId, args, signal, onUpdate, ctx) =>
 			executeCapability(pi, def, args as CapabilityToolInput, signal, onUpdate, ctx),
 	});

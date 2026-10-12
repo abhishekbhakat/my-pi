@@ -1,6 +1,13 @@
 # claude-code-sdk
 
-Pi provider `claude-code-sdk`. Each model turn runs `@anthropic-ai/claude-agent-sdk` `query()` against the local `claude` binary (T3 Code style).
+Pi provider `claude-code-sdk`. Each model turn runs `@anthropic-ai/claude-agent-sdk` `query()` against the local `claude` binary.
+
+## Bridge contract
+
+- `tools: []` — Claude Code built-ins off.
+- `systemPrompt: { type: "custom", prompt, snapshot: false }` — bridge identity + serialized Pi tools (incl. `self`) + full Pi system prompt (SYSTEM.md pointer to `self`, addendum, project, skills, cwd).
+- `settingSources: []` — no CLAUDE.md / filesystem settings bleed.
+- Model emits `<function_calls>` XML as text; Pi parses and executes.
 
 ## Layout
 

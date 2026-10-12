@@ -43,10 +43,11 @@ function statusLines(status?: CliStatus): string[] {
 		`Provider: ${PROVIDER_ID}`,
 		`Claude binary: ${claudeBin()}`,
 		`Active Pi session: ${getActivePiSessionId() ?? "(none)"}`,
-		"Transport: @anthropic-ai/claude-agent-sdk query() per turn (T3-style)",
+		"Transport: @anthropic-ai/claude-agent-sdk query() per turn",
 		"Live thinking: includePartialMessages + thinking-display summarized",
 		"Idle watchdog: CLAUDE_CODE_SDK_IDLE_MS (default 300000); resets on each SDK message",
 		'Own Claude Code tools: disabled via tools: []',
+		'SDK systemPrompt: custom bridge prompt + Available Pi tools, snapshot: false (CLI --system-prompt-snapshot off)',
 		effortLevels.length > 0
 			? `Thinking: effort levels from claude --help: ${effortLevels.join(", ")}`
 			: "Thinking: effort levels not detected; SDK/CLI default used",

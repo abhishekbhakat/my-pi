@@ -6,6 +6,7 @@ import { cleanCommitMessage, NO_STAGED_CHANGES_MESSAGE } from "./commitMessage";
 import { buildCapabilityContext, buildCapabilityPrompt } from "./context";
 import { appendCapabilityHistory } from "./history";
 import { isRefusalPreamble } from "./refusal";
+import { classifyScoutPaths, formatMissingScoutPaths, formatNoFilesRead } from "./scoutPaths";
 import { buildScoutTools, executeScoutTool } from "./scoutTools";
 import { isHallucinatedToolAnswer } from "./toolish";
 import type { CapabilityDef, CapabilityToolInput } from "./types";
@@ -201,6 +202,20 @@ export async function executeCapability(
 			content: [{ type: "text", text: `No API key or headers available for ${def.model}` }],
 			details: { status: "error", capability: def.toolName },
 		};
+	}
+
+	if (def.toolName === "code_scout") {
+		const classified = await classifyScoutPaths(ctx.cwd, input.paths ?? []);
+		if (classified.requested > 0 && classified.found.length === 0) {
+			return {
+				content: [{ type: "text", text: formatMissingScoutPaths(ctx.cwd, classified.missing) }],
+				details: {
+					status: "error",
+					capability: def.toolName,
+					paths: classified.missing,
+				},
+			};
+		}
 	}
 
 	onUpdate?.({
@@ -479,6 +494,22 @@ export async function executeCapability(
 					paths: context.autoPaths,
 					promptChars: prompt.length,
 					stopReason: response.stopReason,
+				},
+			};
+		}
+
+		if (def.toolName === "code_scout" && (context.pathCodeFiles ?? 0) === 0 && toolCalls === 0) {
+			return {
+				content: [{ type: "text", text: formatNoFilesRead(ctx.cwd, context.autoPaths) }],
+				details: {
+					status: "error",
+					capability: def.toolName,
+					model: `${model.provider}/${model.id}`,
+					paths: context.autoPaths,
+					promptChars: prompt.length,
+					pathCodeFiles: 0,
+					toolRounds,
+					toolCalls,
 				},
 			};
 		}
