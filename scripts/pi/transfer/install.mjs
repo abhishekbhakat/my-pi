@@ -6,14 +6,17 @@ import { exists } from "../fs/read-write.mjs";
 import { copyDirReplace, rmTree } from "../fs/tree.mjs";
 import { HOME_AGENT, INSTALL_ROOT, REPO_AGENT, REPO_ROOT } from "../paths.mjs";
 import { stageAgentTree } from "../setup/user-profile.mjs";
-import { ensureBunPiCli, extensionInstallSpec, updatePiAndExtensions } from "../toolchain/bun-cli.mjs";
+import { ensureBunPiCli, ensureRepoExtensionsDeps, extensionInstallSpec, updatePiAndExtensions } from "../toolchain/bun-cli.mjs";
 import { run } from "../toolchain/run.mjs";
 import { mergeAuth } from "./merge-auth.mjs";
 import { applySparseCheckouts, normalizeProxyOrigin, patchModelsProxy } from "./proxy.mjs";
 
 export function install(flags) {
   if (!exists(REPO_AGENT)) die(`Source directory not found: ${REPO_AGENT}`);
-  if (!flags.configOnly) ensureBunPiCli();
+  if (!flags.configOnly) {
+    ensureBunPiCli();
+    ensureRepoExtensionsDeps();
+  }
 
   // Sparse needs real skill submodule .git; staging copies skip .git, so run first.
   applySparseCheckouts(path.join(REPO_AGENT, "skills"));

@@ -3,7 +3,7 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { die } from "../errors.mjs";
 import { exists } from "../fs/read-write.mjs";
-import { REPO_ROOT, SCRIPT_DIR } from "../paths.mjs";
+import { REPO_AGENT, REPO_ROOT, SCRIPT_DIR } from "../paths.mjs";
 import { commandOnPath, run } from "./run.mjs";
 
 const PI_PKG = "@earendil-works/pi-coding-agent";
@@ -13,6 +13,19 @@ export function extensionInstallSpec() {
     return { cmd: "bun", args: ["install", "--production"] };
   }
   return { cmd: "npm", args: ["install", "--omit=dev", "--no-fund", "--no-audit"] };
+}
+
+export function ensureRepoExtensionsDeps() {
+  const extDir = path.join(REPO_AGENT, "extensions");
+  if (!exists(path.join(extDir, "package.json"))) return;
+  console.log("[extensions bun install (repo)]");
+  console.log("  Refreshing node_modules + bun.lock in .pi/agent/extensions");
+  const result = run("bun", ["install"], extDir, {
+    stdio: "inherit",
+    label: "bun install (repo extensions)",
+  });
+  if (result.status !== 0) die("bun install in .pi/agent/extensions failed.");
+  console.log("");
 }
 
 export function npmGlobalPiDir() {
