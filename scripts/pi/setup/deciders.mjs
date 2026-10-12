@@ -7,7 +7,7 @@ export const DECIDER_ROLES = ["booleanGuy", "prune", "compaction", "guard"];
 
 const ENV_KEYS = {
   typesafe: ["TYPESAFE_API_KEY"],
-  "opencode-zen": ["OPENCODE_ZEN_API_KEY"],
+  "hal-x": ["HALX_API_KEY"],
   cloudflare: ["CLOUDFLARE_AUTH_TOKEN", "CLOUDFLARE_API_TOKEN"],
   perplexity: ["PERPLEXITY_API_KEY", "PPLX_API_KEY"],
   fastino: ["FASTINO_API_KEY"],
@@ -26,8 +26,9 @@ export function loadDecidersRegistry(agentDir) {
   }
 }
 
-// Providers with a public free-tier fallback key baked into the decider module.
-const FALLBACK_PROVIDERS = new Set(["opencode-zen"]);
+// Mirror of FALLBACK_KEYS in .pi/agent/extensions/shared/deciders/config.ts.
+// HAL-X accepts any bearer; runtime sends "dummy" when no personal key exists.
+const FALLBACK_PROVIDERS = new Set(["hal-x"]);
 
 function authKeyAvailable(auth, authProvider) {
   if (FALLBACK_PROVIDERS.has(authProvider)) return true;

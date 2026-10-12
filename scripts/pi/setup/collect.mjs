@@ -86,11 +86,6 @@ export async function collectProviders({
       else staged.skipped.push({ provider, reason: "declined" });
       continue;
     }
-    if (kind === "codex") {
-      // openai-codex oauth is legacy: always skipped, no prompt.
-      staged.skipped.push({ provider, reason: "legacy" });
-      continue;
-    }
     if (kind === "oauth") {
       const yes = await prompter.askYesNo(`Enable ${provider} via oauth/login later?`);
       if (yes) {
