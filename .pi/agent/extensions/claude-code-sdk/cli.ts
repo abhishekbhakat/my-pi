@@ -1,8 +1,15 @@
+/**
+ * Claude Code CLI availability and environment helpers.
+ *
+ * The provider speaks to the CLI only through @anthropic-ai/claude-agent-sdk;
+ * these helpers check that `claude` works, scrub routing env vars so the SDK
+ * subprocess uses the same Claude Code login as the user's own CLI, and map
+ * Pi thinking levels to the CLI's --effort choices.
+ */
 import { spawn, spawnSync } from "node:child_process";
-import type { ModelThinkingLevel, ThinkingLevel, ThinkingLevelMap } from "@earendil-works/pi-ai";
+import type { ThinkingLevel, ThinkingLevelMap } from "@earendil-works/pi-ai";
 
 export const STATUS_TIMEOUT_MS = 4_000;
-export const REQUEST_TIMEOUT_MS = 5 * 60_000;
 export const STDERR_LIMIT = 20_000;
 
 export type CliStatus = {
@@ -10,8 +17,6 @@ export type CliStatus = {
 	summary: string;
 	detail?: string;
 };
-
-export type SessionArgMode = "none" | "seed" | "resume";
 
 export function claudeBin(): string {
 	return process.env.CLAUDE_CODE_PI_BIN?.trim() || "claude";
@@ -36,12 +41,6 @@ export function claudeEnv(): NodeJS.ProcessEnv {
 	const env = { ...process.env };
 	for (const name of ROUTING_ENV) delete env[name];
 	return env;
-}
-
-export function requestTimeoutMs(): number {
-	const configured = Number(process.env.CLAUDE_CODE_PI_TIMEOUT_MS);
-	if (Number.isFinite(configured) && configured > 0) return configured;
-	return REQUEST_TIMEOUT_MS;
 }
 
 const PI_LEVELS: ThinkingLevel[] = ["minimal", "low", "medium", "high", "xhigh", "max"];
@@ -83,50 +82,6 @@ export function buildThinkingLevelMap(effortLevels: string[]): ThinkingLevelMap 
 	return map;
 }
 
-// Without a detected map the CLI default effort applies; guessing a value
-// the installed CLI may reject would fail the whole turn.
-export function effortArgs(level: ModelThinkingLevel | undefined, map?: ThinkingLevelMap): string[] {
-	if (!level || level === "off") return [];
-	const effort = map?.[level];
-	return effort ? ["--effort", effort] : [];
-}
-
-export function thinkingDisplayArgs(level: ModelThinkingLevel | undefined): string[] {
-	if (!level || level === "off") return [];
-	return ["--thinking-display", "summarized"];
-}
-
-export function buildClaudeArgs(options: {
-	modelId: string;
-	reasoning?: ModelThinkingLevel;
-	thinkingLevelMap?: ThinkingLevelMap;
-	useStreamJson?: boolean;
-	sessionMode?: SessionArgMode;
-	claudeSessionId?: string;
-	sessionName?: string;
-	systemPrompt?: string;
-}): string[] {
-	const args = ["-p", "--model", options.modelId, "--permission-mode", "dontAsk", "--tools", ""];
-	const mode = options.sessionMode ?? "none";
-	if (mode === "none" || !options.claudeSessionId) {
-		args.push("--no-session-persistence");
-	} else if (mode === "resume") {
-		args.push("--resume", options.claudeSessionId);
-	} else {
-		args.push("--session-id", options.claudeSessionId);
-	}
-	if (options.sessionName) args.push("-n", options.sessionName);
-	if (options.systemPrompt) {
-		args.push("--system-prompt", options.systemPrompt);
-		args.push("--system-prompt-snapshot", "off");
-	}
-	args.push(...effortArgs(options.reasoning, options.thinkingLevelMap));
-	args.push(...thinkingDisplayArgs(options.reasoning));
-	args.push("--output-format", "stream-json", "--verbose");
-	if (options.useStreamJson) args.push("--input-format", "stream-json");
-	return args;
-}
-
 export function runCapture(
 	args: string[],
 	input?: string,
@@ -147,10 +102,10 @@ export function runCapture(
 
 		child.stdout!.setEncoding("utf8");
 		child.stderr!.setEncoding("utf8");
-		child.stdout!.on("data", (chunk) => {
+		child.stdout!.on("data", (chunk: string) => {
 			stdout += chunk;
 		});
-		child.stderr!.on("data", (chunk) => {
+		child.stderr!.on("data", (chunk: string) => {
 			stderr = (stderr + chunk).slice(-STDERR_LIMIT);
 		});
 		child.on("error", (error) => {
@@ -189,7 +144,7 @@ export function setupGuidance(error: string): string {
 		"claude-code-sdk could not use the local Claude Code CLI.",
 		`Reason: ${error}`,
 		"Install Claude Code, ensure `claude --version` works on PATH, authenticate Claude Code if needed, then reload Pi.",
-		"This provider never falls back to Anthropic SDK, HTTP APIs, or Pi built-in Claude providers; every request must go through `claude -p`.",
+		"This provider never falls back to Anthropic SDK, HTTP APIs, or Pi built-in Claude providers; every request must go through the Claude Agent SDK.",
 	].join(" ");
 }
 

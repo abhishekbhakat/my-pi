@@ -2,7 +2,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { homedir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
-import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { mkdir, open, readFile, rename, rm, writeFile } from "node:fs/promises";
 import type { Message } from "@earendil-works/pi-ai";
 
 let activePiSessionId: string | undefined;
@@ -169,6 +169,57 @@ export async function reseedRecord(piSessionId: string, cwd: string): Promise<Se
 	};
 	await saveRecord(record);
 	return record;
+}
+
+function claudeSessionPath(claudeSessionId: string, cwd: string): string {
+	const home = process.env.CLAUDE_CONFIG_DIR?.trim() || join(homedir(), ".claude");
+	return join(home, "projects", cwd.replace(/[^a-zA-Z0-9]/g, "-"), `${claudeSessionId}.jsonl`);
+}
+
+const TAIL_BYTES = 1024 * 1024;
+
+/**
+ * Final output_tokens per API message id, read from the tail of Claude's own
+ * transcript (the SDK stream's assistant snapshots carry a stale count).
+ * Returns the sum only when every requested id is present, else undefined.
+ */
+export async function readClaudeOutputTokens(
+	claudeSessionId: string,
+	cwd: string,
+	messageIds: string[],
+): Promise<number | undefined> {
+	if (messageIds.length === 0) return undefined;
+	try {
+		const handle = await open(claudeSessionPath(claudeSessionId, cwd), "r");
+		try {
+			const { size } = await handle.stat();
+			const length = Math.min(size, TAIL_BYTES);
+			const buffer = Buffer.alloc(length);
+			await handle.read(buffer, 0, length, size - length);
+			const found = new Map<string, number>();
+			for (const line of buffer.toString("utf8").split("\n")) {
+				if (!line.includes('"output_tokens"')) continue;
+				try {
+					const message = (JSON.parse(line) as { message?: { id?: string; usage?: { output_tokens?: number } } }).message;
+					const tokens = message?.usage?.output_tokens;
+					if (message?.id && typeof tokens === "number") found.set(message.id, tokens);
+				} catch {
+					/* partial first line of the tail window */
+				}
+			}
+			let sum = 0;
+			for (const id of messageIds) {
+				const tokens = found.get(id);
+				if (tokens === undefined) return undefined;
+				sum += tokens;
+			}
+			return sum;
+		} finally {
+			await handle.close();
+		}
+	} catch {
+		return undefined;
+	}
 }
 
 /** Best-effort delete of Claude's on-disk transcript for this UUID. */

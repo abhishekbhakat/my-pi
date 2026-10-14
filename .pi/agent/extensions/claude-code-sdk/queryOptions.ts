@@ -3,10 +3,10 @@
  * pathToClaudeCodeExecutable, includePartialMessages, thinking adaptive+summarized,
  * effort, tools [], dontAsk, persistSession / sessionId / resume.
  *
- * System prompt matches the old CLI bridge: custom --system-prompt with
- * --system-prompt-snapshot off so resume cannot keep a stale no-tools prompt.
- * Built-in Claude tools stay disabled; Pi tools live in the system prompt and
- * are executed by Pi after XML parse.
+ * With an MCP server present, tools are exposed natively and the CLI must
+ * never gate them itself: permissionMode becomes bypassPermissions and the
+ * handlers (which route into Pi's own gate) run freely. Without MCP, the
+ * old dontAsk + empty tools behavior applies.
  */
 import type { EffortLevel, Options as SdkOptions, ThinkingConfig } from "@anthropic-ai/claude-agent-sdk";
 import type { ModelThinkingLevel, ThinkingLevelMap } from "@earendil-works/pi-ai";
@@ -43,6 +43,7 @@ export function buildQueryOptions(input: {
 	claudeSessionId?: string;
 	cwd: string;
 	abortController: AbortController;
+	mcpServers?: SdkOptions["mcpServers"];
 }): SdkOptions {
 	const effort = mapEffort(input.reasoning, input.thinkingLevelMap);
 	const thinking = buildThinkingConfig(input.reasoning);
@@ -60,12 +61,13 @@ export function buildQueryOptions(input: {
 		systemPrompt: toSdkSystemPrompt(input.systemPrompt),
 		tools: [],
 		settingSources: [],
-		permissionMode: "dontAsk",
+		permissionMode: input.mcpServers ? "bypassPermissions" : "dontAsk",
 		includePartialMessages: true,
 		cwd: input.cwd,
 		pathToClaudeCodeExecutable: claudeBin(),
 		env: claudeEnv(),
 		abortController: input.abortController,
+		...(input.mcpServers ? { mcpServers: input.mcpServers } : {}),
 		...(effort ? { effort } : {}),
 		...(thinking ? { thinking } : {}),
 		...(requestThinkingSummaries

@@ -7,7 +7,6 @@ import {
 	setupGuidance,
 	type CliStatus,
 } from "./cli.ts";
-import { morphStatus, type MorphStatus } from "./morphRepair.ts";
 import { API_ID, configuredModels, PROVIDER_ID, providerModels, type ClaudeCodeModelInfo } from "./models.ts";
 import {
 	deleteClaudeSessionFile,
@@ -16,6 +15,7 @@ import {
 	reseedRecord,
 	setActivePiSessionId,
 } from "./sessions.ts";
+import { clearSessionTurns } from "./rendezvous.ts";
 import { streamClaudeSdk } from "./stream.ts";
 
 export { PROVIDER_ID } from "./models.ts";
@@ -25,7 +25,6 @@ export { buildQueryOptions } from "./queryOptions.ts";
 let registeredModels: ClaudeCodeModelInfo[] = configuredModels();
 let effortLevels: string[] = [];
 let lastCliStatus: CliStatus | undefined;
-let lastMorphStatus: MorphStatus | undefined;
 
 function registerProvider(pi: ExtensionAPI) {
 	pi.registerProvider(PROVIDER_ID, {
@@ -34,7 +33,7 @@ function registerProvider(pi: ExtensionAPI) {
 		apiKey: "claude-code-sdk-no-api-key",
 		api: API_ID,
 		models: providerModels(registeredModels, buildThinkingLevelMap(effortLevels)),
-		streamSimple: streamClaudeSdk,
+		streamSimple: ((model: any, context: any, options: any) => streamClaudeSdk(model, context, options)) as any,
 	});
 }
 
@@ -43,16 +42,17 @@ function statusLines(status?: CliStatus): string[] {
 		`Provider: ${PROVIDER_ID}`,
 		`Claude binary: ${claudeBin()}`,
 		`Active Pi session: ${getActivePiSessionId() ?? "(none)"}`,
-		"Transport: @anthropic-ai/claude-agent-sdk query() per turn",
+		"Transport: @anthropic-ai/claude-agent-sdk query(), one drain per user message",
+		"Tools: in-process 'pi' MCP server (mcp__pi__*); native tool_use/tool_result",
+		"Execution: Pi model-issued tool calls (full pipeline; native transcript records and UI)",
 		"Live thinking: includePartialMessages + thinking-display summarized",
 		"Idle watchdog: CLAUDE_CODE_SDK_IDLE_MS (default 300000); resets on each SDK message",
-		'Own Claude Code tools: disabled via tools: []',
-		'SDK systemPrompt: custom bridge prompt + Available Pi tools, snapshot: false (CLI --system-prompt-snapshot off)',
+		"Own Claude Code tools: disabled via tools: []",
+		'SDK systemPrompt: custom bridge prompt + Pi system prompt, snapshot: false (CLI --system-prompt-snapshot off)',
 		effortLevels.length > 0
 			? `Thinking: effort levels from claude --help: ${effortLevels.join(", ")}`
 			: "Thinking: effort levels not detected; SDK/CLI default used",
 		`Registered models: ${registeredModels.length}`,
-		lastMorphStatus?.summary ?? "Morph repair: run /claude-code-sdk status",
 	];
 	const current = status ?? lastCliStatus;
 	if (current) {
@@ -67,8 +67,6 @@ export default async function claudeCodeSdkExtension(pi: ExtensionAPI) {
 	registeredModels = configuredModels();
 	effortLevels = detectEffortLevels();
 	const status = await checkCliStatus();
-	lastCliStatus = status;
-	lastMorphStatus = await morphStatus();
 	if (!status.ok) {
 		pi.registerCommand("claude-code-sdk", {
 			description: "Claude Agent SDK provider status (disabled: `claude` not usable)",
@@ -89,6 +87,8 @@ export default async function claudeCodeSdkExtension(pi: ExtensionAPI) {
 				ctx.ui.notify("No active Pi session; nothing to refresh.", "warning");
 				return;
 			}
+			// Abort the live drain first so it cannot recreate Claude's jsonl.
+			await clearSessionTurns(piId);
 			const record = await loadRecord(piId);
 			if (!record?.initialized) {
 				ctx.ui.notify("No seeded Claude SDK mirror yet.", "info");
@@ -106,7 +106,9 @@ export default async function claudeCodeSdkExtension(pi: ExtensionAPI) {
 	pi.on("session_start", async (_event: any, ctx: any) => {
 		setActivePiSessionId(ctx.sessionManager.getSessionId());
 	});
-	pi.on("session_shutdown", async () => {
+	pi.on("session_shutdown", async (_event: any, ctx: any) => {
+		const piId = ctx?.sessionManager?.getSessionId?.() ?? getActivePiSessionId();
+		if (piId) void clearSessionTurns(piId);
 		setActivePiSessionId(undefined);
 	});
 
@@ -116,7 +118,6 @@ export default async function claudeCodeSdkExtension(pi: ExtensionAPI) {
 			const sub = args.trim().split(/\s+/).filter(Boolean)[0] ?? "status";
 			if (sub === "status") {
 				lastCliStatus = await checkCliStatus();
-				lastMorphStatus = await morphStatus();
 				for (const line of statusLines(lastCliStatus)) {
 					ctx.ui.notify(line, lastCliStatus.ok ? "info" : "warning");
 				}

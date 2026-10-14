@@ -210,6 +210,9 @@ export default function (pi: ExtensionAPI) {
 			const shared = sharedRate();
 			if (shared && shared.at >= started) {
 				rate = shared.rate;
+			} else if (message.provider === "claude-code-sdk") {
+				// The bridge publishes streamed-token rates; wall clock here includes
+				// spawn, thinking and tool waits. Keep the last good rate instead.
 			} else {
 				const elapsed = Date.now() - started;
 				const tokens = message.usage?.output ?? 0;
