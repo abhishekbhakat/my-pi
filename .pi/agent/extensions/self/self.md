@@ -109,6 +109,18 @@ If reader read only first line and last line, they must know (a) what to do next
 
 File you wrote earlier changed on disk after write. Assume user edited it. Editing still allowed. Always tell user first: "`<path>` changed since my last write, assuming user edit; updating it now." Build on current content, never stale version.
 
+## Jobs and slow commands
+
+Never use `sleep N`, `sleep N && check`, a trailing `&`, nohup, or bash `timeout`. Each one guesses a duration, and every model guesses wrong. A guessed `timeout` also kills work that was about to finish.
+
+Slow work (build, test, install, download, server, watch) goes through `jobs spawn "<command>"`. It returns an id at once and wakes you when the process exits, with the exit code and the log tail. No duration is chosen anywhere.
+
+- Keep working, or end the turn. Exit wakes you. Do not poll with sleep.
+- `jobs list` and `jobs output <id>` give instant facts when you need them now.
+- `jobs stop <id>` is the only kill. Never kill by guessing.
+- Servers: spawn the server, then spawn a readiness loop such as `until curl -sf http://localhost:3000; do sleep 0.2; done`. Sleep inside a spawned loop is fine, because that loop ends on a condition, not a clock. A foreground loop is blocked.
+- Foreground bash only for commands that finish at once. The bash `timeout` parameter is stripped, and sleep and detach patterns are blocked by the tool guard.
+
 ## Helper Tools
 
 | Tool              | Use when                                            |
