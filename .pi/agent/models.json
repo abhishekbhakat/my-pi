@@ -148,6 +148,9 @@
         },
         "inclusionai/ling-3.1-flash": {
           "contextWindow": 262144
+        },
+        "minimax/minimax-m3.1-flash:free": {
+          "contextWindow": 262144
         }
       }
     },
@@ -180,85 +183,6 @@
           },
           "compat": {
             "thinkingFormat": "together"
-          }
-        }
-      ]
-    },
-    "opencode": {
-      "models": [
-        {
-          "id": "space-bunny-free",
-          "name": "Space Bunny Free",
-          "reasoning": true,
-          "input": [
-            "text",
-            "image"
-          ],
-          "cost": {
-            "input": 0,
-            "output": 0,
-            "cacheRead": 0,
-            "cacheWrite": 0
-          },
-          "contextWindow": 262144,
-          "maxTokens": 524288,
-          "thinkingLevelMap": {
-            "off": null,
-            "minimal": "minimal",
-            "low": "low",
-            "medium": "medium",
-            "high": "high",
-            "xhigh": "xhigh",
-            "max": null
-          },
-          "compat": {
-            "supportsDeveloperRole": false,
-            "supportsStrictMode": true,
-            "sendSessionAffinityHeaders": true
-          }
-        },
-        {
-          "id": "longcat-2.5-preview-free",
-          "name": "LongCat 2.5 Preview Free",
-          "reasoning": true,
-          "input": [
-            "text",
-            "image"
-          ],
-          "cost": {
-            "input": 0,
-            "output": 0,
-            "cacheRead": 0,
-            "cacheWrite": 0
-          },
-          "contextWindow": 262144,
-          "maxTokens": 131072,
-          "compat": {
-            "supportsDeveloperRole": false,
-            "supportsStrictMode": true,
-            "sendSessionAffinityHeaders": true
-          }
-        },
-        {
-          "id": "ling-3.1-flash-free",
-          "name": "Ling 3.1 Flash Free",
-          "reasoning": true,
-          "input": [
-            "text",
-            "image"
-          ],
-          "cost": {
-            "input": 0,
-            "output": 0,
-            "cacheRead": 0,
-            "cacheWrite": 0
-          },
-          "contextWindow": 262144,
-          "maxTokens": 65536,
-          "compat": {
-            "supportsDeveloperRole": false,
-            "supportsStrictMode": true,
-            "sendSessionAffinityHeaders": true
           }
         }
       ]
@@ -641,6 +565,22 @@
           }
         }
       ]
+    },
+    "opencode-go": {
+      "modelOverrides": {
+        "deepseek-v4.1-flash": {
+          "contextWindow": 262144
+        },
+        "gemini-4-argon-contributor": {
+          "contextWindow": 1048576
+        },
+        "minimax-m3.1-flash-free": {
+          "contextWindow": 262144
+        },
+        "muse-spark-1.3-contributor": {
+          "contextWindow": 262144
+        }
+      }
     }
   }
 }
