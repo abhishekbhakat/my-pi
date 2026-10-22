@@ -27,6 +27,7 @@ import {
 } from "./state.ts";
 
 const CUSTOM_TYPE = "pi_job_exit";
+const TOOL_NAME = "jobs";
 const POLL_MS = 2000;
 const DEBOUNCE_MS = 300;
 const DEBOUNCE_MAX_MS = 2000;
@@ -34,6 +35,7 @@ const STALL_MS = 10 * 60_000;
 const STALL_TAIL_LINES = 20;
 
 export default function jobsExtension(pi: ExtensionAPI) {
+	let activated = false;
 	let root: string | undefined;
 	let ctxRef: ExtensionContext | undefined;
 	let disposed = false;
@@ -54,6 +56,45 @@ export default function jobsExtension(pi: ExtensionAPI) {
 			await ensureRoot(root);
 		}
 		return root;
+	}
+
+	function listsTool(value: unknown): boolean {
+		if (!Array.isArray(value)) return false;
+		return value.some((tool) => (tool as { name?: unknown } | null)?.name === TOOL_NAME);
+	}
+
+	/** True when this session's transcript ever declared the tool, meaning its state is deliberate. */
+	function transcriptListedTool(ctx: ExtensionContext): boolean {
+		try {
+			const entries = ctx.sessionManager.getEntries() as unknown as Array<Record<string, unknown>>;
+			for (const entry of entries) {
+				if (listsTool(entry?.toolsAdded)) return true;
+				const message = entry?.message as Record<string, unknown> | undefined;
+				if (message && listsTool(message.toolsAdded)) return true;
+			}
+		} catch {
+			return false;
+		}
+		return false;
+	}
+
+	/**
+	 * A resumed session restores the tool list recorded in its transcript, which cannot contain
+	 * a tool added later. Activate once, but never fight a transcript that already knew the tool
+	 * or a harness allowlist that removed it.
+	 */
+	function ensureToolActive(ctx: ExtensionContext): void {
+		if (activated) return;
+		try {
+			if (!pi.getAllTools().some((tool) => tool.name === TOOL_NAME)) return;
+			const active = pi.getActiveTools();
+			if (!active.includes(TOOL_NAME) && !transcriptListedTool(ctx)) {
+				pi.setActiveTools([...active, TOOL_NAME]);
+			}
+			activated = true;
+		} catch {
+			// Retried from before_agent_start.
+		}
 	}
 
 	function updateStatus(jobs: readonly JobState[]): void {
@@ -198,6 +239,8 @@ export default function jobsExtension(pi: ExtensionAPI) {
 	});
 
 	pi.on("session_start", async (event, ctx) => {
+		activated = false;
+		ensureToolActive(ctx);
 		disposed = false;
 		root = jobsRoot(ctx.sessionManager.getSessionId());
 		ctxRef = ctx;
@@ -228,6 +271,10 @@ export default function jobsExtension(pi: ExtensionAPI) {
 		void scan(true);
 	});
 
+	pi.on("before_agent_start", (_event, ctx) => {
+		ensureToolActive(ctx);
+	});
+
 	pi.on("session_shutdown", async () => {
 		disposed = true;
 		if (poller) clearInterval(poller);
@@ -237,7 +284,7 @@ export default function jobsExtension(pi: ExtensionAPI) {
 	});
 
 	pi.registerTool({
-		name: "jobs",
+		name: TOOL_NAME,
 		label: "Jobs",
 		description:
 			"Background jobs that wake you when they finish. spawn starts a command detached and returns an id " +
