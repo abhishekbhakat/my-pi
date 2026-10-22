@@ -22,5 +22,7 @@ export function loadSetupInputs(agentDir) {
   }
   const settingsPath = path.join(agentDir, "settings.json");
   const settingsText = fs.readFileSync(settingsPath, "utf8");
-  return { settings, models, auth, settingsText };
+  const decidersPath = path.join(agentDir, "deciders.json");
+  const decidersText = exists(decidersPath) ? fs.readFileSync(decidersPath, "utf8") : null;
+  return { settings, models, auth, settingsText, decidersText };
 }

@@ -5,6 +5,7 @@ export function isOauthEntry(value) {
 export const PROVIDER_PRIORITY = [
   "google",
   "claude-code-sdk",
+  "opencode-go",
   "mistral-vibe-cli",
   "openai",
   "openrouter",

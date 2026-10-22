@@ -107,24 +107,6 @@ export async function resolveDeciderTargets({ registry, auth, prompter, log = co
   return { roles, keys, cloudflareAccountId };
 }
 
-export function applyDeciderPlan(registry, plan) {
-  const next = {
-    providers: registry.providers,
-    models: registry.models,
-    roles: { ...registry.roles, ...plan.roles },
-  };
-  if (plan.cloudflareAccountId) {
-    next.providers = {
-      ...registry.providers,
-      cloudflare: {
-        ...registry.providers.cloudflare,
-        accountId: plan.cloudflareAccountId,
-      },
-    };
-  }
-  return `${JSON.stringify(next, null, 2)}\n`;
-}
-
 export function describeDeciderPlan(plan) {
   const roles = DECIDER_ROLES.map((role) => `${role}=${plan.roles[role]}`).join("; ");
   const keys = plan.keys.size ? `new keys: ${[...plan.keys.keys()].join(",")}` : "new keys: (none)";

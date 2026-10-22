@@ -56,7 +56,7 @@ help:
 		'  `pi` is the bun global TypeScript CLI; config lives under ~/.pi/agent.' \
 		'  auth.json: api_key merge both ways; oauth home -> repo on sync only.' \
 		'  After install, run /reload or /restart inside pi.' \
-		'  setup needs a TTY; writes userprofile.json (gitignored), restores tracked .pi/agent.' \
+		'  setup needs a TTY; writes userprofile.json + auth.json; never modifies tracked .pi/agent.' \
 		'  install merges userprofile.json in temp staging; a bad profile warns, never blocks.' \
 		'  setup never writes ~/.pi; run make install to apply userprofile.json.' \
 		'  test-setup needs Docker; never mounts host repo; secrets excluded by .gitignore.'

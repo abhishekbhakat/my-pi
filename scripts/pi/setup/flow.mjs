@@ -9,7 +9,6 @@ import {
 } from "./capabilities.mjs";
 import { collectProviders } from "./collect.mjs";
 import {
-  applyDeciderPlan,
   describeDeciderPlan,
   loadDecidersRegistry,
   resolveDeciderTargets,
@@ -18,7 +17,7 @@ import { loadSetupInputs } from "./inputs.mjs";
 import { describePersistSummary, persistSetup, printPostSetupHints } from "./persist.mjs";
 import { orderProviders } from "./providers.mjs";
 import { createPrompter, isInteractive } from "./prompts.mjs";
-import { restoreAgentTracked, setupRepoGate } from "./branch-gate.mjs";
+import { setupRepoGate } from "./branch-gate.mjs";
 import {
   buildUserProfile,
   collectSecretsFromStaged,
@@ -59,10 +58,14 @@ export function printSetupHelp() {
   make setup
 
 No git branch is created. Setup:
-  1. Refuses if tracked .pi/agent files are dirty (auth.json ignored)
-  2. Writes personalized files under .pi/agent
-  3. Saves personalization data as untracked userprofile.json at the repo root
-  4. Restores tracked .pi/agent files to HEAD (auth.json stays)
+  1. Reads repo .pi/agent (settings, models, auth, deciders)
+  2. Asks which providers to enable, default model, thinking level,
+     decision models and capability models
+  3. Writes API keys to untracked .pi/agent/auth.json
+  4. Writes personalization to untracked userprofile.json at the repo root
+
+Tracked .pi/agent files are never modified, so a dirty worktree is fine.
+Setup needs no branch and no clean checkout.
 
 Does not install. Run make install afterward; that merges userprofile.json
 onto repo .pi/agent in a temp staging dir, then copies to ~/.pi.
@@ -134,12 +137,10 @@ export async function setup(_flags = {}) {
     console.log(describeCapabilityPlan(capTargets, capEdits));
 
     let deciderPlan = null;
-    let deciderContents = null;
     if (deciderRegistry) {
       deciderPlan = await resolveDeciderTargets({ registry: deciderRegistry, auth: inputs.auth, prompter });
       console.log(describeDeciderPlan(deciderPlan));
       for (const [provider, key] of deciderPlan.keys) staged.apiKeys.set(provider, key);
-      deciderContents = applyDeciderPlan(deciderRegistry, deciderPlan);
     } else {
       console.log("Phase 5: deciders.json missing; skipping decision-model setup.");
     }
@@ -147,10 +148,9 @@ export async function setup(_flags = {}) {
     const report = persistSetup({
       agentDir: REPO_AGENT,
       staged,
-      settingsPlan,
       settingsText: inputs.settingsText,
+      decidersText: inputs.decidersText,
       capEdits,
-      deciderContents,
     });
 
     profileInfo = writeUserProfile({
@@ -158,9 +158,8 @@ export async function setup(_flags = {}) {
       secrets: collectSecretsFromStaged(staged),
     });
     removeLegacyProfilePatch();
-    restoreAgentTracked(REPO_ROOT);
     console.log(
-      `Wrote ${profileInfo.path} (${profileInfo.sections.join(", ")}; ${profileInfo.bytes} bytes). Restored tracked .pi/agent to HEAD; auth.json kept.`,
+      `Wrote ${profileInfo.path} (${profileInfo.sections.join(", ")}; ${profileInfo.bytes} bytes). Tracked .pi/agent untouched; auth.json kept.`,
     );
 
     console.log(describePersistSummary({ gate, staged, order, capTargets, deciderPlan, report, profileInfo }));

@@ -42,7 +42,7 @@ Interactive bootstrap for a new machine or fresh clone. It asks which providers 
 make setup
 ```
 
-- **No lasting git branch.** Setup refuses if tracked `.pi/agent` files are dirty (`auth.json` ignored), applies your answers, writes `userprofile.json` at the repo root (gitignored), then restores tracked `.pi/agent` files to `HEAD`. `auth.json` stays untracked.
+- **No lasting git branch, no clean-tree requirement.** Setup never writes tracked files: API keys go to repo `.pi/agent/auth.json` (gitignored, mode 600) and personalization to `userprofile.json` (gitignored). A dirty worktree is fine; your uncommitted edits stay untouched.
 - `make install` copies through a temp staging dir and merges `userprofile.json` there (settings, deciders, capability models). Your checkout stays clean so you can `git pull` on main. A missing or malformed profile never blocks install; affected sections fall back to repo defaults with a warning. `userprofile.json` is plain JSON and safe to edit by hand; re-run `make setup` to regenerate it.
 - Escape hatch: `make install ARGS="--no-profile"`.
 - Yes/no prompts default to `n`. Existing keys kept on Enter. Keys never echoed.

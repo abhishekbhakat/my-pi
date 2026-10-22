@@ -28,7 +28,7 @@ export {
 export { createPrompter, isInteractive, parsePick, parseYesNo } from "./pi/setup/prompts.mjs";
 export { describeSettingsPlan, describeStaged, planSettings } from "./pi/setup/settings-plan.mjs";
 export { persistSetup } from "./pi/setup/persist.mjs";
-export { branchGate, setupRepoGate, restoreAgentTracked } from "./pi/setup/branch-gate.mjs";
+export { branchGate, setupRepoGate } from "./pi/setup/branch-gate.mjs";
 export {
   USER_PROFILE_VERSION,
   applyUserProfile,

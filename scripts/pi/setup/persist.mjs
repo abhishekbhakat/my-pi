@@ -28,10 +28,9 @@ function assertUnderAgentDir(agentDir, filePath) {
   return rel.split(path.sep).join("/");
 }
 
-export function persistSetup({ agentDir, staged, settingsPlan, settingsText, capEdits, deciderContents }) {
+export function persistSetup({ agentDir, staged, settingsText, decidersText, capEdits }) {
   /** @type {{ path: string, contents: string, mode?: number, rel: string }[]} */
   const writes = [];
-  const unchanged = [];
   const authKeys = [];
 
   const authPath = path.join(agentDir, "auth.json");
@@ -49,54 +48,32 @@ export function persistSetup({ agentDir, staged, settingsPlan, settingsText, cap
     const contents = `${JSON.stringify(merged, null, 2)}\n`;
     if (contents !== authText) {
       writes.push({ path: authPath, contents, mode: 0o600, rel: ".pi/agent/auth.json" });
-    } else {
-      unchanged.push(".pi/agent/auth.json");
     }
   }
 
+  // Tracked files are never written here: settings, decider roles and capability
+  // targets travel in userprofile.json and are applied to a staging copy at
+  // install time. Validate that those files did not change mid-session so the
+  // profile matches what was planned.
   const settingsPath = path.join(agentDir, "settings.json");
-  const liveSettingsText = fs.readFileSync(settingsPath, "utf8");
-  if (liveSettingsText !== settingsText) {
+  if (fs.readFileSync(settingsPath, "utf8") !== settingsText) {
     throw new SetupAbort("settings.json changed during setup; re-run");
   }
-  const settingsContents = `${JSON.stringify(settingsPlan.next, null, 2)}\n`;
-  if (settingsContents !== liveSettingsText) {
-    writes.push({
-      path: settingsPath,
-      contents: settingsContents,
-      rel: ".pi/agent/settings.json",
-    });
-  } else {
-    unchanged.push(".pi/agent/settings.json");
-  }
-
-  if (deciderContents) {
+  if (decidersText !== null && decidersText !== undefined) {
     const decidersPath = path.join(agentDir, "deciders.json");
-    const prevDeciders = exists(decidersPath) ? fs.readFileSync(decidersPath, "utf8") : null;
-    if (deciderContents !== prevDeciders) {
-      writes.push({ path: decidersPath, contents: deciderContents, rel: ".pi/agent/deciders.json" });
-    } else {
-      unchanged.push(".pi/agent/deciders.json");
-    }
+    const live = exists(decidersPath) ? fs.readFileSync(decidersPath, "utf8") : null;
+    if (live !== decidersText) throw new SetupAbort("deciders.json changed during setup; re-run");
   }
-
   for (const edit of capEdits) {
     const rel = assertUnderAgentDir(agentDir, edit.path);
-    const live = fs.readFileSync(edit.path, "utf8");
-    if (live !== edit.before) {
+    if (fs.readFileSync(edit.path, "utf8") !== edit.before) {
       throw new SetupAbort(`${rel} changed since plan; re-run setup`);
     }
-    if (live === edit.after) {
-      unchanged.push(`.pi/agent/${rel}`);
-      continue;
-    }
-    writes.push({ path: edit.path, contents: edit.after, rel: `.pi/agent/${rel}` });
   }
 
   for (const w of writes) writeAtomic(w.path, w.contents, w.mode);
   return {
     written: writes.map((w) => w.rel),
-    unchanged,
     authKeys,
   };
 }
@@ -125,8 +102,7 @@ export function describePersistSummary({ gate, staged, order, capTargets, decide
       : "  deciders: skipped",
     `  ${authLine}`,
     `  ${profileLine}`,
-    `  staged writes before restore: ${report.written.join(", ") || "(none)"}`,
-    "  Tracked .pi/agent restored to HEAD. Keep userprofile.json untracked. Do not commit secrets.",
+    "  Tracked .pi/agent untouched. Keep userprofile.json untracked. Do not commit secrets.",
   ].join("\n");
 }
 
