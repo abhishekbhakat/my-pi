@@ -41,3 +41,25 @@ If a `cf` command fails in a project that doesn't use Wrangler, don't fall back 
 | Auth | `cf auth login`, `cf auth whoami`, `cf auth list` |
 | D1 list | `cf d1 list` |
 | Intent search | `cf cli search "..."` |
+
+## Zero Trust (tunnels, devices, DNS)
+
+Inventory:
+
+```bash
+cf zero-trust devices list          # WARP devices
+cf zero-trust gateway rules list    # DNS override + network rules
+cf tunnels list                     # All tunnels
+cf mesh nodes list                  # WARP Connector tunnels
+cf network routes cidr list          # Tunnel routes
+cf dns records list --zone <zone>   # Zone DNS
+```
+
+Gotchas (hit 2026-10-25):
+
+- Delete fails `1022 active connections` while list shows none. Run `cf tunnels connections cleanup <tunnel-id>` first, stop local cloudflared, then `cf tunnels delete <tunnel-id> --force`.
+- Remote ingress has no per-field flags. Use `cf tunnels config update <id> --body '{"config":{"ingress":[{"hostname":"...","service":"http://localhost:..."},{"service":"http_status:404"}]}}'`.
+- `cf dns records edit <id> --zone <zone>` takes `--body` JSON only. No `--content` flag.
+- Fresh tunnel can reject connectors with `Failed to get tunnel` for ~1 min (propagation). Verify from a second host before recreating.
+- Split Tunnel: default device profile may miss the `192.168.0.0/16` exclude, so connector hosts route LAN via WARP and blackhole it (dead CIFS, dead origins). Compare `cf zero-trust devices profiles default get` against `... profiles custom list`, fix with `... default update --exclude '[...]'`. WARP Connector identity uses the default profile, not per-email ones. Policy auto-syncs, no daemon restart needed.
+- Windows cloudflared token lives in the service binPath. Rotate with `net stop cloudflared`, `sc config cloudflared binPath= "\"<exe>\" tunnel run --token <token>"`, `net start cloudflared`.

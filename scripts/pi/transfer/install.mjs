@@ -9,6 +9,7 @@ import { stageAgentTree } from "../setup/user-profile.mjs";
 import { ensureBunPiCli, ensureRepoExtensionsDeps, extensionInstallSpec, updatePiAndExtensions } from "../toolchain/bun-cli.mjs";
 import { run } from "../toolchain/run.mjs";
 import { mergeAuth } from "./merge-auth.mjs";
+import { ensureBinInPath } from "./bin-path.mjs";
 import { applySparseCheckouts, normalizeProxyOrigin, patchModelsProxy } from "./proxy.mjs";
 
 export function install(flags) {
@@ -96,6 +97,7 @@ export function install(flags) {
       console.log(`  Copied ${name} -> ${dst}`);
       copied += 1;
     }
+    ensureBinInPath(binDir);
     console.log("\n[auth.json]");
     // Prefer working-tree auth (untracked); staging copy also has it when present.
     const authSrc = exists(path.join(REPO_AGENT, "auth.json"))
