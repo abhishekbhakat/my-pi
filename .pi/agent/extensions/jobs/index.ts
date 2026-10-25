@@ -1,6 +1,6 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { StringEnum } from "@earendil-works/pi-ai";
-import { Text } from "@earendil-works/pi-tui";
+import { Box, Container, MouseRegion, Text } from "@earendil-works/pi-tui";
 import { Type } from "@sinclair/typebox";
 import {
 	OUTPUT_DEFAULT_LINES,
@@ -10,7 +10,7 @@ import {
 	spawnAction,
 	stopAction,
 } from "./actions.ts";
-import { buildSettledContent, formatElapsed, jobLine, jobName, renderJobs } from "./format.ts";
+import { buildSettledContent, buildSettledSummary, formatElapsed, jobLine, jobName, renderJobs } from "./format.ts";
 import { checkBashCommand } from "./guard.ts";
 import {
 	ensureRoot,
@@ -33,6 +33,56 @@ const DEBOUNCE_MS = 300;
 const DEBOUNCE_MAX_MS = 2000;
 const STALL_MS = 10 * 60_000;
 const STALL_TAIL_LINES = 20;
+
+type JobTone = "success" | "error" | "pending";
+
+function toneForJobs(jobs: readonly JobState[]): JobTone {
+	return jobs.some((job) => job.status === "stopped" || job.status === "lost" || (job.exitCode ?? 0) !== 0)
+		? "error"
+		: "success";
+}
+
+/** Collapsed job notice. Full tail lives in details.fullContent (not sent to the model). */
+class JobMessageComponent extends Container {
+	private expanded: boolean;
+
+	constructor(
+		private readonly summary: string,
+		private readonly full: string,
+		private readonly outputPad: number,
+		private readonly theme: any,
+		expanded: boolean,
+		private readonly tone: JobTone,
+	) {
+		super();
+		this.expanded = expanded;
+		this.rebuild();
+	}
+
+	setExpanded(expanded: boolean): void {
+		this.expanded = expanded;
+		this.rebuild();
+	}
+
+	private rebuild(): void {
+		this.clear();
+		const head = this.theme.fg("accent", "[job] ");
+		const hint = this.expanded ? this.theme.fg("dim", "\n(click to collapse)") : this.theme.fg("dim", "\n(click or ctrl+o to expand)");
+		const body = this.expanded ? this.full : this.summary;
+		const bgName = this.tone === "error" ? "toolErrorBg" : this.tone === "pending" ? "toolPendingBg" : "toolSuccessBg";
+		const bg = (value: string) => this.theme.bg(bgName, value);
+		const content = new Text(head + body + hint, 1, 1, bg);
+		const box = new Box(this.outputPad, 1, bg);
+		box.addChild(content);
+		this.addChild(
+			new MouseRegion(box, (event) => {
+				if (event.type !== "click" || event.button !== "left") return;
+				this.setExpanded(!this.expanded);
+				return { handled: true };
+			}),
+		);
+	}
+}
 
 export default function jobsExtension(pi: ExtensionAPI) {
 	let activated = false;
@@ -143,10 +193,11 @@ export default function jobsExtension(pi: ExtensionAPI) {
 			for (const job of jobs) {
 				tails.set(job.id, await tailLog(jobPaths(rootPath, job.id).log, STALL_TAIL_LINES));
 			}
-			const content = buildSettledContent(jobs, tails, running);
+			const fullContent = buildSettledContent(jobs, tails, running);
+			const content = buildSettledSummary(jobs, running);
 			const idle = ctxRef?.isIdle() ?? true;
 			await pi.sendMessage(
-				{ customType: CUSTOM_TYPE, content, display: true, details: { ids: jobs.map((job) => job.id) } },
+				{ customType: CUSTOM_TYPE, content, display: true, details: { ids: jobs.map((job) => job.id), fullContent, tone: toneForJobs(jobs) } },
 				idle ? { triggerTurn: true } : { triggerTurn: true, deliverAs: "followUp" },
 			);
 			for (const job of jobs) await markNotified(rootPath, job.id);
@@ -185,7 +236,7 @@ export default function jobsExtension(pi: ExtensionAPI) {
 			ctxRef?.ui.notify(`Job ${job.id} quiet for ${quiet}`, "warning");
 			try {
 				await pi.sendMessage(
-					{ customType: CUSTOM_TYPE, content, display: true, details: { ids: [job.id], stall: true } },
+					{ customType: CUSTOM_TYPE, content, display: true, details: { ids: [job.id], stall: true, tone: "pending" } },
 					{ deliverAs: "nextTurn" },
 				);
 			} catch {
@@ -224,8 +275,9 @@ export default function jobsExtension(pi: ExtensionAPI) {
 	}
 
 	pi.registerMessageRenderer(CUSTOM_TYPE, (message, options, theme) => {
-		const head = theme.fg("accent", "[job] ");
-		return new Text(head + String(message.content), options.outputPad, 0);
+		const details = message.details as { fullContent?: string; tone?: JobTone } | undefined;
+		const summary = String(message.content);
+		return new JobMessageComponent(summary, details?.fullContent ?? summary, options.outputPad, theme, options.expanded, details?.tone ?? "success");
 	});
 
 	pi.on("tool_call", (event) => {
@@ -257,7 +309,7 @@ export default function jobsExtension(pi: ExtensionAPI) {
 				const content = `Finished while pi was closed:\n${renderJobs(unsettled)}`;
 				try {
 					await pi.sendMessage(
-						{ customType: CUSTOM_TYPE, content, display: true, details: { ids: unsettled.map((job) => job.id) } },
+						{ customType: CUSTOM_TYPE, content, display: true, details: { ids: unsettled.map((job) => job.id), tone: toneForJobs(unsettled) } },
 						{ deliverAs: "nextTurn" },
 					);
 					for (const job of unsettled) await markNotified(root, job.id);

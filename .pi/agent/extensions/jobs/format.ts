@@ -48,6 +48,14 @@ export function clipTail(tail: string): string {
 		.join("\n");
 }
 
+export function buildSettledSummary(jobs: readonly JobState[], running: readonly JobState[]): string {
+	const lines: string[] = [jobs.length === 1 ? "Job finished." : `${jobs.length} jobs finished.`, ""];
+	for (const job of jobs) lines.push(jobLine(job));
+	lines.push("", `Full output: jobs output ${jobs.map((job) => job.id).join(", ")} (or click/ctrl+o to expand this notice).`);
+	if (running.length > 0) lines.push("", "Still running:", ...running.map((job) => `  ${jobLine(job)}`));
+	return lines.join("\n");
+}
+
 export function buildSettledContent(
 	jobs: readonly JobState[],
 	tails: ReadonlyMap<string, string>,
