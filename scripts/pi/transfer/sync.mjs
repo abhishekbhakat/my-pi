@@ -4,7 +4,8 @@ import path from "node:path";
 import { die } from "../errors.mjs";
 import { exists } from "../fs/read-write.mjs";
 import { relPosix, walkFiles, writeIfChanged } from "../fs/tree.mjs";
-import { HOME_AGENT, REPO_AGENT, REPO_ROOT, SYNC_ROOT } from "../paths.mjs";
+import { HOME_AGENT, REPO_AGENT, REPO_ROOT, SYNC_ROOT, USER_PROFILE } from "../paths.mjs";
+import { syncProfileAuth } from "../setup/user-profile.mjs";
 import { mergeAuth } from "./merge-auth.mjs";
 
 function loadSubmodules() {
@@ -88,7 +89,19 @@ export function sync(flags) {
     console.log("  Done.");
   }
   console.log("\n[auth.json]");
-  mergeAuth(path.join(REPO_AGENT, "auth.json"), path.join(HOME_AGENT, "auth.json"));
+  const liveAuthPath = path.join(HOME_AGENT, "auth.json");
+  mergeAuth(path.join(REPO_AGENT, "auth.json"), liveAuthPath);
+
+  console.log("\n[userprofile.json]");
+  const profileAuthCount = exists(USER_PROFILE)
+    ? syncProfileAuth({ profilePath: USER_PROFILE, authPath: liveAuthPath })
+    : null;
+  console.log(
+    profileAuthCount === null
+      ? "  Skipped (no userprofile.json)"
+      : `  auth section refreshed (${profileAuthCount} api_key providers)`,
+  );
+
   console.log("\n=============================");
   console.log(" Sync complete.");
   console.log(` Dirs synced: ${stats.dirs}`);

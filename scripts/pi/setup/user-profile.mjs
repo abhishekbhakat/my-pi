@@ -7,6 +7,7 @@ import { copyDirReplace, rmTree } from "../fs/tree.mjs";
 import { PROFILE_PATCH, REPO_AGENT, REPO_ROOT, USER_PROFILE } from "../paths.mjs";
 import { loadCapabilitySources, planCapabilityEdits } from "./capabilities.mjs";
 import { DECIDER_ROLES } from "./deciders.mjs";
+import { isOauthEntry } from "./providers.mjs";
 import { THINKING_LEVELS } from "./settings-plan.mjs";
 
 export const USER_PROFILE_VERSION = 1;
@@ -15,21 +16,28 @@ export const USER_PROFILE_VERSION = 1;
 const SETTINGS_KEYS = new Set(["enabledModels", "defaultProvider", "defaultModel", "modelThinkingLevels"]);
 const CAP_ROLES = ["timeline", "scout", "coach", "reviewer"];
 
-export function collectSecretsFromStaged(staged) {
-  const secrets = [];
-  if (staged?.apiKeys) {
-    for (const key of staged.apiKeys.values()) {
-      if (typeof key === "string" && key.trim()) secrets.push(key.trim());
+/** api_key entries of an auth.json object. OAuth entries never travel in the profile. */
+export function apiKeyEntries(auth) {  const out = {};
+  for (const [provider, entry] of Object.entries(auth ?? {})) {
+    if (
+      entry
+      && typeof entry === "object"
+      && !Array.isArray(entry)
+      && entry.type === "api_key"
+      && typeof entry.key === "string"
+      && entry.key.trim()
+    ) {
+      out[provider] = entry;
     }
   }
-  return secrets;
+  return out;
 }
 
 /**
  * Profile data from setup plans. Sections stay optional so a partial setup
  * still yields a valid profile.
  */
-export function buildUserProfile({ settingsPlan, deciderPlan, capTargets } = {}) {
+export function buildUserProfile({ settingsPlan, deciderPlan, capTargets, auth } = {}) {
   const profile = { version: USER_PROFILE_VERSION };
   if (settingsPlan?.next) {
     const settings = {};
@@ -48,24 +56,19 @@ export function buildUserProfile({ settingsPlan, deciderPlan, capTargets } = {})
     }
   }
   if (capTargets) profile.capabilities = capTargets;
+  const authKeys = apiKeyEntries(auth);
+  if (Object.keys(authKeys).length) profile.auth = authKeys;
   return profile;
 }
 
-/** Serialize + write userprofile.json. Refuses if a staged API key appears in the text. */
+/** Serialize + write userprofile.json. Carries api_key auth entries, so keep it untracked. */
 export function writeUserProfile({
   profile,
-  secrets = [],
   profilePath = USER_PROFILE,
 } = {}) {
   if (!profile || typeof profile !== "object") throw new SetupAbort("writeUserProfile: profile object required");
   const text = `${JSON.stringify(profile, null, 2)}\n`;
-  for (const secret of secrets) {
-    if (!secret || secret.length < 8) continue;
-    if (text.includes(secret)) {
-      throw new SetupAbort("refusing to write userprofile.json: an API key would be included. Nothing written.");
-    }
-  }
-  writeAtomic(profilePath, text);
+  writeAtomic(profilePath, text, 0o600);
   const sections = Object.keys(profile).filter((key) => key !== "version");
   return { path: profilePath, bytes: text.length, sections };
 }
@@ -199,6 +202,43 @@ function applyCapabilitiesProfile(agentDir, capabilities) {
   };
 }
 
+/** Merge profile api_key entries onto the agent dir's auth.json. */
+function applyAuthProfile(agentDir, auth) {
+  if (!isPlainObject(auth)) throw new SetupAbort("auth section must be an object");
+  const authPath = path.join(agentDir, "auth.json");
+  let current = {};
+  if (exists(authPath)) {
+    const parsed = parseJsonObjectFile(authPath, { redact: true });
+    if (!parsed.ok) throw new SetupAbort(`auth.json: ${parsed.reason}`);
+    current = parsed.data;
+  }
+  const next = { ...current };
+  const applied = [];
+  const skipped = [];
+  for (const [provider, entry] of Object.entries(auth)) {
+    if (
+      !isPlainObject(entry)
+      || entry.type !== "api_key"
+      || typeof entry.key !== "string"
+      || !entry.key.trim()
+    ) {
+      skipped.push(provider);
+      continue;
+    }
+    if (isOauthEntry(next[provider])) {
+      skipped.push(provider);
+      continue;
+    }
+    next[provider] = entry;
+    applied.push(provider);
+  }
+  if (!applied.length) throw new SetupAbort("no valid auth keys in profile");
+  const before = exists(authPath) ? fs.readFileSync(authPath, "utf8") : null;
+  const after = `${JSON.stringify(next, null, 2)}\n`;
+  if (before !== after) writeAtomic(authPath, after, 0o600);
+  return { applied, skipped };
+}
+
 /**
  * Apply userprofile.json onto a copied agent dir. Structural problems warn and
  * fall back to repo defaults; install never aborts on profile issues.
@@ -245,6 +285,7 @@ export function applyUserProfile(
     ["settings", profile.settings, applySettingsProfile],
     ["deciders", profile.deciders, applyDecidersProfile],
     ["capabilities", profile.capabilities, applyCapabilitiesProfile],
+    ["auth", profile.auth, applyAuthProfile],
   ];
   for (const [name, sectionData, applier] of sections) {
     if (sectionData === undefined) continue;
@@ -267,6 +308,36 @@ export function applyUserProfile(
     }
   }
   return { status: applied.length ? "applied" : "none", applied, warnings };
+}
+
+/** Refresh the auth section of userprofile.json from an auth.json file (sync). */
+export function syncProfileAuth({
+  profilePath = USER_PROFILE,
+  authPath,
+  log = console.log,
+} = {}) {
+  if (!exists(profilePath)) return null;
+  const parsed = parseJsonObjectFile(profilePath);
+  if (!parsed.ok) {
+    const reason = parsed.reason;
+    log(`WARNING: userprofile.json auth not refreshed: ${reason}`);
+    return null;
+  }
+  const profile = parsed.data;
+  if (profile.version !== USER_PROFILE_VERSION) {
+    log(`WARNING: userprofile.json auth not refreshed: unsupported version ${JSON.stringify(profile.version)}`);
+    return null;
+  }
+  const authPathToUse = authPath ?? path.join(REPO_AGENT, "auth.json");
+  const auth = exists(authPathToUse) ? parseJsonObjectFile(authPathToUse, { redact: true }) : { ok: true, data: {} };
+  if (!auth.ok) {
+    log(`WARNING: userprofile.json auth not refreshed: ${authPathToUse} ${auth.reason}`);
+    return null;
+  }
+  const keys = apiKeyEntries(auth.data);
+  profile.auth = keys;
+  writeAtomic(profilePath, `${JSON.stringify(profile, null, 2)}\n`, 0o600);
+  return Object.keys(keys).length;
 }
 
 /**

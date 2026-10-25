@@ -31,9 +31,11 @@ export { persistSetup } from "./pi/setup/persist.mjs";
 export { branchGate, setupRepoGate } from "./pi/setup/branch-gate.mjs";
 export {
   USER_PROFILE_VERSION,
+  apiKeyEntries,
   applyUserProfile,
   buildUserProfile,
   stageAgentTree,
+  syncProfileAuth,
   writeUserProfile,
 } from "./pi/setup/user-profile.mjs";
 export { probeClaude, updateClaude } from "./pi/toolchain/claude.mjs";
@@ -71,7 +73,8 @@ Usage:
 
 install  Copy repo .pi/agent -> ~/.pi/agent.
          If userprofile.json exists, merge it onto the copy in a temp staging
-         dir first (settings, deciders, capability models). A missing or bad
+         dir first (settings, deciders, capability models, auth api_keys). A
+         missing or bad
          profile never blocks install; affected sections fall back to repo
          defaults with a warning.
          Default also manages the bun pi CLI (npm global removed, bun install -g if

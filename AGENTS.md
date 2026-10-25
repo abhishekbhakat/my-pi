@@ -43,7 +43,7 @@ Examples:
 
 After changing source files, run `make install`. Install also merges repo `.pi/agent/auth.json` into `~/.pi/agent/auth.json` for `api_key` entries only (repo keys override, live-only keys stay). OAuth entries (`type: oauth`) never install from repo into live home.
 
-`make setup` writes untracked `userprofile.json` (personalization data: settings, deciders, capability models) and leaves tracked `.pi/agent` clean. `make install` merges that file onto the repo tree in a temp staging directory before copying to `~/.pi`. A stale or malformed profile never blocks install; affected sections warn and fall back to repo defaults. Edit `userprofile.json` directly or re-run `make setup` to regenerate it. Do not commit `userprofile.json` or `auth.json`.
+`make setup` writes untracked `userprofile.json` (personalization data: settings, deciders, capability models, and api_key auth entries; OAuth entries stay out) and leaves tracked `.pi/agent` clean. `make install` merges that file onto the repo tree in a temp staging directory before copying to `~/.pi`. A stale or malformed profile never blocks install; affected sections warn and fall back to repo defaults. Edit `userprofile.json` directly or re-run `make setup` to regenerate it. Do not commit `userprofile.json` or `auth.json`.
 
 ## Sync live config back into the repo
 

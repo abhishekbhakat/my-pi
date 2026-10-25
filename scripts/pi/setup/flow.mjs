@@ -20,7 +20,6 @@ import { createPrompter, isInteractive } from "./prompts.mjs";
 import { setupRepoGate } from "./branch-gate.mjs";
 import {
   buildUserProfile,
-  collectSecretsFromStaged,
   removeLegacyProfilePatch,
   writeUserProfile,
 } from "./user-profile.mjs";
@@ -153,9 +152,11 @@ export async function setup(_flags = {}) {
       capEdits,
     });
 
+    const auth = { ...(inputs.auth ?? {}) };
+    for (const [provider, key] of staged.apiKeys) auth[provider] = { type: "api_key", key };
+
     profileInfo = writeUserProfile({
-      profile: buildUserProfile({ settingsPlan, deciderPlan, capTargets }),
-      secrets: collectSecretsFromStaged(staged),
+      profile: buildUserProfile({ settingsPlan, deciderPlan, capTargets, auth }),
     });
     removeLegacyProfilePatch();
     console.log(
