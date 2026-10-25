@@ -43,14 +43,15 @@ Thumbs.db
 # IDE
 .vscode/
 
-# Plan skill state
-.agents/PLAN*.md
+# Plan skill state (tool-managed JSON + rendered view)
+/.agents/PLAN-*
 
 # setup writeAtomic temp files
 *.tmp
 
-# Tests
-tests/
+# Tests (kept local except the plan tool smoke suite)
+tests/*
+!tests/plan.smoke.ts
 
 # PR Lens writes its previews here. They are rebuilt on demand.
 .pr-lens/

@@ -218,15 +218,69 @@
       ]
     },
     "kimi-coding": {
+      "compat": {
+        "supportsDeveloperRole": false
+      },
+      "models": [
+        {
+          "id": "k3.1-pro-highspeed",
+          "name": "K3.1 Pro Highspeed",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 262144,
+          "maxTokens": 131072,
+          "cost": {
+            "input": 3,
+            "output": 15,
+            "cacheRead": 0.3,
+            "cacheWrite": 0
+          },
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": "low",
+            "medium": null,
+            "high": "high",
+            "xhigh": null,
+            "max": "max"
+          }
+        },
+        {
+          "id": "k3.1-pro",
+          "name": "K3.1 Pro",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 262144,
+          "maxTokens": 131072,
+          "cost": {
+            "input": 3,
+            "output": 15,
+            "cacheRead": 0.3,
+            "cacheWrite": 0
+          },
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": "low",
+            "medium": null,
+            "high": "high",
+            "xhigh": null,
+            "max": "max"
+          }
+        }
+      ],
       "modelOverrides": {
         "k3-256k": {
           "thinkingLevelMap": {
             "low": null,
             "high": null
           }
-        },
-        "kimi-for-coding": {
-          "contextWindow": 262144
         }
       }
     },
@@ -574,13 +628,101 @@
         "gemini-4-argon-contributor": {
           "contextWindow": 1048576
         },
-        "minimax-m3.1-flash-free": {
+        "mimo-v2.6-pro": {
           "contextWindow": 262144
         },
         "muse-spark-1.3-contributor": {
           "contextWindow": 262144
         }
       }
+    },
+    "explabs": {
+      "baseUrl": "https://api.experientiallabs.ai/v1",
+      "api": "openai-completions",
+      "apiKey": "$EXPLABS_API_KEY",
+      "compat": {
+        "supportsStore": false,
+        "supportsDeveloperRole": false,
+        "maxTokensField": "max_tokens"
+      },
+      "models": [
+        {
+          "id": "glm-5.3-uncensored:free",
+          "name": "GLM 5.3 Uncensored",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 262144,
+          "maxTokens": 131072,
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": "low",
+            "medium": null,
+            "high": "high",
+            "xhigh": "high",
+            "max": "high"
+          }
+        },
+        {
+          "id": "glm-5.3-flash-uncensored",
+          "name": "GLM 5.3 Flash Uncensored",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 262144,
+          "maxTokens": 131072,
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": "low",
+            "medium": null,
+            "high": "high",
+            "xhigh": null,
+            "max": "max"
+          }
+        },
+        {
+          "id": "deepseek-v4.1-flash-uncensored",
+          "name": "DeepSeek V4.1 Flash Uncensored",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 262144,
+          "maxTokens": 262144,
+          "thinkingLevelMap": {
+            "off": "none",
+            "minimal": null,
+            "low": "low",
+            "medium": null,
+            "high": "high",
+            "xhigh": null,
+            "max": "max"
+          }
+        },
+        {
+          "id": "mimo-v2.6-flash-uncensored",
+          "name": "MiMo V2.6 Flash Uncensored",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 262144,
+          "maxTokens": 65536,
+          "thinkingLevelMap": {
+            "off": "none",
+            "minimal": null,
+            "low": null,
+            "medium": null,
+            "high": "high",
+            "xhigh": null,
+            "max": null
+          }
+        }
+      ]
     }
   }
 }
