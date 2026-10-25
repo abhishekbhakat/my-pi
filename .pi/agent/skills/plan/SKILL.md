@@ -1,142 +1,114 @@
 ---
 name: plan
 description: >-
-  Use when user say "create plan". Coach-gated step by step plan and checklist
-  execution. Triggers: "create plan", plan skill, step by step plan,
-  checklist, work through list, complex multi-step task. Always gate plan,
-  checklist, each item, pivot, and completion through reasoning_coach.
-keywords: [create plan, plan, checklist, steps, coach-gated, pivot, verify complete]
+  Execute multi-step plans with tool-enforced checklist state. Triggers: "create
+  plan", plan skill, step by step plan, checklist, work through list, complex
+  multi-step task. reasoning_coach shapes the plan once and judges completion;
+  the plan tool enforces execution (checks, one item at a time, escalation).
+  Coach is event-driven, not per item.
+keywords: [create plan, plan, checklist, steps, execution, escalation, verify complete]
 ---
 
 # Plan
 
-Coach decides plan shape. Agent executes checklist. No shortcut.
+Coach shapes. Tool enforces. Agent executes.
 
-## Hard rules
+## Roles
 
-- Every plan, checklist, item result, pivot, completion verdict pass through `reasoning_coach`.
-- Plan edit allowed only when coach says change or pivot needed. No self-edit.
-- Item marked complete only after post-task coach check says complete.
-- One item at a time. Finish current item before next.
-- Checklist lives in `.agents/PLAN-<slug>.md`. State line each turn derived from file: done count, current item, next action. Read file before each state line.
-- No file edit without coach verdict.
-- No silent overwrite of active plan file. Ask resume, abandon, or start new.
+- `reasoning_coach`: plan build (once), completion verdict (once), escalation (only when a trigger fires).
+- `plan` tool: checklist state in `.agents/PLAN-<slug>.json`. Enforces checks, one active item, stale evidence, regression sweep, amend log. The generated `.md` is a view, not state.
+- Agent: execute items, run checks, escalate on triggers. Never self-certify an item.
 
-## Plan file
+## Start
 
-One file per plan: `.agents/PLAN-<slug>.md` at project root. Slug: 2-4 kebab words from goal, chosen at step 2 write time. Chat holds only one-line status.
+1. `plan { action: "list" }`. Active plan exists: ask user resume, abandon, or new. Never overwrite.
+2. No active plan: build one (below). `create` prunes done/abandoned plans automatically.
 
-Format:
+## Build (one coach call)
 
-```markdown
----
-goal: <user goal verbatim>
-created: <date>
-status: active | done | abandoned
-current: <item number>
-session: <PI_SESSION_ID or unknown>
----
+1. Gather context. Use `code_scout` when the code area is unfamiliar. Ask the user only questions that block the plan.
+2. Call `reasoning_coach` with Packet A. It returns plan + checklist as structured items.
+3. `plan { action: "create", goal, items, riskiestItem, risks }`. Every item needs a `check` (narrowest shell command, exit 0 = verified) or `judgment` (acceptance text) plus `files` and `assumptions`.
 
-## Plan
-1. ...
-
-## Checklist
-- [ ] 1. <item>
-- [x] 2. <item>
-
-## Pivots
-- Item N: <reason> -> <delta>
-```
-
-- Agent writes file only after coach verdict: build, mark complete, pivot, completion.
-- Gate steps N.1-N.4 never written to file. File holds item-level checklist only.
-- Coach packets pass `paths: [<actual plan filename>]` instead of embedding full plan text.
-- At skill start: glob `.agents/PLAN-*.md`. Read frontmatter before any delete. Delete files with `status: done` or `abandoned`. For each `status: active`, ask user: resume, abandon, or start new. Same-slug active file exists: never silent overwrite, never auto-append timestamp.
-
-## Protocol
-
-### 1. Coach builds plan
-
-Call `reasoning_coach`. Task packet:
+Packet A:
 
 ```text
 Goal: <user goal verbatim>
-Context: <paths, constraints, known state>
-Ask: build step by step plan. Order steps. Name dependencies. Flag ambiguity.
+Constraints: <repo rules, forbidden areas, scope limits>
+Code map: <code_scout output or known paths>
+Known unknowns: <what could not be determined>
+Ask: return plan + checklist as structured items. Fewest items that work, cap 5 per group.
+Per item: {action, files[], check: <shell cmd> | judgment: <acceptance text>,
+           dependsOn[], assumptions[]}
+Also: riskiestItem, top 3 risks, questions that block start.
 ```
 
-Output plan numbered. Ask user to confirm goal/scope before checklist when ambiguity remains.
+User questions from Packet A get answered before item 1.
 
-### 2. Coach builds checklist
+## Execute (per item, no coach)
 
-Second `reasoning_coach` call. Task packet:
+For the current item in order:
+
+1. `plan { action: "claim", item }`. Claim fails while dependencies or another item are open.
+2. Do the work. Minimal change inside `files`. `code_scout` only if the location is unclear.
+3. `plan { action: "check", item }`. Cmd items: the tool runs the check itself. Judgment items: run the judge (`boolean_guy` Noul over the acceptance text), then `complete` with `judgmentVerdict` and `judgmentSource` (who judged, what returned). No judge available: ESCALATE, never self-pass.
+4. `plan { action: "complete", item }`. Fails on stale or missing evidence; re-check and retry. On ESCALATE output, stop and run the escalation packet.
+5. State line for the user from the tool output: `Item N/M done: <name>. Next: <name>.`
+
+One item at a time. The tool blocks skips and parallel work; do not route around it.
+
+## Escalate (event-driven coach call)
+
+Tool output `ESCALATE [trigger]`, or any trigger below, means call `reasoning_coach` with Packet C before continuing. Not a trigger: a check failing once and fixed next try, lint or format fixes, wording changes.
+
+Triggers:
+
+1. `two_failed_fixes` — same item's check failed twice.
+2. `regression` — a finished item's check goes red (tool sweep).
+3. `scope_drift` — edits outside the item's declared files (tool sweep).
+4. `structural_amend` / `drop` — second structural amend in a run, or any drop.
+5. `uncheckable` — judgment item with no judge, or judge returns fail twice.
+6. Assumption broken — a Packet A assumption is false, or `code_scout` finds nothing where the plan said.
+7. Stuck — item exceeds roughly 25 tool calls.
+8. User changes scope mid-run.
+
+Packet C:
 
 ```text
-Approved plan: <plan from step 1>
-Ask: turn plan into step by step checklist. One bounded action per item.
-Each item verifiable. Fewest items that work. Cap 5 per group; split do-now vs later when longer.
+Goal + plan state: <plan status output>
+Trigger: <which one fired>
+Evidence: <failing check output, attempts tried, falsified assumption>
+Ask: continue | adjust item N | amend plan. Return delta as tool-format items.
 ```
 
-Freeze checklist. Number items `1..N`. Pick slug from goal. Write `PLAN-<slug>.md` with `status: active`, `current: 1`. File is frozen source of truth.
+Apply the delta with `plan { action: "amend", ... }` (reason required, append-only log), then resume the loop. Rewording an item is allowed without coach; anything structural escalates by tool.
 
-### 3. Expand checklist with coach gates
+## Complete (one coach call)
 
-Rewrite each item into fixed loop:
+After every item is done or dropped:
 
 ```text
-[N.1] Pre-coach: reason with coach on how to do item N.
-[N.2] Do item N.
-[N.3] Post-coach: reason with coach on whether item N complete.
-[N.4] Mark N complete only on coach pass. Else fix and re-check.
+Goal: <verbatim>
+Checklist: <plan status output: items + recorded check evidence>
+Amends: <amend log>
+Changes: <git diff --stat, or paths>
+Ask: goal met? gaps, regressions, scope creep, leftover work. Return new items or "done".
 ```
 
-Never collapse gate steps. Never batch pre/post checks across items.
-
-### 4. Execute loop per item
-
-For each item N in order:
-
-1. Pre-coach call. Packet: item text, full checklist, files touched so far, exact question: approach plus pitfalls for this item only.
-2. Do task. Read before edit. Minimal change. Narrowest check after change.
-3. Post-coach call. Packet: what changed (paths + lines), check output, exact question: item complete or not, what remains.
-4. Coach says complete: mark `[x]` in file, bump `current` to next item. Coach says incomplete: apply fix, rerun check, re-ask coach. No advance until pass.
-5. State line from file: `Item N/M done: <name>. Next: <N+1 name>.`
-
-### 5. Final completion check
-
-After all `[x]`, call `reasoning_coach`. Packet:
-
-```text
-Plan: <original plan>
-Checklist: <all items with [x]>
-Changes: <paths, checks run>
-Ask: plan complete against original goal? Name gaps, regressions, leftover work.
-```
-
-Coach says incomplete: add coach-named items only, run loop again. Coach says complete: set `status: done` in file, report done plus verification status. File deleted at next skill start.
-
-### 6. Pivot rule
-
-Mid-run coach says plan wrong, step missing, order wrong, pivot needed:
-
-1. Ask coach for revised plan/checklist delta.
-2. Apply coach delta to file only. Append to `## Pivots`: item number, reason, what changed.
-3. Resume loop at correct item. Never rewrite unchecked items on own judgment.
-
-User-requested scope change also needs coach pass before checklist edit.
+Coach returns new items: `amend add` each one and keep looping. Coach says done: report done with verification status. The plan file is pruned at the next `create`.
 
 ## Output shape
 
 ```text
-Plan: .agents/PLAN-fix-auth-timeout.md
+Plan: .agents/PLAN-fix-auth-timeout.json
 Checklist: 4 items, 1 done
 Progress: Item 2/4 done: <name>. Next: <name>. Run <narrowest check>?
 ```
 
 ## Ban list
 
-- No checklist from memory alone. Coach builds it.
-- No silent plan edit. Coach source or no edit. File edit counts as plan edit.
-- No `[x]` without post-coach pass.
-- No parallel items. No skip.
-- No tool-call narration. Fire `reasoning_coach`, report verdict.
+- No checklist from memory. Packet A builds it.
+- No `[x]` by assertion. Only `complete` with fresh evidence.
+- No per-item coach calls on clean runs. Coach at build, completion, and escalation only.
+- No silent plan edits. `amend` with reason; structural changes escalate.
+- No tool-call narration. Fire the tool, report state.
