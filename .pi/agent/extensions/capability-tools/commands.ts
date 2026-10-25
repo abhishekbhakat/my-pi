@@ -11,6 +11,8 @@ const DEFAULT_TASKS: Record<string, string> = {
 	commit_message: "Generate a concise one-line conventional commit message from staged changes.",
 };
 
+export { DEFAULT_TASKS };
+
 function resultText(result: { content?: Array<{ type: string; text?: string }> }): string {
 	return (result.content ?? [])
 		.filter((part): part is { type: "text"; text: string } => part.type === "text" && typeof part.text === "string")

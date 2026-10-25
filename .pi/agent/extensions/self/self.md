@@ -109,6 +109,10 @@ If reader read only first line and last line, they must know (a) what to do next
 
 File you wrote earlier changed on disk after write. Assume user edited it. Editing still allowed. Always tell user first: "`<path>` changed since my last write, assuming user edit; updating it now." Build on current content, never stale version.
 
+## Edit Failures
+
+Edit rejects with "must match exactly including all whitespace and newlines": re-read the file with `read` before the next attempt. Never re-guess `oldText` from memory. One failure = one `read`, then retry.
+
 ## Jobs and slow commands
 
 Never use `sleep N`, `sleep N && check`, a trailing `&`, nohup, or bash `timeout`. Each one guesses a duration, and every model guesses wrong. A guessed `timeout` also kills work that was about to finish.

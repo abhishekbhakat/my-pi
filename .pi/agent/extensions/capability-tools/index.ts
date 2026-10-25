@@ -1,6 +1,6 @@
 import type { ExtensionAPI, ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
-import { registerCapabilityCommands } from "./commands";
+import { registerCapabilityCommands, DEFAULT_TASKS } from "./commands";
 import { BOOLEAN_GUY_DEF, BOOLEAN_GUY_SCHEMA, executeBooleanGuy } from "./booleanGuy";
 import { loadCapabilityDefs } from "./definitions";
 import { applyCapabilityPrune } from "./prune";
@@ -13,7 +13,7 @@ const SCOUT_PATHS_DESCRIPTION =
 
 function capabilityInputSchema(pathsDescription: string) {
 	return Type.Object({
-		task: Type.String({ description: "Question, objective, or request for the helper capability" }),
+		task: Type.Optional(Type.String({ description: "Question, objective, or request for the helper capability. Omit for the tool's default task." })),
 		paths: Type.Optional(Type.Array(Type.String({ description: pathsDescription }))),
 		includeConversation: Type.Optional(Type.Boolean({ description: "Override the capability default for recent conversation context" })),
 		includeTree: Type.Optional(Type.Boolean({ description: "Override the capability default for workspace tree context" })),
@@ -31,8 +31,10 @@ function registerCapabilityTool(pi: ExtensionAPI, def: CapabilityDef): void {
 		promptSnippet: def.promptSnippet ?? def.description,
 		promptGuidelines: def.promptGuidelines.length > 0 ? def.promptGuidelines : undefined,
 		parameters: capabilityInputSchema(pathsDescription),
-		execute: async (_callId, args, signal, onUpdate, ctx) =>
-			executeCapability(pi, def, args as CapabilityToolInput, signal, onUpdate, ctx),
+		execute: async (_callId, args, signal, onUpdate, ctx) => {
+			const input = { ...args, task: args.task ?? DEFAULT_TASKS[def.toolName] } as CapabilityToolInput;
+			return executeCapability(pi, def, input, signal, onUpdate, ctx);
+		},
 	});
 }
 
