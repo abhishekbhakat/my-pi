@@ -284,40 +284,16 @@
         }
       }
     },
-    "openai-codex": {
+    "openai": {
       "modelOverrides": {
         "gpt-6-astra": {
-          "thinkingLevelMap": {
-            "off": null,
-            "minimal": null,
-            "low": null,
-            "medium": null,
-            "high": "high",
-            "xhigh": "xhigh",
-            "max": "max"
-          }
+          "contextWindow": 278528
         },
-        "gpt-6-sol": {
-          "thinkingLevelMap": {
-            "off": null,
-            "minimal": null,
-            "low": null,
-            "medium": null,
-            "high": "high",
-            "xhigh": "xhigh",
-            "max": "max"
-          }
+        "gpt-6.1-sol": {
+          "contextWindow": 278528
         },
-        "gpt-6-luna": {
-          "thinkingLevelMap": {
-            "off": null,
-            "minimal": null,
-            "low": null,
-            "medium": null,
-            "high": null,
-            "xhigh": null,
-            "max": "max"
-          }
+        "gpt-6.1-terra": {
+          "contextWindow": 278528
         }
       }
     },
