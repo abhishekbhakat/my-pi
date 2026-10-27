@@ -39,6 +39,7 @@
     "claude-code-sdk/sonnet",
     "deepseek/deepseek-flash",
     "explabs/deepseek-v4.1-flash-uncensored",
+    "explabs/glm-5.3-uncensored",
     "explabs/glm-5.3-uncensored:free",
     "grok-cli/grok-4.5",
     "grok-cli/grok-4.7-build-fast",
