@@ -1,0 +1,14 @@
+#!/usr/bin/env node
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+const { spawnSync } = require("node:child_process");
+
+const cli = path.join(os.homedir(), ".pi", "agent", "skills", "atlassian", "cli.mjs");
+if (!fs.existsSync(cli)) {
+  console.error("confluence: Atlassian skill missing. Run make install in the my-pi repository.");
+  process.exit(1);
+}
+const result = spawnSync(process.execPath, [cli, "confluence", ...process.argv.slice(2)], { stdio: "inherit" });
+if (result.error) console.error(`confluence: ${result.error.code || "cannot start CLI"}`);
+process.exitCode = result.status ?? 1;
