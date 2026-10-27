@@ -88,7 +88,7 @@ export function install(flags) {
     console.log("\n[bin]");
     const binDir = path.join(HOME_AGENT, "bin");
     fs.mkdirSync(binDir, { recursive: true });
-    for (const name of ["tf", "ssm-server"]) {
+    for (const name of ["tf", "ssm-server", "mcp-to-skill", "jira", "confluence"]) {
       const src = path.join(REPO_ROOT, "scripts", name === "ssm-server" ? "ssm-server.mjs" : name);
       if (!exists(src)) continue;
       const dst = path.join(binDir, name);

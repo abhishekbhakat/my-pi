@@ -1,0 +1,13 @@
+{
+  "name": "atlassian",
+  "command": "npx",
+  "args": [
+    "-y",
+    "mcp-remote@0.15.2",
+    "https://mcp.atlassian.com/v2/mcp",
+    "--transport",
+    "http-only",
+    "--auth-timeout",
+    "300"
+  ]
+}
