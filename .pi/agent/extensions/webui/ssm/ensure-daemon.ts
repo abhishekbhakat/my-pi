@@ -112,10 +112,11 @@ export async function restartSsmDaemon(): Promise<DaemonHealth> {
 	return up;
 }
 
-/** Non-disruptive: restart only when dead or version-mismatched. */
+/** Non-disruptive: accept newer daemons; restart only when dead or older. */
 export async function ensureSsmDaemon(): Promise<DaemonHealth> {
 	const health = await fetchHealth();
-	if (health?.ok && health.kind === SSM_DAEMON_KIND && health.version === SSM_DAEMON_VERSION) {
+	if (health?.ok && health.kind === SSM_DAEMON_KIND &&
+		(health.version === SSM_DAEMON_VERSION || Number(health.version) > Number(SSM_DAEMON_VERSION))) {
 		return health;
 	}
 	return restartSsmDaemon();

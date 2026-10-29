@@ -110,9 +110,10 @@ export function renderSessionViewHtml(sessionPath: string, themeName?: string): 
 
 	return assets.templateHtml
 		.replace("<title>Session Export</title>", `<title>${title}</title>`)
-		.replace("{{CSS}}", css)
-		.replace("{{JS}}", js)
-		.replace("{{SESSION_DATA}}", sessionDataBase64)
-		.replace("{{MARKED_JS}}", assets.markedJs)
-		.replace("{{HIGHLIGHT_JS}}", assets.highlightJs);
+		.replace("{{CSS}}", () => css)
+		.replace("{{JS}}", () => js.replace('href="/"', `href="/live?id=${encodeURIComponent(sessionPath)}"`))
+		.replace("{{SESSION_DATA}}", () => sessionDataBase64)
+		.replace("{{MARKED_JS}}", () => assets.markedJs)
+		.replace("{{MARKED_CJK_FRIENDLY_JS}}", () => assets.markedCjkFriendlyJs)
+		.replace("{{HIGHLIGHT_JS}}", () => assets.highlightJs);
 }

@@ -1,6 +1,6 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { StringEnum } from "@earendil-works/pi-ai";
-import { Box, Container, MouseRegion, Text } from "@earendil-works/pi-tui";
+import { JobMessageComponent } from "./message.ts";
 import { Type } from "@sinclair/typebox";
 import {
 	OUTPUT_DEFAULT_LINES,
@@ -40,48 +40,6 @@ function toneForJobs(jobs: readonly JobState[]): JobTone {
 	return jobs.some((job) => job.status === "stopped" || job.status === "lost" || (job.exitCode ?? 0) !== 0)
 		? "error"
 		: "success";
-}
-
-/** Collapsed job notice. Full tail lives in details.fullContent (not sent to the model). */
-class JobMessageComponent extends Container {
-	private expanded: boolean;
-
-	constructor(
-		private readonly summary: string,
-		private readonly full: string,
-		private readonly outputPad: number,
-		private readonly theme: any,
-		expanded: boolean,
-		private readonly tone: JobTone,
-	) {
-		super();
-		this.expanded = expanded;
-		this.rebuild();
-	}
-
-	setExpanded(expanded: boolean): void {
-		this.expanded = expanded;
-		this.rebuild();
-	}
-
-	private rebuild(): void {
-		this.clear();
-		const head = this.theme.fg("accent", "[job] ");
-		const hint = this.expanded ? this.theme.fg("dim", "\n(click to collapse)") : this.theme.fg("dim", "\n(click or ctrl+o to expand)");
-		const body = this.expanded ? this.full : this.summary;
-		const bgName = this.tone === "error" ? "toolErrorBg" : this.tone === "pending" ? "toolPendingBg" : "toolSuccessBg";
-		const bg = (value: string) => this.theme.bg(bgName, value);
-		const content = new Text(head + body + hint, 1, 1, bg);
-		const box = new Box(this.outputPad, 1, bg);
-		box.addChild(content);
-		this.addChild(
-			new MouseRegion(box, (event) => {
-				if (event.type !== "click" || event.button !== "left") return;
-				this.setExpanded(!this.expanded);
-				return { handled: true };
-			}),
-		);
-	}
 }
 
 export default function jobsExtension(pi: ExtensionAPI) {

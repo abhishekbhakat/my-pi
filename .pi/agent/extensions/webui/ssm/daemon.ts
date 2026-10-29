@@ -10,7 +10,8 @@ import { SettingsManager } from "@earendil-works/pi-coding-agent";
 import { json, readJson, text } from "../utils/http";
 import { SSM_DAEMON_KIND, SSM_DAEMON_VERSION, SSM_PORT } from "./constants";
 import { proxyToLive, renderNoLivePage } from "./proxy";
-import { discoverRunningSessions } from "./discover";
+import { canonicalLiveUrl, selectLiveBackend } from "./live-routing";
+import { readProcessInfo } from "./process-info";
 import { handleSsmRoutes, type SsmLiveInfo } from "./routes";
 
 export interface LiveBackend {
@@ -19,6 +20,8 @@ export interface LiveBackend {
 	id?: string;
 	path?: string;
 	cwd?: string;
+	startedAt?: number;
+	parentPid?: number;
 }
 
 const PIDFILE = join(homedir(), ".pi", "agent", "ssm-server.pid");
@@ -51,15 +54,7 @@ function pruneDead(): void {
 
 function liveList(): SsmLiveInfo[] {
 	pruneDead();
-	const byKey = new Map<string, SsmLiveInfo>();
-	for (const d of discoverRunningSessions()) {
-		byKey.set(d.path || d.id || String(d.pid), d);
-	}
-	for (const r of lives.values()) {
-		const key = r.path || r.id || String(r.pid);
-		byKey.set(key, { ...byKey.get(key), ...r });
-	}
-	return [...byKey.values()];
+	return [...lives.values()];
 }
 
 function writePid(): void {
@@ -87,7 +82,11 @@ async function handleLiveApi(
 			json(response, 400, { error: "port and pid required" });
 			return true;
 		}
+		const previous = lives.get(pid);
+		const info = previous?.port === port ? previous : readProcessInfo(pid);
 		lives.set(pid, {
+			startedAt: info.startedAt ?? (typeof body.startedAt === "number" && Number.isFinite(body.startedAt) ? body.startedAt : undefined),
+			parentPid: info.parentPid ?? (Number.isSafeInteger(body.parentPid) ? body.parentPid : undefined),
 			port,
 			pid,
 			id: typeof body.id === "string" ? body.id : undefined,
@@ -108,27 +107,9 @@ async function handleLiveApi(
 	return false;
 }
 
-function cookieLiveId(request: IncomingMessage): string | undefined {
-	const raw = request.headers.cookie;
-	if (!raw) return undefined;
-	const match = raw.match(/(?:^|;\s*)ssm-live-id=([^;]+)/);
-	return match ? decodeURIComponent(match[1]) : undefined;
-}
-
-function pickLive(url: URL, request: IncomingMessage): LiveBackend | undefined {
+function pickLive(url: URL): LiveBackend | undefined {
 	pruneDead();
-	const want = url.searchParams.get("id") || cookieLiveId(request);
-	if (want) {
-		for (const backend of lives.values()) {
-			if (backend.id === want || backend.path === want) return backend;
-		}
-		// Unknown id — do not fall back to a random other session.
-		return undefined;
-	}
-	const all = [...lives.values()];
-	// Bare /live is only unambiguous when exactly one pi is live.
-	if (all.length === 1) return all[0];
-	return undefined;
+	return selectLiveBackend(lives.values(), url.searchParams.get("id"), url.searchParams.get("pid"));
 }
 
 async function route(request: IncomingMessage, response: ServerResponse): Promise<void> {
@@ -151,17 +132,22 @@ async function route(request: IncomingMessage, response: ServerResponse): Promis
 	const isLivePath =
 		url.pathname === "/" || url.pathname === "/live" || url.pathname.startsWith("/__webui/");
 	if (isLivePath) {
-		const target = pickLive(url, request);
+		const target = pickLive(url);
 		if (!target) {
-			text(response, 200, renderNoLivePage(), "text/html; charset=utf-8");
+			if (url.pathname.startsWith("/__webui/")) {
+				json(response, 409, { error: "live process unavailable; reopen from /ssm" });
+			} else {
+				text(response, 404, renderNoLivePage(), "text/html; charset=utf-8");
+			}
 			return;
 		}
-		const extraHeaders =
-			target.id && (url.pathname === "/live" || url.pathname === "/")
-				? { "set-cookie": `ssm-live-id=${encodeURIComponent(target.id)}; Path=/; SameSite=Lax` }
-				: undefined;
+		if (request.method === "GET" && !url.searchParams.has("pid") && (url.pathname === "/live" || url.pathname === "/")) {
+			response.writeHead(302, { location: canonicalLiveUrl(url, target), "cache-control": "no-store" });
+			response.end();
+			return;
+		}
 		const backendPath =
-			url.pathname === "/live" || url.pathname === "/" ? "/" : (request.url ?? "/");
+			url.pathname === "/live" || url.pathname === "/" ? `/${url.search}` : (request.url ?? "/");
 		proxyToLive(
 			request,
 			response,
@@ -169,7 +155,7 @@ async function route(request: IncomingMessage, response: ServerResponse): Promis
 			() => {
 				lives.delete(target.pid);
 			},
-			{ path: backendPath, extraHeaders },
+			{ path: backendPath },
 		);
 		return;
 	}

@@ -1,5 +1,7 @@
 import { SSM_ORIGIN } from "./constants";
 
+const PROCESS_STARTED_AT = Date.now() - process.uptime() * 1000;
+
 export interface LiveRegistration {
 	port: number;
 	pid: number;
@@ -13,7 +15,7 @@ export async function registerLive(info: LiveRegistration): Promise<boolean> {
 		const res = await fetch(`${SSM_ORIGIN}/api/live`, {
 			method: "POST",
 			headers: { "content-type": "application/json" },
-			body: JSON.stringify(info),
+			body: JSON.stringify({ ...info, parentPid: process.ppid, startedAt: PROCESS_STARTED_AT }),
 			signal: AbortSignal.timeout(1500),
 		});
 		return res.ok;

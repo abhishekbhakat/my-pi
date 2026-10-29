@@ -1,10 +1,12 @@
 import type { ExtensionAPI, ExtensionCommandContext, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { buildSessionData } from "../core/session-data";
+import { buildEntryDelta, buildSessionData } from "../core/session-data";
 import { renderWebUiPage } from "../core/page";
 import type { WebUiRuntime } from "../runtime/types";
 import { broadcastRuntime, sendSnapshot } from "../runtime/broadcast";
 import { json, makeClientId, readJson, sendSseHeaders, text } from "../utils/http";
+import { handleModelSettings } from "./model-controls";
+import { getLiveAsset } from "../core/assets";
 
 interface PromptRequestBody {
 	message?: string;
@@ -53,6 +55,33 @@ export async function routeRequest(
 		return;
 	}
 
+	const matchesSession = () => {
+		const identity = url.searchParams.get("id");
+		const manager = runtime.currentSessionManager;
+		return !!identity && !!manager &&
+			(!url.searchParams.has("pid") || url.searchParams.get("pid") === String(process.pid)) &&
+			(identity === manager.getSessionId() || identity === manager.getSessionFile());
+	};
+	if (!matchesSession()) {
+		json(response, 409, { error: "session no longer live here; reopen from /ssm" });
+		return;
+	}
+
+	if (request.method === "GET" && url.pathname.startsWith("/__webui/assets/")) {
+		const asset = getLiveAsset(url.pathname);
+		if (!asset) {
+			json(response, 404, { error: "asset version unavailable; reopen /webui" });
+			return;
+		}
+		response.writeHead(200, {
+			"content-type": asset.contentType,
+			"cache-control": "private, max-age=31536000, immutable",
+			"x-content-type-options": "nosniff",
+		});
+		response.end(asset.body);
+		return;
+	}
+
 	const theme = runtime.themeName ?? themeName;
 
 	const withLiveCtx = <T>(fn: (live: ExtensionContext | ExtensionCommandContext) => T): T | undefined => {
@@ -85,6 +114,21 @@ export async function routeRequest(
 		return;
 	}
 
+	if (request.method === "GET" && url.pathname === "/__webui/api/entries") {
+		const delta = buildEntryDelta(ctx.sessionManager, {
+			sessionId: url.searchParams.get("sessionId"),
+			count: url.searchParams.has("count") ? Number(url.searchParams.get("count")) : -1,
+			lastId: url.searchParams.get("lastId"),
+		});
+		json(response, 200, delta);
+		return;
+	}
+
+	if (url.pathname === "/__webui/api/settings") {
+		await handleModelSettings(pi, ctx, request, response, matchesSession);
+		return;
+	}
+
 	if (request.method === "GET" && url.pathname === "/__webui/events") {
 		const clientId = makeClientId();
 		sendSseHeaders(response);
@@ -101,6 +145,10 @@ export async function routeRequest(
 
 	if (request.method === "POST" && url.pathname === "/__webui/api/prompt") {
 		const body = await readJson<PromptRequestBody>(request);
+		if (!matchesSession()) {
+			json(response, 409, { error: "session changed while reading prompt" });
+			return;
+		}
 		const message = body.message?.trim();
 		if (!message) {
 			json(response, 400, { error: "message is required" });

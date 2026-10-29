@@ -48,12 +48,16 @@ export function clipTail(tail: string): string {
 		.join("\n");
 }
 
+/** Also compacts notices recorded by older versions. */
+export function compactJobSummary(content: string): string {
+	const lines = content.split("\n").map((line) => line.trim()).filter(Boolean);
+	const jobs = lines.filter((line) => /^j\d+\s+(exited|stopped|lost)\b/.test(line));
+	return (jobs.length ? jobs.join("; ") : lines[0] ?? "Job update").replace(/\s+/g, " ");
+}
+
 export function buildSettledSummary(jobs: readonly JobState[], running: readonly JobState[]): string {
-	const lines: string[] = [jobs.length === 1 ? "Job finished." : `${jobs.length} jobs finished.`, ""];
-	for (const job of jobs) lines.push(jobLine(job));
-	lines.push("", `Full output: jobs output ${jobs.map((job) => job.id).join(", ")} (or click/ctrl+o to expand this notice).`);
-	if (running.length > 0) lines.push("", "Still running:", ...running.map((job) => `  ${jobLine(job)}`));
-	return lines.join("\n");
+	const summary = jobs.map(jobLine).join("; ");
+	return running.length ? `${summary} | ${running.length} still running` : summary;
 }
 
 export function buildSettledContent(
@@ -61,15 +65,15 @@ export function buildSettledContent(
 	tails: ReadonlyMap<string, string>,
 	running: readonly JobState[],
 ): string {
-	const lines: string[] = [jobs.length === 1 ? "Job finished." : `${jobs.length} jobs finished.`, ""];
+	const lines: string[] = [jobs.length === 1 ? "Job finished." : `${jobs.length} jobs finished.`];
 	for (const job of jobs) lines.push(jobLine(job));
 	for (const job of jobs) {
 		const tail = clipTail(tails.get(job.id) ?? "");
 		if (tail.length === 0) continue;
-		lines.push("", `${job.id} output (last ${NOTIFY_TAIL_LINES} lines):`, "```", tail, "```");
+		lines.push(`${job.id} output (last ${NOTIFY_TAIL_LINES} lines):`, "```", tail, "```");
 	}
 	if (running.length > 0) {
-		lines.push("", "Still running:", ...running.map((job) => `  ${jobLine(job)}`));
+		lines.push("Still running:", ...running.map((job) => `  ${jobLine(job)}`));
 	}
 	let content = lines.join("\n");
 	if (content.length > NOTIFY_MAX_CHARS) {

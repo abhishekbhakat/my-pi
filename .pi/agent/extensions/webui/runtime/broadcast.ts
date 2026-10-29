@@ -1,5 +1,4 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { buildSessionData } from "../core/session-data";
 import type { WebUiRuntime } from "./types";
 import { writeSse } from "../utils/http";
 
@@ -35,18 +34,16 @@ export function broadcastRuntime(runtime: WebUiRuntime, ctx?: ExtensionContext):
 	broadcast(runtime, "runtime", runtimeSnapshot(ctx, runtime));
 }
 
-export function broadcastSession(pi: ExtensionAPI, runtime: WebUiRuntime, ctx: ExtensionContext): void {
+export function broadcastSession(_pi: ExtensionAPI, runtime: WebUiRuntime, ctx: ExtensionContext): void {
 	broadcast(runtime, "session", {
-		sessionData: buildSessionData(pi, ctx, runtime),
 		runtime: runtimeSnapshot(ctx, runtime),
 	});
 }
 
-export function sendSnapshot(pi: ExtensionAPI, runtime: WebUiRuntime, ctx: ExtensionContext, clientId: string): void {
+export function sendSnapshot(_pi: ExtensionAPI, runtime: WebUiRuntime, ctx: ExtensionContext, clientId: string): void {
 	const client = runtime.clients.get(clientId);
 	if (!client) return;
 	writeSse(client.response, "snapshot", {
-		sessionData: buildSessionData(pi, ctx, runtime),
 		runtime: runtimeSnapshot(ctx, runtime),
 	});
 }

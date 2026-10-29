@@ -151,11 +151,19 @@ export function registerSessionEvents(pi: ExtensionAPI, runtime: WebUiRuntime): 
 			name: event.model.name,
 		};
 		broadcastRuntime(runtime, ctx);
+		broadcast(runtime, "settings", {});
+	});
+
+	pi.on("thinking_level_select", async () => {
+		broadcast(runtime, "settings", {});
 	});
 
 	pi.on("session_shutdown", async (event) => {
 		// Drop disposed ctx before any async work so heartbeat/HTTP cannot touch it.
 		clearSessionRefs(runtime);
+		for (const client of runtime.clients.values()) client.response.end();
+		runtime.clients.clear();
+		await unregisterLive(process.pid);
 		// Catalog may still list this session until force refresh / TTL.
 		void invalidateSsmCatalog();
 		const keep = event.reason === "new" || event.reason === "resume" || event.reason === "fork";
@@ -164,7 +172,6 @@ export function registerSessionEvents(pi: ExtensionAPI, runtime: WebUiRuntime): 
 			clearInterval(heartbeat);
 			heartbeat = undefined;
 		}
-		await unregisterLive(process.pid);
 		await shutdownWebUiServer(runtime);
 	});
 }

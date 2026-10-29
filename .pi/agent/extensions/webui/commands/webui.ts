@@ -21,7 +21,7 @@ export function registerWebUiCommand(pi: ExtensionAPI, runtime: WebUiRuntime): v
 				const themeName = SettingsManager.create(ctx.cwd).getTheme();
 				const sessionId = ctx.sessionManager.getSessionId();
 				const { port } = await ensureWebUiServer(pi, runtime, ctx, themeName);
-				await registerLive({
+				const registered = await registerLive({
 					port,
 					pid: process.pid,
 					id: sessionId,
@@ -29,8 +29,8 @@ export function registerWebUiCommand(pi: ExtensionAPI, runtime: WebUiRuntime): v
 					cwd: ctx.cwd,
 				});
 
-				// Must include ?id= so daemon pickLive binds this session, not "last registered".
-				const url = `${SSM_ORIGIN}/live?id=${encodeURIComponent(sessionId)}`;
+				if (!registered) throw new Error("could not register this Pi process with SSM");
+				const url = `${SSM_ORIGIN}/live?id=${encodeURIComponent(sessionId)}&pid=${process.pid}`;
 				ctx.ui.notify(`Web UI: ${url}`, "info");
 				await openBrowser(pi, url);
 			} catch (error) {
