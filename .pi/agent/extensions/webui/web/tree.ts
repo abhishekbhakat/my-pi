@@ -5,9 +5,10 @@ export const WINDOWED_TREE_JS = String.raw`
         let state = container.__piLiveTree;
         if (!state) {
           state = container.__piLiveTree = {
-            rows: [], active: new Set(), cache: new Map(), rowHeight: 13, start: -1, end: -1, frame: false
+            rows: [], active: new Set(), cache: new Map(), rowHeight: 13, start: -1, end: -1, frame: false, maxWidth: 0
           };
           container.setAttribute('role', 'list');
+          container.style.overflowX = 'auto';
           container.addEventListener('scroll', () => {
             if (state.frame) return;
             state.frame = true;
@@ -47,9 +48,13 @@ export const WINDOWED_TREE_JS = String.raw`
         if (state.start === start && state.end === end) return;
         state.start = start; state.end = end;
         const fragment = document.createDocumentFragment();
+        const scrollLeft = container.scrollLeft;
+        const spacers = [];
         const spacer = height => {
           const element = document.createElement('div');
           element.style.height = Math.max(0, height) + 'px';
+          element.style.minWidth = state.maxWidth + 'px';
+          spacers.push(element);
           element.setAttribute('aria-hidden', 'true');
           fragment.appendChild(element);
         };
@@ -66,7 +71,8 @@ export const WINDOWED_TREE_JS = String.raw`
             node.dataset.id = entry.id;
             node.setAttribute('role', 'listitem');
             node.style.height = state.rowHeight + 'px';
-            node.style.overflow = 'hidden';
+            node.style.width = 'max-content';
+            node.style.minWidth = '100%';
             const prefix = document.createElement('span'); prefix.className = 'tree-prefix';
             const marker = document.createElement('span'); marker.className = 'tree-marker';
             const content = document.createElement('span'); content.className = 'tree-content';
@@ -89,6 +95,11 @@ export const WINDOWED_TREE_JS = String.raw`
         }
         spacer((state.rows.length - end) * state.rowHeight);
         container.replaceChildren(fragment);
+        for (const cached of state.cache.values()) {
+          if (visible.has(cached.entry.id)) state.maxWidth = Math.max(state.maxWidth, cached.node.scrollWidth);
+        }
+        for (const element of spacers) element.style.minWidth = state.maxWidth + 'px';
+        container.scrollLeft = scrollLeft;
         if (state.scrollTo !== undefined) {
           container.scrollTop = state.scrollTo;
           delete state.scrollTo;

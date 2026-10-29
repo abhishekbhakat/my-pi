@@ -118,6 +118,7 @@ export function registerSessionEvents(pi: ExtensionAPI, runtime: WebUiRuntime): 
 		runtime.currentSessionManager = ctx.sessionManager;
 		runtime.isStreaming = false;
 		broadcast(runtime, "agent", { state: "end" });
+		broadcastRuntime(runtime, ctx);
 		broadcastSession(pi, runtime, ctx);
 	});
 
