@@ -360,6 +360,7 @@ export const WEBUI_SHELL_JS = [
   "      'body { overflow: hidden; }',",
   "      '#app { height: 100vh; height: 100dvh; min-height: 0; overflow: hidden; }',",
   "      '#content { height: 100%; min-height: 0; }',",
+  "      '#tree-container .tree-node.in-path:not(.active):not(:hover) { background: transparent; }',",
   "      '#webui-control-bar { padding: 16px; border-top: 1px solid var(--dim); background: var(--exportCardBg); position: sticky; bottom: 0; z-index: 20; margin-top: auto; }',",
   "      '.webui-status { display: flex; flex-direction: column; gap: 0; color: var(--muted); font-size: 11px; margin-bottom: 8px; }',",
   "      '.webui-prompt-form { display: flex; flex-direction: column; gap: 8px; }',",
