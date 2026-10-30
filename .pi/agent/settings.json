@@ -45,6 +45,7 @@
     "grok-cli/grok-4.7-build-fast",
     "openai/gpt-6-astra",
     "openai/gpt-6.1-sol",
+    "openai/gpt-6.1-terra",
     "opencode-go/deepseek-v4.1-flash",
     "opencode-go/gemini-4-argon-contributor",
     "opencode-go/muse-spark-1.3-contributor",

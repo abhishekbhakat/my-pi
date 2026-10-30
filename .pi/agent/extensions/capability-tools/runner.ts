@@ -255,7 +255,7 @@ export async function executeCapability(
 	});
 
 	const TEXT_ONLY_REMINDER =
-		"PLAIN TEXT ONLY. Do not emit function calls, tool calls, XML tool tags, or <pi_tool_call> blocks.\n\n";
+		"PLAIN TEXT ONLY. Do not emit function calls, tool calls, DSML, XML tool tags, or <pi_tool_call> blocks.\n\n";
 
 	try {
 		const provider = ctx.modelRegistry.getProvider(model.provider);
@@ -383,13 +383,16 @@ export async function executeCapability(
 			if (response.stopReason === "toolUse" && expectTools && calls.length > 0 && !lastRound) {
 				messages = [...messages, response];
 				toolRounds += 1;
-				for (const call of calls.slice(0, MAX_CALLS_PER_ROUND)) {
-					const result = await executeScoutTool(
-						call.name,
-						(call.arguments ?? {}) as Record<string, unknown>,
-						{ cwd: ctx.cwd, roots: scoutRoots },
-					);
-					toolCalls += 1;
+				for (const [index, call] of calls.entries()) {
+					const canExecute = index < MAX_CALLS_PER_ROUND && totalToolChars < MAX_TOOL_CHARS;
+					const result = canExecute
+						? await executeScoutTool(
+							call.name,
+							(call.arguments ?? {}) as Record<string, unknown>,
+							{ cwd: ctx.cwd, roots: scoutRoots },
+						)
+						: { text: "Read budget reached. Use existing results or request remaining files in a later round.", isError: true };
+					if (canExecute) toolCalls += 1;
 					totalToolChars += result.text.length;
 					messages.push({
 						role: "toolResult",
@@ -415,15 +418,15 @@ export async function executeCapability(
 
 			text = extractText(response);
 
-			// Hallucinated tool markup only matters on text-only turns.
-			if (!expectTools && isToolishFailure(response, text) && !signal?.aborted) {
-				messages = [
-					{
-						role: "user",
-						content: [{ type: "text", text: TEXT_ONLY_REMINDER + prompt }],
-						timestamp: Date.now(),
-					},
-				];
+			// Tool markup written as text was never executed, even when native tools were offered.
+			if (isToolishFailure(response, text) && !signal?.aborted) {
+				messages = [...messages, {
+					role: "user",
+					content: [{ type: "text", text: TEXT_ONLY_REMINDER +
+						"Previous tool markup was not executed. No tools are available now. Use Path Context and completed tool results above. " +
+						(def.toolName === "code_scout" ? "Write the report now, starting with ## Relevant Files. List missing files under Unknowns." : "Answer the task now.") }],
+					timestamp: Date.now(),
+				}];
 				response = await streamTurn(messages, [], "none", false, roundLabel);
 				text = extractText(response);
 			}
