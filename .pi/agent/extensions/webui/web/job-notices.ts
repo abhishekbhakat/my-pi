@@ -4,7 +4,7 @@ import { compactJobSummary } from "../../jobs/format.ts";
 export const JOB_NOTICE_RENDER_JS = `
         if (entry.type === 'custom_message' && entry.customType === 'pi_job_exit') {
           const raw = typeof entry.content === 'string' ? entry.content : JSON.stringify(entry.content);
-          const summary = (${compactJobSummary.toString()})(raw);
+          const summary = typeof entry.details?.summary === 'string' ? entry.details.summary : (${compactJobSummary.toString()})(raw);
           const full = typeof entry.details?.fullContent === 'string' ? entry.details.fullContent : raw;
           const hidden = entry.display === false;
           return '<details class="hook-message webui-job-notice' + (hidden ? ' hook-message-hidden' : '') + '" id="' + entryDomId + '">' +

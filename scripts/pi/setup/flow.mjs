@@ -20,7 +20,6 @@ import { createPrompter, isInteractive } from "./prompts.mjs";
 import { setupRepoGate } from "./branch-gate.mjs";
 import {
   buildUserProfile,
-  loadCapabilityPreferences,
   removeLegacyProfilePatch,
   writeUserProfile,
 } from "./user-profile.mjs";
@@ -133,7 +132,6 @@ export async function setup(_flags = {}) {
       resolved: resolvedCaps,
       sources: capSources,
       models: inputs.models,
-      previous: loadCapabilityPreferences(),
       prompter,
     });
     const capEdits = planCapabilityEdits(capSources, capTargets);

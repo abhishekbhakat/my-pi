@@ -40,8 +40,22 @@
     },
     "claude-code-sdk": {
       "modelOverrides": {
+        "haiku": {
+          "thinkingLevelMap": {
+            "xhigh": "xhigh",
+            "max": "max"
+          }
+        },
+        "opus": {
+          "thinkingLevelMap": {
+            "max": "max"
+          }
+        },
         "sonnet": {
-          "contextWindow": 262144
+          "contextWindow": 262144,
+          "thinkingLevelMap": {
+            "max": "max"
+          }
         }
       }
     },

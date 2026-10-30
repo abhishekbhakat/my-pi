@@ -151,11 +151,11 @@ export default function jobsExtension(pi: ExtensionAPI) {
 			for (const job of jobs) {
 				tails.set(job.id, await tailLog(jobPaths(rootPath, job.id).log, STALL_TAIL_LINES));
 			}
-			const fullContent = buildSettledContent(jobs, tails, running);
-			const content = buildSettledSummary(jobs, running);
+			const content = buildSettledContent(jobs, tails, running);
+			const summary = buildSettledSummary(jobs, running);
 			const idle = ctxRef?.isIdle() ?? true;
 			await pi.sendMessage(
-				{ customType: CUSTOM_TYPE, content, display: true, details: { ids: jobs.map((job) => job.id), fullContent, tone: toneForJobs(jobs) } },
+				{ customType: CUSTOM_TYPE, content, display: true, details: { ids: jobs.map((job) => job.id), summary, tone: toneForJobs(jobs) } },
 				idle ? { triggerTurn: true } : { triggerTurn: true, deliverAs: "followUp" },
 			);
 			for (const job of jobs) await markNotified(rootPath, job.id);
@@ -233,9 +233,10 @@ export default function jobsExtension(pi: ExtensionAPI) {
 	}
 
 	pi.registerMessageRenderer(CUSTOM_TYPE, (message, options, theme) => {
-		const details = message.details as { fullContent?: string; tone?: JobTone } | undefined;
-		const summary = String(message.content);
-		return new JobMessageComponent(summary, details?.fullContent ?? summary, options.outputPad, theme, options.expanded, details?.tone ?? "success");
+		const details = message.details as { fullContent?: string; summary?: string; tone?: JobTone } | undefined;
+		const content = String(message.content);
+		const summary = details?.summary ?? content;
+		return new JobMessageComponent(summary, details?.fullContent ?? content, options.outputPad, theme, options.expanded, details?.tone ?? "success");
 	});
 
 	pi.on("tool_call", (event) => {
@@ -309,6 +310,13 @@ export default function jobsExtension(pi: ExtensionAPI) {
 			"Foreground bash only for commands that finish at once. There is no `timeout` parameter to pass; it is stripped.",
 			"Check with `jobs list` or `jobs output <id>` only when you need the answer now. Do not poll a running job with sleep.",
 		],
+		renderResult(result, options, theme) {
+			const full = result.content
+				.filter((block) => block.type === "text")
+				.map((block) => block.text)
+				.join("\n");
+			return new JobMessageComponent(full, full, 0, theme, options.expanded, result.isError ? "error" : "success");
+		},
 		parameters: Type.Object({
 			action: StringEnum(["spawn", "list", "output", "stop"] as const, {
 				description: "spawn starts a background job; list shows all; output tails one; stop kills one",

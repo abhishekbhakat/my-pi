@@ -19,6 +19,8 @@ export function parsePick(answer, count, defaultIndex) {
 }
 
 export function createPrompter({ input = process.stdin, output = process.stdout } = {}) {
+  const useColor = Boolean(output?.isTTY) && !process.env.NO_COLOR;
+  const paint = (code, text) => useColor ? `\u001b[${code}m${text}\u001b[0m` : text;
   let buffer = "";
   let mode = "idle"; // idle | line | secret
   let resolveWait = null;
@@ -137,7 +139,7 @@ export function createPrompter({ input = process.stdin, output = process.stdout 
   }
 
   async function askYesNo(question) {
-    const answer = await waitLine(`${question} [y/N] `);
+    const answer = await waitLine(paint(32, `${question} [y/N] `));
     return parseYesNo(answer);
   }
 
@@ -145,7 +147,7 @@ export function createPrompter({ input = process.stdin, output = process.stdout 
     if (closed) throw new SetupAbort("prompter closed");
     wasRaw = Boolean(input.isRaw);
     setRaw(true);
-    write(`${label}`);
+    write(paint("38;5;214", label));
     secretChars = [];
     try {
       return await new Promise((resolve, reject) => {
@@ -168,7 +170,7 @@ export function createPrompter({ input = process.stdin, output = process.stdout 
     if (!count) throw new SetupAbort("askPick needs at least one choice");
     const def = Math.min(Math.max(defaultIndex, 0), count - 1);
     const printChoices = options.printChoices !== false;
-    write(`${label}\n`);
+    write(`${paint(33, label)}\n`);
     if (printChoices) {
       choices.forEach((choice, i) => {
         write(`  ${i + 1}) ${choice}\n`);
