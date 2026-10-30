@@ -2,16 +2,15 @@ import fs from "node:fs";
 import path from "node:path";
 import { SetupAbort } from "../errors.mjs";
 import { exists } from "../fs/read-write.mjs";
-import { CAPABILITY_PREFERRED, firstByPriority, providerOf } from "./providers.mjs";
+import { CAPABILITY_PREFERRED, CAP_ROLES, THINKING_LEVELS, firstByPriority, providerOf, parseCapabilityTarget, inheritCapabilityTargets, formatCapabilityTargets, supportedThinkingLevels } from "./providers.mjs";
 
 const CAP_DIR = ["extensions", "capability-tools", "capabilities"];
 const CAP_ROLE_BY_TOOL = {
   reasoning_coach: "coach",
   patch_reviewer: "reviewer",
   code_scout: "scout",
-  commit_message: "scout",
+  commit_message: "commit",
 };
-const CAP_TARGET_RE = /^[A-Za-z0-9._-]+\/[^\s"'\\`$]+$/;
 
 function detectEol(text) {
   return text.includes("\r\n") ? "\r\n" : "\n";
@@ -54,11 +53,11 @@ function assertUniqueKeys(pathLabel, counts, keys) {
   }
 }
 
-function replaceQuotedTimeline(text, pathLabel, target) {
-  const re = /^(\s*timelineModel:\s*")([^"\n]*)(",?\s*)$/gm;
+function replaceQuotedTimeline(text, pathLabel, target, key = "timelineModel") {
+  const re = new RegExp(`^([ \\t]*${key}:\\s*")([^"\\n]*)(",?[ \\t\\r]*)$`, "gm");
   const matches = [...text.matchAll(re)];
   if (matches.length !== 1) {
-    throw new SetupAbort(`${pathLabel}: expected exactly one quoted timelineModel literal, found ${matches.length}`);
+    throw new SetupAbort(`${pathLabel}: expected exactly one quoted ${key} literal, found ${matches.length}`);
   }
   const after = text.replace(re, `$1${target}$3`);
   return after;
@@ -78,7 +77,7 @@ export function loadCapabilitySources(agentDir) {
       if (error instanceof SetupAbort) throw new SetupAbort(`${filePath}: ${error.message}`);
       throw error;
     }
-    assertUniqueKeys(filePath, parsed.counts, ["model", "timelineModel", "tool"]);
+    assertUniqueKeys(filePath, parsed.counts, ["model", "timelineModel", "reasoningEffort", "timelineReasoningEffort", "tool"]);
     return {
       path: filePath,
       rel: path.posix.join(".pi/agent", ...CAP_DIR, name),
@@ -102,7 +101,7 @@ export function loadCapabilitySources(agentDir) {
   return { caps, definitions, booleanGuy };
 }
 
-function setFrontmatterValue(text, key, target) {
+function setFrontmatterValue(text, key, target, insert = false) {
   const parsed = parseFrontmatterBlock(text);
   const lines = parsed.lines.slice();
   let found = false;
@@ -115,7 +114,11 @@ function setFrontmatterValue(text, key, target) {
     lines[i] = `${m[1]}${m[2]}${target}`;
     changed = true;
   }
-  if (!found || !changed) return null;
+  if (!found && insert) {
+    lines.splice(parsed.end, 0, `${key}: ${target}`);
+    changed = true;
+  }
+  if (!changed) return null;
   let out = lines.join(parsed.eol);
   if (text.endsWith("\r\n")) {
     if (!out.endsWith("\r\n")) out += "\r\n";
@@ -125,9 +128,14 @@ function setFrontmatterValue(text, key, target) {
   return out;
 }
 
-export function planCapabilityEdits(sources, targets) {
-  for (const value of Object.values(targets)) {
-    if (!CAP_TARGET_RE.test(value)) throw new SetupAbort(`invalid capability model ref: ${value}`);
+export function planCapabilityEdits(sources, selections) {
+  const targets = {};
+  const efforts = {};
+  for (const [role, value] of Object.entries(inheritCapabilityTargets(selections))) {
+    const parsed = parseCapabilityTarget(value);
+    if (!CAP_ROLES.includes(role) || !parsed) throw new SetupAbort(`invalid capability target for ${role}`);
+    targets[role] = parsed.model;
+    if (parsed.reasoningEffort !== undefined) efforts[role] = parsed.reasoningEffort;
   }
   /** @type {{ path: string, before: string, after: string, changes: { key: string, from: string, to: string }[] }[]} */
   const edits = [];
@@ -146,6 +154,19 @@ export function planCapabilityEdits(sources, targets) {
       }
     }
 
+    const effortKeys = [
+      ["reasoningEffort", role && efforts[role], true],
+      ["timelineReasoningEffort", efforts.timeline, false],
+    ];
+    for (const [key, effort, insert] of effortKeys) {
+      if (!effort) continue;
+      const next = setFrontmatterValue(afterText, key, effort, insert);
+      if (next) {
+        changes.push({ key, from: cap.fm[key] ?? "(default)", to: effort });
+        afterText = next;
+      }
+    }
+
     if (Object.hasOwn(cap.fm, "timelineModel") && targets.timeline) {
       const next = setFrontmatterValue(afterText, "timelineModel", targets.timeline);
       if (next) {
@@ -160,13 +181,18 @@ export function planCapabilityEdits(sources, targets) {
   }
 
   if (targets.timeline) {
-    const defAfter = replaceQuotedTimeline(sources.definitions.text, sources.definitions.path, targets.timeline);
+    let defAfter = replaceQuotedTimeline(sources.definitions.text, sources.definitions.path, targets.timeline);
+    const defChanges = [{ key: "timelineModel", from: "(definitions.ts)", to: targets.timeline }];
+    if (efforts.timeline) {
+      defAfter = replaceQuotedTimeline(defAfter, sources.definitions.path, efforts.timeline, "timelineReasoningEffort");
+      defChanges.push({ key: "timelineReasoningEffort", from: "(definitions.ts)", to: efforts.timeline });
+    }
     if (defAfter !== sources.definitions.text) {
       edits.push({
         path: sources.definitions.path,
         before: sources.definitions.text,
         after: defAfter,
-        changes: [{ key: "timelineModel", from: "(definitions.ts)", to: targets.timeline }],
+        changes: defChanges,
       });
     }
     const boolAfter = replaceQuotedTimeline(sources.booleanGuy.text, sources.booleanGuy.path, targets.timeline);
@@ -186,7 +212,7 @@ export function planCapabilityEdits(sources, targets) {
 export function resolveCapabilityModels(keptModels, orderedProviders) {
   const kept = Array.isArray(keptModels) ? keptModels : [];
   const fallbackDefault = firstByPriority(kept, orderedProviders);
-  const roles = /** @type {const} */ (["timeline", "scout", "coach", "reviewer"]);
+  const roles = CAP_ROLES;
   /** @type {Record<string, { preferred: string, ok: boolean, fallbackDefault: string|null }>} */
   const out = {};
   for (const role of roles) {
@@ -213,37 +239,42 @@ function prioritySortedKept(kept, order) {
   return out;
 }
 
-export async function resolveCapabilityTargets({ kept, order, resolved, prompter, log = console.log }) {
+function sourceEffort(sources, role) {
+  const key = role === "timeline" ? "timelineReasoningEffort" : "reasoningEffort";
+  const cap = sources?.caps.find((item) => CAP_ROLE_BY_TOOL[normalizeToolName(item.fm.tool)] === role);
+  const literal = sources?.definitions.text.match(new RegExp(`${key}:\\s*"([^"]*)"`))?.[1];
+  return [cap?.fm[key], literal, "high"].find((value) => THINKING_LEVELS.includes(value));
+}
+
+export async function resolveCapabilityTargets({ kept, order, resolved, prompter, sources, models, previous = {}, log = console.log }) {
   const choices = prioritySortedKept(kept, order);
   if (!choices.length) throw new SetupAbort("enable at least one provider");
-  const roles = ["timeline", "scout", "coach", "reviewer"];
-  /** @type {Record<string, string>} */
+  const prior = previous;
   const targets = {};
-
-  if (choices.length === 1) {
-    log(`Phase 4: only one enabled model; using ${choices[0]} for timeline/scout/coach/reviewer`);
-    for (const role of roles) targets[role] = choices[0];
-    return targets;
-  }
-
-  log("Phase 4: pick capability models (Enter keeps preferred when available).");
+  log("Phase 4: pick a model and reasoning effort for each capability and timeline.");
+  if (choices.length === 1) log(`Only one enabled model; using ${choices[0]} for all roles.`);
   let printed = false;
-  for (const role of roles) {
-    const preferred = resolved[role].preferred;
+  for (const role of CAP_ROLES) {
+    const existing = parseCapabilityTarget(prior[role]);
+    const preferred = existing && choices.includes(existing.model) ? existing.model : resolved[role].preferred;
     const defIdx = Math.max(0, choices.indexOf(preferred));
-    const roleLabel = role === "scout" ? "scout/commit" : role;
-    const hint = choices.includes(preferred)
-      ? `preferred ${preferred}`
-      : `preferred ${preferred} not enabled`;
-    const idx = await prompter.askPick(`${roleLabel} (${hint})`, choices, defIdx, {
-      printChoices: !printed,
-    });
-    printed = true;
-    targets[role] = choices[idx];
+    const label = role === "scout" ? "code scout" : role === "commit" ? "commit message" : role;
+    let model = choices[0];
+    if (choices.length > 1) {
+      const idx = await prompter.askPick(`${label} model`, choices, defIdx, { printChoices: !printed });
+      printed = true;
+      model = choices[idx];
+    }
+    const defaultEffort = existing?.model === model && existing.reasoningEffort
+      ? existing.reasoningEffort : sourceEffort(sources, role);
+    const efforts = supportedThinkingLevels(model, models);
+    const effortDefIdx = Math.max(0, efforts.indexOf(defaultEffort));
+    const effortIndex = await prompter.askPick(`${label} reasoning effort (${model})`, efforts, effortDefIdx);
+    targets[role] = { model, reasoningEffort: efforts[effortIndex] };
   }
   return targets;
 }
 
 export function describeCapabilityPlan(targets, edits) {
-  return `Phase 4: timeline=${targets.timeline}; scout/commit=${targets.scout}; coach=${targets.coach}; reviewer=${targets.reviewer}; files to edit: ${edits.length}`;
+  return `Phase 4: ${formatCapabilityTargets(targets)}; files to edit: ${edits.length}`;
 }

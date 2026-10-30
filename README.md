@@ -51,6 +51,26 @@ make setup
 
 Make does not forward bare flags, so pass options through `ARGS="..."`. Full behaviour is in [SPEC.md](SPEC.md).
 
+### Capability thinking effort
+
+Each role in `userprofile.json` accepts a model string or an object with `model` and optional `reasoningEffort`:
+
+```json
+{
+  "version": 1,
+  "capabilities": {
+    "scout": {
+      "model": "deepseek/deepseek-flash",
+      "reasoningEffort": "low"
+    }
+  }
+}
+```
+
+Roles are `scout`, `commit`, `coach`, `reviewer`, and `timeline`. Effort values are `off`, `minimal`, `low`, `medium`, `high`, `xhigh`, and `max`; provider support varies. String entries keep repository effort defaults. Legacy profiles without `commit` apply the `scout` selection to both code scout and commit-message helpers. An explicit `commit` entry configures commit messages separately. These overrides do not change chat-model effort in `settings.modelThinkingLevels`.
+
+`make setup` asks for a model and reasoning effort for each role. It uses valid existing profile choices as Enter defaults, including inherited scout choices for commit messages. With one enabled model, it skips model picks but still asks for all five effort levels. Setup saves explicit effort values, so later repository default changes do not replace them. Run `make install`, then `/reload`.
+
 ## Testing
 
 `make test-setup` runs the setup acceptance cases in Docker with `--network none`. The image is built from a filtered tar of tracked and unignored files. It never bind-mounts the host repo, and it fails if a real `auth.json` would enter the context. `make test-setup ARGS="07-providers"` runs one case. Do not run `setup` on the host as a test.

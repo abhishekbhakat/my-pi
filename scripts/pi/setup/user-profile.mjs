@@ -7,14 +7,13 @@ import { copyDirReplace, rmTree } from "../fs/tree.mjs";
 import { PROFILE_PATCH, REPO_AGENT, REPO_ROOT, USER_PROFILE } from "../paths.mjs";
 import { loadCapabilitySources, planCapabilityEdits } from "./capabilities.mjs";
 import { DECIDER_ROLES } from "./deciders.mjs";
-import { isOauthEntry } from "./providers.mjs";
+import { isOauthEntry, CAP_ROLES } from "./providers.mjs";
 import { THINKING_LEVELS } from "./settings-plan.mjs";
 
 export const USER_PROFILE_VERSION = 1;
 
 /** Keys of settings.json that setup manages and userprofile.json may carry. */
 const SETTINGS_KEYS = new Set(["enabledModels", "defaultProvider", "defaultModel", "modelThinkingLevels"]);
-const CAP_ROLES = ["timeline", "scout", "coach", "reviewer"];
 
 /** api_key entries of an auth.json object. OAuth entries never travel in the profile. */
 export function apiKeyEntries(auth) {  const out = {};
@@ -177,6 +176,13 @@ function applyDecidersProfile(agentDir, deciders) {
   const after = `${JSON.stringify(parsed.data, null, 2)}\n`;
   if (after !== before) writeAtomic(decidersPath, after);
   return { applied, skipped };
+}
+
+export function loadCapabilityPreferences(profilePath = USER_PROFILE) {
+  if (!exists(profilePath)) return {};
+  const parsed = parseJsonObjectFile(profilePath, { redact: true });
+  if (!parsed.ok || parsed.data.version !== USER_PROFILE_VERSION) return {};
+  return isPlainObject(parsed.data.capabilities) ? parsed.data.capabilities : {};
 }
 
 /** Rewrite capability frontmatter + timeline literals from profile targets. */

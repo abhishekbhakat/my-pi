@@ -16,12 +16,59 @@ export const PROVIDER_PRIORITY = [
 export const CLI_PROVIDERS = new Set(["claude-code-sdk", "mistral-vibe-cli"]);
 // Login via /login in pi; setup never prompts for a key.
 export const OAUTH_PROVIDERS = new Set(["openai", "kimi-coding", "grok-cli"]);
+export const THINKING_LEVELS = ["off", "minimal", "low", "medium", "high", "xhigh", "max"];
 export const CAPABILITY_PREFERRED = {
   timeline: "claude-code-sdk/haiku",
   scout: "claude-code-sdk/haiku",
+  commit: "claude-code-sdk/haiku",
   coach: "claude-code-sdk/opus",
   reviewer: "claude-code-sdk/opus",
 };
+
+export const CAP_ROLES = Object.keys(CAPABILITY_PREFERRED);
+const CAP_MODEL_RE = /^[A-Za-z0-9._-]+\/[^\s"'\\`$]+$/;
+
+export function parseCapabilityTarget(value) {
+  const object = value && typeof value === "object" && !Array.isArray(value);
+  const model = typeof value === "string" ? value : object ? value.model : null;
+  if (typeof model !== "string" || !CAP_MODEL_RE.test(model)) return null;
+  if (object && Object.keys(value).some((key) => key !== "model" && key !== "reasoningEffort")) return null;
+  if (object && Object.hasOwn(value, "reasoningEffort")) {
+    if (!THINKING_LEVELS.includes(value.reasoningEffort)) return null;
+    return { model, reasoningEffort: value.reasoningEffort };
+  }
+  return { model };
+}
+
+export function inheritCapabilityTargets(targets) {
+  return !Object.hasOwn(targets, "commit") && Object.hasOwn(targets, "scout")
+    ? { ...targets, commit: targets.scout }
+    : targets;
+}
+
+/** Match pi-ai's supported-level rules for custom models and modelOverrides. */
+export function supportedThinkingLevels(ref, models = {}) {
+  const provider = models?.providers?.[providerOf(ref)];
+  const id = modelIdOf(ref);
+  const custom = provider?.models?.find((model) => model.id === id);
+  const override = provider?.modelOverrides?.[id];
+  const reasoning = override?.reasoning ?? custom?.reasoning;
+  const map = override?.thinkingLevelMap ?? custom?.thinkingLevelMap;
+  if (reasoning === false) return ["off"];
+  const levels = THINKING_LEVELS.filter((level) => {
+    const mapped = map?.[level];
+    if (mapped === null) return false;
+    return level === "xhigh" || level === "max" ? mapped !== undefined : true;
+  });
+  return levels.length ? levels : ["off"];
+}
+
+export function formatCapabilityTargets(targets) {
+  return CAP_ROLES.filter((role) => Object.hasOwn(targets, role)).map((role) => {
+    const value = parseCapabilityTarget(targets[role]);
+    return `${role}=${value ? value.model + (value.reasoningEffort ? "@" + value.reasoningEffort : "") : "(invalid)"}`;
+  }).join("; ");
+}
 
 export function providerOf(ref) {
   if (typeof ref !== "string") return "";

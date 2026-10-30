@@ -1,7 +1,7 @@
 import { SetupAbort } from "../errors.mjs";
-import { filterEnabledModels, modelIdOf, providerOf, resolveDefaults } from "./providers.mjs";
+import { filterEnabledModels, modelIdOf, providerOf, resolveDefaults, supportedThinkingLevels, THINKING_LEVELS } from "./providers.mjs";
 
-export const THINKING_LEVELS = ["off", "minimal", "low", "medium", "high", "xhigh", "max"];
+export { THINKING_LEVELS };
 
 export function describeStaged(staged, order) {
   const enabled = order.filter((p) => staged.enabled.has(p));
@@ -79,13 +79,14 @@ export async function promptDefaultModel({ settings, plan, order, prompter, log 
   };
 }
 
-export async function promptThinkingLevel({ settings, plan, prompter }) {
+export async function promptThinkingLevel({ settings, plan, models, prompter }) {
   const ref = `${plan.next.defaultProvider}/${plan.next.defaultModel}`;
   const existing =
     settings?.modelThinkingLevels?.[ref] ?? settings?.defaultThinkingLevel ?? "low";
-  const defIdx = Math.max(THINKING_LEVELS.indexOf(existing), 0);
-  const idx = await prompter.askPick(`Thinking level for ${ref}`, THINKING_LEVELS, defIdx);
-  const level = THINKING_LEVELS[idx];
+  const levels = supportedThinkingLevels(ref, models);
+  const defIdx = Math.max(levels.indexOf(existing), 0);
+  const idx = await prompter.askPick(`Thinking level for ${ref}`, levels, defIdx);
+  const level = levels[idx];
   const map = { ...(plan.next.modelThinkingLevels ?? {}) };
   map[ref] = level;
   plan.next.modelThinkingLevels = map;

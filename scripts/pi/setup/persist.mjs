@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { SetupAbort } from "../errors.mjs";
 import { exists, parseJsonObjectFile, writeAtomic } from "../fs/read-write.mjs";
-import { isOauthEntry } from "./providers.mjs";
+import { isOauthEntry, formatCapabilityTargets } from "./providers.mjs";
 
 const PROVIDER_ID_RE = /^[A-Za-z0-9._-]+$/;
 
@@ -96,7 +96,7 @@ export function describePersistSummary({ gate, staged, order, capTargets, decide
     `  enabled: ${enabled}`,
     `  skipped: ${skipped}`,
     `  oauth-pending: ${pending}`,
-    `  capabilities: timeline=${capTargets.timeline}; scout/commit=${capTargets.scout}; coach=${capTargets.coach}; reviewer=${capTargets.reviewer}`,
+    `  capabilities: ${formatCapabilityTargets(capTargets)}`,
     deciderPlan
       ? `  deciders: booleanGuy=${deciderPlan.roles.booleanGuy}; prune=${deciderPlan.roles.prune}; compaction=${deciderPlan.roles.compaction}; guard=${deciderPlan.roles.guard}`
       : "  deciders: skipped",

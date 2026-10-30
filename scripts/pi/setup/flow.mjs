@@ -20,6 +20,7 @@ import { createPrompter, isInteractive } from "./prompts.mjs";
 import { setupRepoGate } from "./branch-gate.mjs";
 import {
   buildUserProfile,
+  loadCapabilityPreferences,
   removeLegacyProfilePatch,
   writeUserProfile,
 } from "./user-profile.mjs";
@@ -59,7 +60,7 @@ export function printSetupHelp() {
 No git branch is created. Setup:
   1. Reads repo .pi/agent (settings, models, auth, deciders)
   2. Asks which providers to enable, default model, thinking level,
-     decision models and capability models
+     decision models, and model plus reasoning effort for each capability and timeline
   3. Writes API keys to untracked .pi/agent/auth.json
   4. Writes personalization to untracked userprofile.json at the repo root
 
@@ -122,7 +123,7 @@ export async function setup(_flags = {}) {
 
     const settingsPlan = planSettings(inputs.settings, staged, order);
     await promptDefaultModel({ settings: inputs.settings, plan: settingsPlan, order, prompter });
-    await promptThinkingLevel({ settings: inputs.settings, plan: settingsPlan, prompter });
+    await promptThinkingLevel({ settings: inputs.settings, plan: settingsPlan, models: inputs.models, prompter });
     console.log(describeSettingsPlan(settingsPlan, inputs.settings));
 
     const resolvedCaps = resolveCapabilityModels(settingsPlan.kept, order);
@@ -130,6 +131,9 @@ export async function setup(_flags = {}) {
       kept: settingsPlan.kept,
       order,
       resolved: resolvedCaps,
+      sources: capSources,
+      models: inputs.models,
+      previous: loadCapabilityPreferences(),
       prompter,
     });
     const capEdits = planCapabilityEdits(capSources, capTargets);
