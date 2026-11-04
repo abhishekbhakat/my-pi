@@ -15,6 +15,7 @@ package-lock.json
 .pi/agent/skills/slack/slack-auth.json
 .pi/agent/skills/slack/slack-token.json
 .pi/agent/skills/tinyfish/tinyfish-auth.json
+.pi/agent/skills/browser-use-cloud/browser-use-auth.json
 .pi/agent/skills/typesafe-ai/typesafe-auth.json
 # Archived skills retain local credentials, never commit them.
 archive/skills/**/*-auth.json

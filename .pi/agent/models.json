@@ -165,6 +165,9 @@
         },
         "minimax/minimax-m3.1-flash": {
           "contextWindow": 262144
+        },
+        "z-ai/glm-5.3-flashx-legal": {
+          "contextWindow": 262144
         }
       }
     },
@@ -307,7 +310,12 @@
           "contextWindow": 278528
         },
         "gpt-6.1-terra": {
-          "contextWindow": 278528
+          "contextWindow": 278528,
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": null
+          }
         }
       }
     },

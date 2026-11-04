@@ -63,7 +63,8 @@
     "opencode-go/minimax-m3.1-flash",
     "opencode-go/muse-spark-1.3-contributor",
     "opencode-go/qwen3.8-max",
-    "opencode-go/step-5-preview"
+    "opencode-go/step-5-preview",
+    "openrouter/z-ai/glm-5.3-flashx-legal"
   ],
   "showCacheMissNotices": true,
   "terminal": {
