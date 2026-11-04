@@ -278,6 +278,7 @@ export async function executeCapability(
 				apiKey: auth.apiKey,
 				headers: auth.headers,
 				signal,
+				sessionId: ctx.sessionManager.getSessionId(),
 				reasoningEffort: model.reasoning ? def.reasoningEffort : undefined,
 				serviceTier,
 				toolChoice,
