@@ -11,6 +11,7 @@ export { SetupAbort } from "./pi/errors.mjs";
 export { loadSetupInputs } from "./pi/setup/inputs.mjs";
 export {
   CAPABILITY_PREFERRED,
+  PROVIDER_ENV_KEYS,
   PROVIDER_PRIORITY,
   classifyProvider,
   filterEnabledModels,

@@ -1,5 +1,6 @@
 import { SetupAbort } from "../errors.mjs";
 import {
+  PROVIDER_ENV_KEYS,
   classifyProvider,
   hasApiKey,
   isOauthEntry,
@@ -17,6 +18,15 @@ function openRouterKeyPresent(auth, staged) {
   if (process.env.CLAUDE_CODE_PI_MORPH_API_KEY?.trim()) return true;
   if (process.env.OPENROUTER_API_KEY?.trim()) return true;
   return false;
+}
+
+/** Env-provided key for a provider, used when auth.json has none. */
+function envApiKey(provider) {
+  for (const name of PROVIDER_ENV_KEYS[provider] ?? []) {
+    const value = process.env[name]?.trim();
+    if (value) return value;
+  }
+  return null;
 }
 
 /**
@@ -105,14 +115,20 @@ export async function collectProviders({
       continue;
     }
     const existing = hasApiKey(auth?.[provider]);
+    const fromEnv = existing ? null : envApiKey(provider);
     const label = existing
       ? `${provider} API key (key exists, Enter keeps): `
-      : `${provider} API key: `;
+      : fromEnv
+        ? `${provider} API key (env ${PROVIDER_ENV_KEYS[provider][0]} found, Enter keeps): `
+        : `${provider} API key: `;
     const secret = await prompter.askSecret(label);
     if (secret) {
       staged.apiKeys.set(provider, secret);
       staged.enabled.add(provider);
     } else if (existing) {
+      staged.enabled.add(provider);
+    } else if (fromEnv) {
+      staged.apiKeys.set(provider, fromEnv);
       staged.enabled.add(provider);
     } else {
       log(`WARNING: ${provider}: no key entered; skipping.`);

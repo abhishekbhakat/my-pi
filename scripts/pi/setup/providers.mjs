@@ -11,7 +11,12 @@ export const PROVIDER_PRIORITY = [
   "openrouter",
   "kimi-coding",
   "grok-cli",
+  "refuseless",
 ];
+
+// API keys setup can read from the environment instead of prompting.
+export const PROVIDER_ENV_KEYS = { refuseless: ["REFUSELESS_API_KEY"] };
+
 // Local CLI bridges: no API key in setup; auth is the CLI login on PATH.
 export const CLI_PROVIDERS = new Set(["claude-code-sdk", "mistral-vibe-cli"]);
 // Login via /login in pi; setup never prompts for a key.

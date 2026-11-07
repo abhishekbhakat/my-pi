@@ -166,6 +166,9 @@
         "minimax/minimax-m3.1-flash": {
           "contextWindow": 262144
         },
+        "tencent/hy4": {
+          "contextWindow": 262144
+        },
         "z-ai/glm-5.3-flashx-legal": {
           "contextWindow": 262144
         }
@@ -773,6 +776,57 @@
             "high": "high",
             "xhigh": null,
             "max": null
+          }
+        }
+      ]
+    },
+    "refuseless": {
+      "baseUrl": "https://api.refuseless.com/v1",
+      "api": "openai-completions",
+      "authHeader": true,
+      "compat": {
+        "supportsStore": false,
+        "supportsDeveloperRole": false,
+        "maxTokensField": "max_tokens",
+        "thinkingFormat": "zai"
+      },
+      "models": [
+        {
+          "id": "glm-5.3-abliterated",
+          "name": "GLM 5.3 Abliterated",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 262144,
+          "maxTokens": 131072,
+          "thinkingLevelMap": {
+            "off": "off",
+            "minimal": null,
+            "low": "low",
+            "medium": null,
+            "high": "high",
+            "xhigh": null,
+            "max": "max"
+          }
+        },
+        {
+          "id": "kimi-k3.1-pro",
+          "name": "Kimi K3.1 Pro",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 262144,
+          "maxTokens": 131072,
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": "low",
+            "medium": null,
+            "high": "high",
+            "xhigh": null,
+            "max": "max"
           }
         }
       ]
