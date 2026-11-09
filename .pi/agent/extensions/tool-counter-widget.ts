@@ -6,7 +6,7 @@
  */
 
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { Text } from "@earendil-works/pi-tui";
+import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 
 const palette = [
 	[12, 40, 80],    // deep navy
@@ -50,7 +50,6 @@ export default function (pi: ExtensionAPI) {
 	function paint(): void {
 		if (!currentCtx?.hasUI) return;
 		currentCtx.ui.setWidget("tool-counter", (_tui, theme) => {
-			const text = new Text("", 1, 1);
 			return {
 				render(width: number): string[] {
 					const entries = Object.entries(counts);
@@ -58,16 +57,27 @@ export default function (pi: ExtensionAPI) {
 						const rgb = toolColors[name];
 						return bg(rgb, `\x1b[38;2;220;220;220m  ${name} ${count}  \x1b[39m`);
 					});
-					text.setText(
-						theme.fg("accent", `Tools (${total}):`) +
-						(entries.length > 0 ? " " + parts.join(" ") : "") +
-						"  " + theme.fg("accent", `Compactions ${compactions}`),
-					);
-					return text.render(width);
+					if (width <= 2) return [];
+					const available = width - 2;
+					const badges = [
+						theme.fg("accent", `Tools (${total}):`),
+						...parts,
+						bg([45, 45, 15], `\x1b[38;2;220;220;220m  Compactions ${compactions}  \x1b[39m`),
+					];
+					const lines: string[] = [];
+					let line = "";
+					for (const badge of badges) {
+						const fitted = truncateToWidth(badge, available);
+						if (line && visibleWidth(line) + 1 + visibleWidth(fitted) > available) {
+							lines.push(` ${line}`);
+							line = "";
+						}
+						line += (line ? " " : "") + fitted;
+					}
+					if (line) lines.push(` ${line}`);
+					return ["", ...lines, ""];
 				},
-				invalidate() {
-					text.invalidate();
-				},
+				invalidate() {},
 			};
 		});
 	}
