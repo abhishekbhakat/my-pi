@@ -1,4 +1,5 @@
 import * as path from "node:path";
+import { capabilityBudget } from "#capability-model-budget";
 import { normalizeContext, stream as piAiStream, type Message, type Tool, type ToolCall } from "@earendil-works/pi-ai";
 import type { AgentToolUpdateCallback } from "@earendil-works/pi-coding-agent";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
@@ -223,7 +224,8 @@ export async function executeCapability(
 		details: { status: "assembling", capability: def.toolName },
 	});
 
-	const context = await buildCapabilityContext(pi, ctx, def, input, signal);
+	const budget = await capabilityBudget(ctx, model, def.systemPrompt + input.task);
+	const context = await buildCapabilityContext(pi, ctx, { ...def, maxContextChars: budget.maxContextChars }, input, signal);
 	if (def.toolName === "commit_message" && context.stagedEmpty) {
 		return {
 			content: [{ type: "text", text: NO_STAGED_CHANGES_MESSAGE }],
@@ -250,6 +252,9 @@ export async function executeCapability(
 			capability: def.toolName,
 			paths: context.autoPaths,
 			promptChars: prompt.length,
+			contextWindow: budget.contextWindow,
+			contextSource: budget.source,
+			inputBudgetTokens: budget.inputTokens,
 			serviceTier,
 		},
 	});

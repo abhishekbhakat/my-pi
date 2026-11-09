@@ -9,7 +9,6 @@
 #   make sync                          (live ~/.pi/agent -> repo .pi/agent)
 #   make sync ARGS="-p"                (also prune repo files missing from live)
 #   make setup                         (auto-branch pi-install-<ddmmyyyy> on main)
-#   make test-setup                    (Docker setup cases)
 
 SHELL := /bin/sh
 .DEFAULT_GOAL := help
@@ -20,7 +19,7 @@ PI_PKG := @earendil-works/pi-coding-agent
 BUN_HOME := $(or $(BUN_INSTALL),$(HOME)/.bun)
 BUN_BIN := $(BUN_HOME)/bin
 
-.PHONY: help install install-bun restore-bun-pi config-install sync setup test-setup dist release
+.PHONY: help install install-bun restore-bun-pi config-install sync setup dist release
 
 help:
 	@printf '%s\n' \
@@ -35,7 +34,6 @@ help:
 		'  make config-install       Copy repo .pi/agent -> ~/.pi/agent only' \
 		'  make sync                 Copy live ~/.pi/agent -> repo .pi/agent' \
 		'  make setup                Interactive provider/auth bootstrap; writes userprofile.json' \
-		'  make test-setup           Build Docker image from filtered tar; run setup cases' \
 		'  make dist                  Build pi-setup binaries with embedded snapshot' \
 		'  make release               Publish a GitHub release: snapshot + binaries' \
 		'' \
@@ -45,7 +43,6 @@ help:
 		'  make sync ARGS="-p"                 prune repo files missing from live' \
 		'  make setup ARGS="--help"            setup usage' \
 		'  make install ARGS="--no-profile"    skip userprofile.json' \
-		'  make test-setup ARGS="00-harness"   run one Docker case' \
 		'' \
 		'Or call Node directly (same on macOS, Linux, Windows):' \
 		'  node scripts/pi.mjs install [--config-only] [-h HOST]' \
@@ -58,8 +55,7 @@ help:
 		'  After install, run /reload or /restart inside pi.' \
 		'  setup needs a TTY; writes userprofile.json + auth.json; never modifies tracked .pi/agent.' \
 		'  install merges userprofile.json in temp staging; a bad profile warns, never blocks.' \
-		'  setup never writes ~/.pi; run make install to apply userprofile.json.' \
-		'  test-setup needs Docker; never mounts host repo; secrets excluded by .gitignore.'
+		'  setup never writes ~/.pi; run make install to apply userprofile.json.'
 
 install: restore-bun-pi install-bun
 	@printf '%s\n' \
@@ -112,18 +108,6 @@ sync:
 setup:
 	$(CLI) setup $(ARGS)
 
-test-setup:
-	@git ls-files -z -c -- '*auth.json' ':!tests/setup/fixtures/**' \
-	  | xargs -0 sh -c 'if [ "$$#" -gt 0 ]; then echo "ERROR: tracked auth file(s) would enter Docker context: $$*" >&2; exit 1; fi' _
-	@set -e; \
-	CTX=$$(mktemp -d); LIST=$$(mktemp); \
-	trap 'rm -rf "$$CTX" "$$LIST"' EXIT; \
-	{ git ls-files -z -co --exclude-standard; git ls-files -z -o -i --exclude-standard -- tests/; } \
-	  | xargs -0 sh -c 'for f; do case "$$f" in */._*|._*|*/.DS_Store|.DS_Store|*/__pycache__/*|*.tmp) continue;; esac; case "$$f" in *auth.json) case "$$f" in tests/setup/fixtures/*) ;; *) echo "ERROR: auth path in context: $$f" >&2; exit 1;; esac;; esac; if [ -e "$$f" ]; then printf "%s\\0" "$$f"; fi; done' _ >"$$LIST"; \
-	COPYFILE_DISABLE=1 tar --null --no-recursion -T "$$LIST" -cf - | tar -C "$$CTX" -xf -; \
-	[ -f "$$CTX/tests/setup/Dockerfile" ] || { echo "ERROR: tests/setup/Dockerfile missing from context" >&2; exit 1; }; \
-	docker build -t my-pi-setup-test -f "$$CTX/tests/setup/Dockerfile" "$$CTX"; \
-	docker run --rm --network none my-pi-setup-test $(ARGS)
 
 dist:
 	node scripts/dist/build.mjs $(ARGS)

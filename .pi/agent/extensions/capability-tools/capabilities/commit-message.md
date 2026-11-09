@@ -12,7 +12,6 @@ includeGitStatus: true
 includeGitDiff: false
 includeChangedFiles: false
 includeTimeline: false
-maxContextChars: 120000
 maxConversationChars: 8000
 reasoningEffort: max
 ---

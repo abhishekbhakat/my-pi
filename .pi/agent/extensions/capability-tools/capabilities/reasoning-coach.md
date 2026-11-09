@@ -14,7 +14,6 @@ includeChangedFiles: true
 includeTimeline: true
 timelineModel: claude-code-sdk/haiku
 timelineReasoningEffort: xhigh
-maxContextChars: 500000
 reasoningEffort: max
 ---
 You strategy advisor for coding agent.

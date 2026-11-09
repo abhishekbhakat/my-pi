@@ -14,7 +14,6 @@ includeChangedFiles: true
 includeTimeline: false
 timelineModel: claude-code-sdk/haiku
 timelineReasoningEffort: xhigh
-maxContextChars: 360000
 reasoningEffort: max
 expandDirectories: true
 expandFilesPerDir: 6

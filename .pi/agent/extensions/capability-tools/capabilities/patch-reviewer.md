@@ -12,7 +12,6 @@ includeGitStatus: true
 includeGitDiff: true
 includeChangedFiles: true
 includeTimeline: false
-maxContextChars: 500000
 reasoningEffort: max
 ---
 You strict code review helper.
