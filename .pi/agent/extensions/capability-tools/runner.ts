@@ -1,5 +1,5 @@
 import * as path from "node:path";
-import { stream as piAiStream, type Message, type Tool, type ToolCall } from "@earendil-works/pi-ai";
+import { normalizeContext, stream as piAiStream, type Message, type Tool, type ToolCall } from "@earendil-works/pi-ai";
 import type { AgentToolUpdateCallback } from "@earendil-works/pi-coding-agent";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { cleanCommitMessage, NO_STAGED_CHANGES_MESSAGE } from "./commitMessage";
@@ -293,7 +293,7 @@ export async function executeCapability(
 				messages,
 			};
 			const eventStream = provider
-				? provider.stream(model, requestContext, requestOptions)
+				? provider.stream(model, normalizeContext(requestContext), requestOptions)
 				: piAiStream(model, requestContext, requestOptions);
 
 			let lastPublish = 0;
@@ -530,8 +530,13 @@ export async function executeCapability(
 			await appendCapabilityHistory(sessionId, def.toolName, input.task, text).catch(() => undefined);
 		}
 
+		const reportText = text || `[${def.label}] Empty response.`;
+		const visibleText = def.toolName === "code_scout"
+			? `${reportText}\n\n## Execution stats\n- Executed tool calls: ${toolCalls} (includes failed calls; seeded file bodies excluded)\n- Tool-use rounds: ${toolRounds}`
+			: reportText;
+
 		return {
-			content: [{ type: "text", text: text || `[${def.label}] Empty response.` }],
+			content: [{ type: "text", text: visibleText }],
 			details: {
 				status: "done",
 				capability: def.toolName,

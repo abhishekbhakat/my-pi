@@ -36,6 +36,15 @@ Quality code for humans and AI agents. Lean context. Single source of truth.
 - `shared` or `core` needs a stated contract. One owner. No duplicate truth.
 - Apply when creating or already touching a directory. No drive-by reorg.
 
+## Structural refactoring
+
+Use within user-approved area. Whole-codebase refactor needs explicit scope. No drive-by cleanup.
+
+1. **Inspect before edits.** Ask: should these pieces change together? List concrete sites with hidden links (duplicate rules, globals, call-order conventions), needless links (internal access, caller-specific parameters, stable policy importing volatile details), or surplus (unused code, pass-through wrappers, unused extension points). Verify callers and contracts before classifying wrappers or extension points as surplus.
+2. **Find shared causes.** Inspect special cases, retries, swallowed exceptions, and disabled tests as clues. Trace requirements before removing them. Group related problems under one boundary or data-model fix; keep pieces that change together together, and separate independent reasons to change. Use Git co-change history and focused import graphs when boundaries remain unclear. History supports judgment; bulk commits alone prove no coupling.
+3. **Change in bounded slices.** Record problems and proposed fixes in task-local working notes, not durable agent instructions. Establish behavior checks before restructuring. Preserve intended behavior; flag discovered bugs and seek approval for behavior changes outside scope. Remove workarounds only after fixing their cause.
+4. **Verify and stop.** Run focused checks after each slice. Recheck affected callers and dependency direction. Stop when scoped problems pass checks; report remaining issues instead of expanding scope until nothing remains. Ask before optional comment or test cleanup. Keep regression tests during restructuring; assess cleanup last against behavior, not implementation shape.
+
 ## Intervention ladder (agent keeps doing wrong thing)
 
 Apply top first. Move down only when the level above cannot kill the problem.

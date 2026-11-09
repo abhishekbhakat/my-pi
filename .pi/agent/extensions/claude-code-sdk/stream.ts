@@ -243,10 +243,10 @@ export function streamClaudeSdk(
 			const capability = isCapabilityCall(options) ? String(options?.metadata?.capability) : undefined;
 			const regKey = registryKey(piSessionId, capability);
 			const hasTools = bridge.tools.length > 0;
-			const mainTurn = Boolean(piSessionId && !capability && hasTools);
+			const nativeToolTurn = Boolean(piSessionId && hasTools);
 
-			if (!mainTurn) {
-				// One-shot: capability turns and no-tools main turns.
+			if (!nativeToolTurn) {
+				// One-shot for turns without native tools or a Pi session.
 				mirror = { mode: "none", bridge, prompt: buildPrompt(bridge), sentMessages: bridge.messages };
 				stream.push({ type: "start", partial: output });
 				const sdkOptions: SdkOptions = buildQueryOptions({
@@ -496,7 +496,7 @@ export function streamClaudeSdk(
 				output.errorMessage = final?.errorMessage ?? "claude-code-sdk turn aborted";
 				stream.push({ type: "error", reason: "aborted", error: output });
 				stream.end();
-				if (piSessionId && !stale()) await reseedRecord(piSessionId, process.cwd()).catch(() => undefined);
+				if (piSessionId && !capability && !stale()) await reseedRecord(piSessionId, process.cwd()).catch(() => undefined);
 				return;
 			}
 
@@ -531,7 +531,7 @@ export function streamClaudeSdk(
 				output.errorMessage = final.errorMessage ?? final.text ?? "claude-agent-sdk returned an error result";
 				stream.push({ type: "error", reason: "error", error: output });
 				stream.end();
-				if (piSessionId && !stale()) await reseedRecord(piSessionId, process.cwd()).catch(() => undefined);
+				if (piSessionId && !capability && !stale()) await reseedRecord(piSessionId, process.cwd()).catch(() => undefined);
 				return;
 			}
 
@@ -551,7 +551,7 @@ export function streamClaudeSdk(
 			// Persist mirror BEFORE stream.end(): Pi may start the next
 			// streamSimple as soon as this stream ends; seeding the same
 			// Claude UUID twice yields "Session ID already in use".
-			if (!stale()) {
+			if (!capability && !stale()) {
 				const record = await ensureRecord(piSessionId!, process.cwd());
 				await markSeeded(
 					record,
