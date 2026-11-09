@@ -22,7 +22,8 @@
     "openrouter/z-ai/glm-5.3": "low",
     "runinfra/glm-5-3-flash": "low",
     "vibe/zai-glm-5-3": "low",
-    "explabs/glm-5.3-uncensored:free": "max"
+    "explabs/glm-5.3-uncensored:free": "max",
+    "opencode-go/hy4": "off"
   },
   "steeringMode": "all",
   "followUpMode": "all",

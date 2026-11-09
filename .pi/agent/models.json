@@ -624,7 +624,7 @@
     "opencode-go": {
       "modelOverrides": {
         "hy4": {
-          "contextWindow": 1048576
+          "contextWindow": 262144
         },
         "beam-free": {
           "contextWindow": 262144

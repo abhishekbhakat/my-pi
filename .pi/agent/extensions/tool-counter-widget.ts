@@ -2,7 +2,7 @@
  * Tool Counter Widget — Tool call counts in a widget above the editor
  *
  * Shows a persistent, live-updating widget with per-tool background colors.
- * Format: Tools (N): [Bash 3] [Read 7] [Write 2]
+ * Format: Tools (N): [Bash 3] [Read 7] [Write 2] Compactions 2
  */
 
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
@@ -27,6 +27,7 @@ export default function (pi: ExtensionAPI) {
 	const counts: Record<string, number> = {};
 	const toolColors: Record<string, number[]> = {};
 	let total = 0;
+	let compactions = 0;
 	let colorIdx = 0;
 	let currentCtx: ExtensionContext | undefined;
 
@@ -37,6 +38,12 @@ export default function (pi: ExtensionAPI) {
 		}
 		counts[toolName] = (counts[toolName] || 0) + 1;
 		total++;
+		paint();
+	}
+
+	function refreshCompactions(ctx: ExtensionContext): void {
+		currentCtx = ctx;
+		compactions = ctx.sessionManager.getBranch().filter((entry) => entry.type === "compaction").length;
 		paint();
 	}
 
@@ -53,7 +60,8 @@ export default function (pi: ExtensionAPI) {
 					});
 					text.setText(
 						theme.fg("accent", `Tools (${total}):`) +
-						(entries.length > 0 ? " " + parts.join(" ") : ""),
+						(entries.length > 0 ? " " + parts.join(" ") : "") +
+						"  " + theme.fg("accent", `Compactions ${compactions}`),
 					);
 					return text.render(width);
 				},
@@ -81,8 +89,9 @@ export default function (pi: ExtensionAPI) {
 		paint();
 	});
 
-	pi.on("session_start", async (_event, ctx) => {
-		currentCtx = ctx;
-		paint();
-	});
+	pi.on("session_start", async (_event, ctx) => refreshCompactions(ctx));
+	pi.on("session_switch", async (_event, ctx) => refreshCompactions(ctx));
+	pi.on("session_fork", async (_event, ctx) => refreshCompactions(ctx));
+	pi.on("session_tree", async (_event, ctx) => refreshCompactions(ctx));
+	pi.on("session_compact", async (_event, ctx) => refreshCompactions(ctx));
 }
