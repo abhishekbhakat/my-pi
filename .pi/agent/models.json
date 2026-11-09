@@ -623,6 +623,9 @@
     },
     "opencode-go": {
       "modelOverrides": {
+        "hy4": {
+          "contextWindow": 1048576
+        },
         "beam-free": {
           "contextWindow": 262144
         },
@@ -665,7 +668,39 @@
         "step-5-preview": {
           "contextWindow": 262144
         }
-      }
+      },
+      "compat": {
+        "sendSessionAffinityHeaders": true,
+        "sessionAffinityFormat": "openai"
+      },
+      "models": [
+        {
+          "id": "hy4",
+          "name": "Hy4 (OpenCode Go)",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "cost": {
+            "input": 0.834,
+            "output": 2.501,
+            "cacheRead": 0.042,
+            "cacheWrite": 0
+          },
+          "contextWindow": 1048576,
+          "maxTokens": 65536,
+          "thinkingLevelMap": {
+            "off": "none",
+            "minimal": null,
+            "low": null,
+            "medium": null,
+            "high": "high",
+            "xhigh": null,
+            "max": null
+          }
+        }
+      ]
     },
     "explabs": {
       "baseUrl": "https://api.experientiallabs.ai/v1",
