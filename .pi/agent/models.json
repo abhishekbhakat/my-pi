@@ -847,6 +847,28 @@
           }
         },
         {
+          "id": "deepseek-v4.1-flash-abliterated",
+          "name": "DeepSeek V4.1 Flash Abliterated",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 262144,
+          "maxTokens": 262144,
+          "compat": {
+            "thinkingFormat": "deepseek"
+          },
+          "thinkingLevelMap": {
+            "off": "none",
+            "minimal": null,
+            "low": "low",
+            "medium": null,
+            "high": "high",
+            "xhigh": null,
+            "max": "max"
+          }
+        },
+        {
           "id": "kimi-k3.1-pro",
           "name": "Kimi K3.1 Pro",
           "reasoning": true,

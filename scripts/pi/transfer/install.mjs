@@ -99,10 +99,10 @@ export function install(flags) {
     }
     ensureBinInPath(binDir);
     console.log("\n[auth.json]");
-    // Prefer working-tree auth (untracked); staging copy also has it when present.
-    const authSrc = exists(path.join(REPO_AGENT, "auth.json"))
-      ? path.join(REPO_AGENT, "auth.json")
-      : path.join(sourceAgent, "auth.json");
+    // Staging copy holds working-tree auth plus userprofile.json auth; fall back to working tree.
+    const authSrc = exists(path.join(sourceAgent, "auth.json"))
+      ? path.join(sourceAgent, "auth.json")
+      : path.join(REPO_AGENT, "auth.json");
     mergeAuth(path.join(HOME_AGENT, "auth.json"), authSrc, { skipOauth: true });
     if (flags.host) {
       console.log("\n[models proxy]");
