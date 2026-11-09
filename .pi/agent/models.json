@@ -47,6 +47,7 @@
           }
         },
         "opus": {
+          "contextWindow": 262144,
           "thinkingLevelMap": {
             "max": "max"
           }
