@@ -1,11 +1,11 @@
 /**
- * Pin Claude Code models before claude-code-sdk loads.
+ * Configure Claude Code models before claude-code-sdk loads.
  * Local extensions run in path order; this env is visible when
  * configuredModels() reads CLAUDE_CODE_SDK_MODELS / CLAUDE_CODE_PI_MODELS.
  *
- * Fable is disabled: pinned Opus only, alongside sonnet and haiku.
+ * Aliases resolve through the local CLI's current model catalog.
  */
-const DEFAULT_MODELS = "sonnet,opus,haiku";
+const DEFAULT_MODELS = "sonnet,opus,haiku,fable";
 const PIN = "opus";
 
 function normalizeModelsEnv(raw: string | undefined): string {
@@ -13,8 +13,7 @@ function normalizeModelsEnv(raw: string | undefined): string {
 	const ids = raw
 		.split(/[\s,]+/)
 		.map((part) => part.trim())
-		.filter(Boolean)
-		.map((id) => (id === "fable" ? PIN : id));
+		.filter(Boolean);
 	if (!ids.includes(PIN)) ids.push(PIN);
 	return [...new Set(ids)].join(",");
 }
