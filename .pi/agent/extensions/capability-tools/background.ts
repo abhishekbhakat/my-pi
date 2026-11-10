@@ -181,7 +181,7 @@ export function renderPanes(panes: Pane[], width: number, dim: (text: string) =>
 	const base = Math.floor(inner / count);
 	const widths = panes.map((_, index) => base + (index < inner - base * count ? 1 : 0));
 	const edge = (label: string, w: number) => {
-		const text = truncateToWidth(` ${label} `, Math.max(0, w - 2), "…", true);
+		const text = truncateToWidth(` ${label} `, Math.max(0, w - 2), "…");
 		return dim("─") + text + dim("─".repeat(Math.max(0, w - 1 - visibleWidth(text))));
 	};
 	const fit = (line: string) => (visibleWidth(line) > width ? truncateToWidth(line, width, "") : line);
