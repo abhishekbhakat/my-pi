@@ -1,3 +1,6 @@
+import { registerBackground, type CapabilityBackground } from "#capability-background";
+import { CAPABILITY_CHILD_ENV, registerCoderCommand, startCoder } from "#capability-coder";
+import { snapshotContext } from "#capability-snapshot";
 import type { ExtensionAPI, ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { registerCapabilityCommands, DEFAULT_TASKS } from "./commands";
@@ -22,29 +25,40 @@ function capabilityInputSchema(pathsDescription: string) {
 	});
 }
 
-function registerCapabilityTool(pi: ExtensionAPI, def: CapabilityDef): void {
+function registerCapabilityTool(pi: ExtensionAPI, def: CapabilityDef, background: CapabilityBackground): void {
 	const pathsDescription = def.toolName === "code_scout" ? SCOUT_PATHS_DESCRIPTION : DEFAULT_PATHS_DESCRIPTION;
 	pi.registerTool({
 		name: def.toolName,
 		label: def.label,
-		description: def.description,
+		description: `${def.description}${["coder", "reasoning_coach", "patch_reviewer"].includes(def.toolName) ? " Runs asynchronously. Returns run ID immediately; completion wakes this chat. Use capability_jobs for output or cancellation." : ""}`,
 		promptSnippet: def.promptSnippet ?? def.description,
 		promptGuidelines: def.promptGuidelines.length > 0 ? def.promptGuidelines : undefined,
-		parameters: capabilityInputSchema(pathsDescription),
+		parameters: def.toolName === "coder" ? Type.Object({
+			task: Type.String({ minLength: 1, description: "Bounded code change, assigned files, and acceptance checks." }),
+			paths: Type.Optional(Type.Array(Type.String({ description: pathsDescription }))),
+		}) : capabilityInputSchema(pathsDescription),
 		execute: async (_callId, args, signal, onUpdate, ctx) => {
 			const input = { ...args, task: args.task ?? DEFAULT_TASKS[def.toolName] } as CapabilityToolInput;
+			if (def.toolName === "coder") return startCoder(background, def, input, ctx);
+			if (def.toolName === "reasoning_coach" || def.toolName === "patch_reviewer") {
+				const snapshot = snapshotContext(ctx);
+				return background.start(def.toolName, ctx, (ownedSignal) => executeCapability(pi, def, input, ownedSignal, undefined, snapshot));
+			}
 			return executeCapability(pi, def, input, signal, onUpdate, ctx);
 		},
 	});
 }
 
 export default function (pi: ExtensionAPI) {
+	// Children load normal permission extensions, but never recursive delegates.
+	if (process.env[CAPABILITY_CHILD_ENV] === "1") return;
+	const background = registerBackground(pi);
 	const capabilities = loadCapabilityDefs();
 	const listed = [...capabilities, BOOLEAN_GUY_DEF];
-	const capabilityToolNames = listed.map((c) => c.toolName);
+	const capabilityToolNames = listed.filter((c) => c.toolName !== "coder").map((c) => c.toolName);
 
 	for (const capability of capabilities) {
-		registerCapabilityTool(pi, capability);
+		registerCapabilityTool(pi, capability, background);
 	}
 
 	pi.registerTool({
@@ -58,7 +72,8 @@ export default function (pi: ExtensionAPI) {
 			executeBooleanGuy(pi, args as Parameters<typeof executeBooleanGuy>[1], signal, onUpdate, ctx),
 	});
 
-	registerCapabilityCommands(pi, capabilities);
+	registerCapabilityCommands(pi, capabilities, background);
+	registerCoderCommand(pi);
 	applyCapabilityPrune(pi, listed);
 
 	function toggleCapabilities(): { enabled: boolean; names: string[] } {

@@ -10,6 +10,7 @@ const CAP_ROLE_BY_TOOL = {
   patch_reviewer: "reviewer",
   code_scout: "scout",
   commit_message: "commit",
+  coder: "coder",
 };
 
 function detectEol(text) {

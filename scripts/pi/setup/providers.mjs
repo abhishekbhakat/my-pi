@@ -28,6 +28,7 @@ export const CAPABILITY_PREFERRED = {
   commit: "claude-code-sdk/haiku",
   coach: "claude-code-sdk/opus",
   reviewer: "claude-code-sdk/opus",
+  coder: "claude-code-sdk/opus",
 };
 
 export const CAP_ROLES = Object.keys(CAPABILITY_PREFERRED);

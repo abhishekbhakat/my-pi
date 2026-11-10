@@ -2,7 +2,12 @@
 	"name": "pi-agent-extensions",
 	"version": "1.0.0",
 	"imports": {
-		"#capability-model-budget": "./capability-tools/modelBudget.ts"
+		"#capability-model-budget": "./capability-tools/modelBudget.ts",
+		"#capability-background": "./capability-tools/background.ts",
+		"#capability-coder": "./capability-tools/coder.ts",
+		"#capability-snapshot": "./capability-tools/snapshot.ts",
+		"#capability-runner": "./capability-tools/runner.ts",
+		"#capability-types": "./capability-tools/types.ts"
 	},
 	"description": "Extensions for pi coding agent",
 	"dependencies": {
@@ -18,6 +23,8 @@
 		"zod": "^4.6.5"
 	},
 	"devDependencies": {
+		"@earendil-works/pi-coding-agent": "1.5.1",
+		"@sinclair/typebox": "^0.34.41",
 		"typescript": "^5.9.3"
 	}
 }

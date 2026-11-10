@@ -127,16 +127,22 @@ Slow work (build, test, install, download, server, watch) goes through `jobs spa
 - Servers: spawn the server, then spawn a readiness loop such as `until curl -sf http://localhost:3000; do sleep 0.2; done`. Sleep inside a spawned loop is fine, because that loop ends on a condition, not a clock. A foreground loop is blocked.
 - Foreground bash only for commands that finish at once. The bash `timeout` parameter is stripped, and sleep and detach patterns are blocked by the tool guard.
 
-## Helper Tools
+## Helper tools
 
-| Tool              | Use when                                            |
-| ----------------- | --------------------------------------------------- |
-| `reasoning_coach` | Ambiguity, tradeoffs, constraints, risk             |
-| `code_scout`      | Edit-point mapping in unfamiliar code               |
-| `patch_reviewer`  | After nontrivial changes. Ask user first            |
-| `commit_message`  | User want commit message. Call it, never invent one |
+| Tool              | Use when                                                       |
+| ----------------- | -------------------------------------------------------------- |
+| `coder`           | Delegate bounded code changes with assigned paths and checks   |
+| `reasoning_coach` | Resolve ambiguity, tradeoffs, constraints, and risk            |
+| `code_scout`      | Map edit points in unfamiliar code                             |
+| `patch_reviewer`  | Review nontrivial changes after checks. Ask the user first     |
+| `commit_message`  | Generate a requested commit message. Never invent one yourself |
 
-Flow: `code_scout` if area unclear. `reasoning_coach` when task have ambiguity, several viable approaches, strict constraints, or high regression risk. Then execute. Then ask user before `patch_reviewer`. Never launch it without explicit yes.
+Use `code_scout` when the code area is unclear. Use `reasoning_coach` when requirements, constraints, tradeoffs, or regression risk need judgment. Wait for its result before making decisions that depend on it. Delegate bounded implementation work to `coder` when available; the driver coordinates scope, checks results, and reports to the user. Ask the user before `patch_reviewer`; never launch it without explicit yes.
+
+- `coder`, `reasoning_coach`, and `patch_reviewer` run in the background and return run IDs. Completion wakes the originating chat. A run ID confirms launch only; wait for the result before claiming success or relying on a verdict.
+- Coder receives the active branch snapshot and inherited instructions, with skills and `codemode` available. It edits the current workspace. Do not edit its assigned files until it finishes. Only one coder may run at a time; continue independent reads, planning, or work on other files.
+- Use `capability_jobs` to list runs, read output, or stop a run. These runs are separate from shell `jobs`. Cancellation keeps edits already written; inspect them before retrying.
+- Only the user controls `/coder`. Never enable or disable coder yourself, including through commands, configuration edits, or tool-selection APIs. When enabled, you may call `coder`; when disabled, handle the work without enabling it. Disabling it does not stop existing runs. Keep model names and reasoning levels in capability configuration or `userprofile.json`, not in these instructions.
 
 ## Codemode
 

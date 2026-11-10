@@ -1,3 +1,5 @@
+import type { CapabilityBackground } from "#capability-background";
+import { snapshotContext } from "#capability-snapshot";
 import { execFileSync } from "node:child_process";
 import { platform } from "node:os";
 import { copyToClipboard, type AgentToolUpdateCallback, type ExtensionAPI, type ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
@@ -134,24 +136,21 @@ async function runCapabilityCommand(
 	}
 }
 
-export function registerCapabilityCommands(pi: ExtensionAPI, capabilities: CapabilityDef[]): void {
+export function registerCapabilityCommands(pi: ExtensionAPI, capabilities: CapabilityDef[], background: CapabilityBackground): void {
 	const byTool = new Map(capabilities.map((def) => [def.toolName, def]));
 	const patchReviewer = byTool.get("patch_reviewer");
 	const commitMessage = byTool.get("commit_message");
 
 	if (patchReviewer) {
 		pi.registerCommand("patch-review", {
-			description: "Review staged changes with Patch Reviewer",
+			description: "Review staged changes in background with Patch Reviewer",
 			handler: async (args, ctx) => {
 				const note = args.trim();
-				await runCapabilityCommand(
-					pi,
-					patchReviewer,
-					ctx,
-					note || DEFAULT_TASKS.patch_reviewer,
-					undefined,
-					{ stagedOnly: true },
-				);
+				const snapshot = snapshotContext(ctx);
+				background.start("patch_reviewer", ctx, (signal) => executeCapability(
+					pi, patchReviewer, { task: note || DEFAULT_TASKS.patch_reviewer, stagedOnly: true }, signal, undefined, snapshot,
+				));
+				ctx.ui.notify("Patch review started in background. Result will appear in this chat.", "info");
 			},
 		});
 	}
