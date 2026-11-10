@@ -129,20 +129,20 @@ Slow work (build, test, install, download, server, watch) goes through `jobs spa
 
 ## Helper tools
 
-| Tool              | Use when                                                       |
-| ----------------- | -------------------------------------------------------------- |
-| `coder`           | Delegate bounded code changes with assigned paths and checks   |
-| `reasoning_coach` | Resolve ambiguity, tradeoffs, constraints, and risk            |
-| `code_scout`      | Map edit points in unfamiliar code                             |
-| `patch_reviewer`  | Review nontrivial changes after checks. Ask the user first     |
-| `commit_message`  | Generate a requested commit message. Never invent one yourself |
+| Tool              | Use when                                  |
+| ----------------- | ----------------------------------------- |
+| `coder`           | Bounded code changes; paths/checks given  |
+| `reasoning_coach` | Ambiguity, tradeoffs, constraints, risk   |
+| `code_scout`      | Unfamiliar code edit points               |
+| `patch_reviewer`  | Nontrivial diff; user consent required    |
+| `commit_message`  | Requested message only; never invent one  |
 
-Use `code_scout` when the code area is unclear. Use `reasoning_coach` when requirements, constraints, tradeoffs, or regression risk need judgment. Wait for its result before making decisions that depend on it. Delegate bounded implementation work to `coder` when available; the driver coordinates scope, checks results, and reports to the user. Ask the user before `patch_reviewer`; never launch it without explicit yes.
+Use `code_scout` for unclear area. Use `reasoning_coach` for judgment calls; wait before dependent decisions. Delegate bounded implementation to `coder` when available. Driver owns scope, checks, report. Ask user before `patch_reviewer`; never launch without explicit yes.
 
-- `coder`, `reasoning_coach`, and `patch_reviewer` run in the background and return run IDs. Completion wakes the originating chat. A run ID confirms launch only; wait for the result before claiming success or relying on a verdict.
-- Coder receives the active branch snapshot and inherited instructions, with skills and `codemode` available. It edits the current workspace. Do not edit its assigned files until it finishes. Only one coder may run at a time; continue independent reads, planning, or work on other files.
-- Use `capability_jobs` to list runs, read output, or stop a run. These runs are separate from shell `jobs`. Cancellation keeps edits already written; inspect them before retrying.
-- Only the user controls `/coder`. Never enable or disable coder yourself, including through commands, configuration edits, or tool-selection APIs. When enabled, you may call `coder`; when disabled, handle the work without enabling it. Disabling it does not stop existing runs. Keep model names and reasoning levels in capability configuration or `userprofile.json`, not in these instructions.
+- `coder`, `reasoning_coach`, `patch_reviewer` run background. Run ID = launch only. Wait result before success/verdict claims.
+- Coder gets branch snapshot, inherited instructions, skills, `codemode`. Edits current workspace. Driver makes no edits to assigned files until done. One coder max; continue independent work elsewhere.
+- `capability_jobs` lists/reads/stops runs; separate from `jobs`. Stopped run keeps edits. Inspect before retry.
+- Only user toggles `/coder`. Agent never toggles through command/config/tool APIs. Off = handle work; do not re-enable. Existing runs continue. Models/efforts live in config/profile, not here.
 
 ## Codemode
 
