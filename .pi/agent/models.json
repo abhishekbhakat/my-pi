@@ -40,7 +40,15 @@
     },
     "claude-code-sdk": {
       "modelOverrides": {
+        "fable": {
+          "contextWindow": 262144,
+          "thinkingLevelMap": {
+            "xhigh": "xhigh",
+            "max": "max"
+          }
+        },
         "haiku": {
+          "contextWindow": 500000,
           "thinkingLevelMap": {
             "xhigh": "xhigh",
             "max": "max"
