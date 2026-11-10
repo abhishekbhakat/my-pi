@@ -1,5 +1,4 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { StringEnum } from "@earendil-works/pi-ai";
 import { JobMessageComponent, jobToolRenderers } from "./message.ts";
 import { Type } from "@sinclair/typebox";
 import {
@@ -11,7 +10,7 @@ import {
 	stopAction,
 } from "./actions.ts";
 import { buildSettledContent, buildSettledSummary, formatElapsed, jobLine, jobName, renderJobs } from "./format.ts";
-import { checkBashCommand } from "./guard.ts";
+import { checkBashCommand, registerIdlePollingGuard } from "./guard.ts";
 import {
 	ensureRoot,
 	jobPaths,
@@ -43,6 +42,7 @@ function toneForJobs(jobs: readonly JobState[]): JobTone {
 }
 
 export default function jobsExtension(pi: ExtensionAPI) {
+	registerIdlePollingGuard(pi);
 	let activated = false;
 	let root: string | undefined;
 	let ctxRef: ExtensionContext | undefined;
@@ -309,10 +309,11 @@ export default function jobsExtension(pi: ExtensionAPI) {
 			"For a server: spawn it, then spawn a readiness loop such as `until curl -sf http://localhost:3000; do sleep 0.2; done`. Sleep inside a spawned loop is fine because the loop ends on a condition.",
 			"Foreground bash only for commands that finish at once. There is no `timeout` parameter to pass; it is stripped.",
 			"Check with `jobs list` or `jobs output <id>` only when you need the answer now. Do not poll a running job with sleep.",
+			"Do not poll; end the turn and wait for the exit wake. Repeating the same jobs output call with the same parameters stops the current response without cancelling background work.",
 		],
 		...jobToolRenderers,
 		parameters: Type.Object({
-			action: StringEnum(["spawn", "list", "output", "stop"] as const, {
+			action: Type.Union([Type.Literal("spawn"), Type.Literal("list"), Type.Literal("output"), Type.Literal("stop")], {
 				description: "spawn starts a background job; list shows all; output tails one; stop kills one",
 			}),
 			command: Type.Optional(Type.String({ description: "Shell command to run in the background (spawn only)" })),

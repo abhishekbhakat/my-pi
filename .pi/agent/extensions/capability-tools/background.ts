@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import * as path from "node:path";
 import type { AgentToolResult, ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
 import { registerCapabilityMessages } from "#capability-message";
 import { CoderProgress, type CoderChannel, type CoderSend } from "#capability-coder-progress";
@@ -26,6 +27,7 @@ export class CapabilityBackground {
 	private generation = 0;
 	private context?: ExtensionContext;
 	private paintTimer?: ReturnType<typeof setTimeout>;
+	private widgetShown = false;
 
 	constructor(private readonly pi: ExtensionAPI) {}
 
@@ -36,8 +38,8 @@ export class CapabilityBackground {
 		if (this.paintTimer) clearTimeout(this.paintTimer);
 		this.paintTimer = undefined;
 		for (const run of this.runs.values()) this.stop(run.id);
-		this.context?.ui.setWidget("coder-live", undefined);
-		this.context?.ui.setWidget("helper-live", undefined);
+		this.context?.ui.setWidget("capability-live", undefined);
+		this.widgetShown = false;
 		this.context?.ui.setStatus("capability-background", undefined);
 		this.context = undefined;
 		// Session replacement must wait for writers to stop before a new runtime
@@ -58,18 +60,28 @@ export class CapabilityBackground {
 		if (!ctx) return;
 		const active = [...this.runs.values()].filter((run) => run.sessionId === ctx.sessionManager.getSessionId() && (run.status === "running" || run.status === "cancelling"));
 		ctx.ui.setStatus("capability-background", active.length ? `Capabilities: ${active.length} running` : undefined);
-		const coder = active.find((run) => run.kind === "coder");
-		ctx.ui.setWidget("coder-live", coder ? [
-			`Coder ${coder.id} | ${coder.status} | ${coder.progress?.phase ?? "starting"}`,
-			...(coder.progress?.lines() ?? []),
-			"PARTIAL | /coder-send <instruction> | /coder-stop",
-		] : undefined);
-		const helpers = active.filter((run) => run.kind !== "coder" && run.progress);
-		ctx.ui.setWidget("helper-live", helpers.length ? helpers.flatMap((run) => [
-			`${run.kind} ${run.id} | ${run.status} | ${run.progress!.phase}`,
-			...run.progress!.lines(4),
-			"PARTIAL - wait for final result. Stop with capability_jobs.",
-		]) : undefined);
+		const panes: Pane[] = active.filter((run) => run.kind === "coder" || run.progress).map((run) => {
+			const tools = run.progress?.tools ?? 0;
+			return {
+				title: `${run.kind} ${run.id.slice(run.kind.length + 1, run.kind.length + 9)} | ${run.status} | ${run.progress?.phase ?? "starting"}${tools ? ` | ${tools} tools` : ""}`,
+				body: run.progress?.lines(BODY_ROWS) ?? [],
+				footer: run.kind === "coder" ? "PARTIAL | /coder-send <instruction> | /coder-stop" : "PARTIAL | stop via capability_jobs",
+			};
+		});
+		if (!panes.length) {
+			ctx.ui.setWidget("capability-live", undefined);
+			this.widgetShown = false;
+			return;
+		}
+		ctx.ui.setWidget("capability-live", (_tui, theme) => ({
+			render: (width: number) => renderPanes(panes, width, (text) => theme.fg("dim", text)),
+			invalidate() {},
+		}));
+		if (!this.widgetShown) {
+			this.widgetShown = true;
+			// Tool counter listens and re-adds itself so it renders below this panel.
+			this.pi.events.emit("capability:panel-open", {});
+		}
 	}
 
 	private schedulePaint(): void {
@@ -156,6 +168,30 @@ export class CapabilityBackground {
 			details: { status: "running", id, directory },
 		};
 	}
+}
+
+const BODY_ROWS = 4;
+
+interface Pane { title: string; body: string[]; footer: string }
+
+/** One frame, one column per pane. Fixed height: BODY_ROWS plus a title border row and a footer border row. */
+export function renderPanes(panes: Pane[], width: number, dim: (text: string) => string): string[] {
+	const count = panes.length;
+	const inner = Math.max(count * 6, width - count - 1);
+	const base = Math.floor(inner / count);
+	const widths = panes.map((_, index) => base + (index < inner - base * count ? 1 : 0));
+	const edge = (label: string, w: number) => {
+		const text = truncateToWidth(` ${label} `, Math.max(0, w - 2), "…", true);
+		return dim("─") + text + dim("─".repeat(Math.max(0, w - 1 - visibleWidth(text))));
+	};
+	const fit = (line: string) => (visibleWidth(line) > width ? truncateToWidth(line, width, "") : line);
+	const out = [fit(dim("┌") + panes.map((pane, index) => edge(pane.title, widths[index])).join(dim("┬")) + dim("┐"))];
+	for (let row = 0; row < BODY_ROWS; row++) {
+		const cells = panes.map((pane, index) => truncateToWidth(pane.body[row] ?? "", widths[index], "…", true));
+		out.push(fit(dim("│") + cells.join(dim("│")) + dim("│")));
+	}
+	out.push(fit(dim("└") + panes.map((pane, index) => edge(pane.footer, widths[index])).join(dim("┴")) + dim("┘")));
+	return out;
 }
 
 export function registerBackground(pi: ExtensionAPI): CapabilityBackground {

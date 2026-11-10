@@ -4,7 +4,7 @@ import { stripVTControlCharacters } from "node:util";
 import type { AgentToolUpdateCallback } from "@earendil-works/pi-coding-agent";
 
 export type CoderSend = (message: string) => Promise<string>;
-export interface CoderUpdate { phase: string; text: string; delta?: boolean; replace?: boolean }
+export interface CoderUpdate { phase: string; text: string; delta?: boolean; replace?: boolean; tool?: boolean }
 export interface CoderChannel {
 	update: (update: CoderUpdate) => void;
 	attach: (send?: CoderSend) => void;
@@ -16,6 +16,7 @@ function clean(text: string): string {
 
 export class CoderProgress {
 	phase = "starting";
+	tools = 0;
 	private tail = "";
 	private streamingPhase = "";
 
@@ -28,6 +29,7 @@ export class CoderProgress {
 		appendFileSync(path.join(this.directory, "progress.log"), chunk, { mode: 0o600 });
 		this.tail = (update.replace ? `[${update.phase}] ${value}` : this.tail + chunk).slice(-6000);
 		this.phase = update.phase;
+		if (update.tool) this.tools++;
 		this.streamingPhase = update.delta ? update.phase : "";
 	}
 
@@ -61,7 +63,7 @@ export function coderEvent(event: Record<string, any>, update: CoderChannel["upd
 	} else if (event.type === "tool_execution_start") {
 		const args = event.args ?? {};
 		const target = args.path ?? args.command ?? args.action ?? "";
-		update({ phase: "tool", text: `${event.toolName} ${String(target).slice(0, 400)}` });
+		update({ phase: "tool", text: `${event.toolName} ${String(target).slice(0, 400)}`, tool: true });
 	} else if (event.type === "tool_execution_end") {
 		const result = event.result?.content?.filter((part: any) => part.type === "text").map((part: any) => part.text).join("\n") ?? "";
 		update({ phase: event.isError ? "tool error" : "tool done", text: `${event.toolName} ${result.slice(-500)}` });
