@@ -4,7 +4,7 @@ import * as path from "node:path";
 import type { AgentToolResult, ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
-import { registerCapabilityMessages } from "#capability-message";
+import { renderCapabilityJobsCall, renderCapabilityResult, registerCapabilityMessages } from "#capability-message";
 import { CoderProgress, type CoderChannel, type CoderSend } from "#capability-coder-progress";
 
 type Result = { content: Array<{ type: string; text?: string }>; details?: unknown };
@@ -204,7 +204,9 @@ export function registerBackground(pi: ExtensionAPI): CapabilityBackground {
 	pi.on("session_shutdown", () => background.cancelAll());
 	pi.registerTool({
 		name: "capability_jobs", label: "Capability jobs",
-		description: "List background runs, read output, stop, or steer coder with a message. Coder, reasoning, and review output streams as PARTIAL, never a final verdict. Only coder accepts steering. Separate from shell jobs.",
+		description: "List background runs, read output, stop, or steer coder with a message. Coder, reasoning, and review output streams as PARTIAL, never a final verdict. Only coder accepts steering. Separate from shell jobs. The live panel already shows helper progress, so no need to poll output while a run is still going.",
+		renderCall: renderCapabilityJobsCall,
+		renderResult: renderCapabilityResult("Capability jobs"),
 		parameters: Type.Object({ action: Type.Union([Type.Literal("list"), Type.Literal("output"), Type.Literal("stop"), Type.Literal("steer")]), id: Type.Optional(Type.String()), message: Type.Optional(Type.String()) }),
 		execute: async (_id, args, _signal, _update, ctx) => {
 			const runs = [...background.runs.values()].filter((run) => run.sessionId === ctx.sessionManager.getSessionId());

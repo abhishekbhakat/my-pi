@@ -17,8 +17,7 @@ export class CapabilityMessageComponent extends Container {
 
 	private rebuild(): void {
 		this.clear();
-		const color = this.status === "done" ? "toolSuccessBg" : this.status === "running" ? "toolPendingBg" : "toolErrorBg";
-		const bg = (value: string) => this.theme.bg(color, value);
+		const bg = (value: string) => value;
 		const prefix = this.theme.fg("accent", "[capability] ");
 		const body = this.expanded
 			? new Text(prefix + this.full + this.theme.fg("dim", "\n(click to collapse)"), 1, 1, bg)
@@ -34,6 +33,43 @@ export class CapabilityMessageComponent extends Container {
 			return { handled: true };
 		}));
 	}
+}
+
+export function oneLine(raw: string): string {
+	return stripVTControlCharacters(raw).replace(/[\x00-\x08\x0b-\x1f\x7f]/g, "").replace(/\s+/g, " ").trim();
+}
+
+/** One-line call row: label plus collapsed task. Full args expand via ctrl+o or click. */
+export function renderCapabilityCall(label: string, fallbackTask: string): NonNullable<ToolDefinition["renderCall"]> {
+	return (args, theme, context) => {
+		const input = args as { task?: string; paths?: string[] };
+		const task = input?.task ?? fallbackTask;
+		const paths = Array.isArray(input?.paths) ? input.paths : [];
+		const summary = oneLine(`${label} | ${task}${paths.length ? ` | ${paths.length} paths` : ""}`);
+		const full = stripVTControlCharacters([label, task, ...paths.map((item) => oneLine(item))].filter(Boolean).join("\n"));
+		return new CapabilityMessageComponent(summary, full, 0, theme, context.expanded, "running");
+	};
+}
+
+export const renderCapabilityJobsCall: NonNullable<ToolDefinition["renderCall"]> = (args, theme, context) => {
+	const input = args as { action?: string; id?: string; message?: string };
+	const id = input?.id?.replace(/-([0-9a-f]{8})-.*/i, "-$1") ?? "";
+	const summary = oneLine(`jobs ${input?.action ?? "list"} ${id}`);
+	const full = [summary, input?.id, input?.message].filter(Boolean).map((line) => stripVTControlCharacters(line!)).join("\n");
+	return new CapabilityMessageComponent(summary, full, 0, theme, context.expanded, "running");
+};
+
+/** One-line result row: model-facing content unchanged, display collapses to first line. */
+export function renderCapabilityResult(label: string): NonNullable<ToolDefinition["renderResult"]> {
+	return (result, options, theme, context) => {
+		const raw = result.content.filter((part) => part.type === "text").map((part) => part.text).join("\n");
+		const full = stripVTControlCharacters(raw).replace(/[\x00-\x08\x0b-\x1f\x7f]/g, "");
+		const details = result.details as { status?: string } | undefined;
+		const failed = context.isError || details?.status === "error" || details?.status === "aborted";
+		const status = failed ? "error" : options.isPartial || details?.status === "running" || details?.status === "cancelling" ? "running" : "done";
+		const preview = (full.split("\n").find((line) => line.trim()) ?? "").trim().slice(0, 200);
+		return new CapabilityMessageComponent(`${label} | ${oneLine(preview)}`, full, 0, theme, options.expanded, status);
+	};
 }
 
 /** Keep scout tool output compact without trimming model-facing results. */
