@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "1.5.0",
+  "lastChangelogVersion": "1.5.1",
   "theme": "everforest",
   "quietStartup": true,
   "hideThinkingBlock": false,
@@ -17,6 +17,7 @@
     "mistral-vibe-cli/glm-5.3": "max",
     "mistral/zai-glm-5-3": "max",
     "openai/gpt-6.1-sol": "low",
+    "openrouter/meta/muse-ember": "low",
     "openrouter/meta/muse-spark-1.3": "max",
     "openrouter/meta/muse-spark-1.3-contributor": "xhigh",
     "openrouter/z-ai/glm-5.3": "low",
@@ -63,6 +64,7 @@
     "opencode-go/muse-spark-1.3-contributor",
     "opencode-go/qwen3.8-max",
     "opencode-go/step-5-preview",
+    "openrouter/meta/muse-ember",
     "openrouter/meta/muse-spark-1.3-contributor",
     "openrouter/z-ai/glm-5.3",
     "openrouter/z-ai/glm-5.3-flashx-legal",
