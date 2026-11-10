@@ -2,9 +2,13 @@
 	"name": "pi-agent-extensions",
 	"version": "1.0.0",
 	"imports": {
+		"#compact-codemode": "./compact-tools/codemode.ts",
 		"#capability-model-budget": "./capability-tools/modelBudget.ts",
 		"#capability-background": "./capability-tools/background.ts",
+		"#capability-message": "./capability-tools/capabilityMessage.ts",
 		"#capability-coder": "./capability-tools/coder.ts",
+		"#capability-coder-progress": "./capability-tools/coderProgress.ts",
+		"#capability-coder-rpc": "./capability-tools/coderRpc.ts",
 		"#capability-snapshot": "./capability-tools/snapshot.ts",
 		"#capability-runner": "./capability-tools/runner.ts",
 		"#capability-types": "./capability-tools/types.ts"

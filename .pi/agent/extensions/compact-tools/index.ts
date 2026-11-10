@@ -12,10 +12,12 @@
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { registerCompactCodemode } from "#compact-codemode";
 import { patchToolExecutionNoInlineImages } from "./image-patch";
 import { registerCompactTools } from "./tools";
 
 export default function (pi: ExtensionAPI) {
 	patchToolExecutionNoInlineImages();
 	registerCompactTools(pi);
+	registerCompactCodemode(pi);
 }

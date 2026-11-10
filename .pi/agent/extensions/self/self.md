@@ -141,7 +141,8 @@ Use `code_scout` for unclear area. Use `reasoning_coach` for judgment calls; wai
 
 - `coder`, `reasoning_coach`, `patch_reviewer` run background. Run ID = launch only. Wait result before success/verdict claims.
 - Coder gets branch snapshot, inherited instructions, skills, `codemode`. Edits current workspace. Driver makes no edits to assigned files until done. One coder max; continue independent work elsewhere.
-- `capability_jobs` lists/reads/stops runs; separate from `jobs`. Stopped run keeps edits. Inspect before retry.
+- Coder, coach, reviewer widgets stream partial work. `/coder-send <message>` steers after current tool turn; `/coder-stop` cancels. Only coder accepts steering. Partial output never proves success.
+- `capability_jobs` lists/reads/stops runs or steers coder; separate from `jobs`. Stopped run keeps edits. Inspect before retry.
 - Only user toggles `/coder`. Agent never toggles through command/config/tool APIs. Off = handle work; do not re-enable. Existing runs continue. Models/efforts live in config/profile, not here.
 
 ## Codemode

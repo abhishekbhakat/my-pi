@@ -8,6 +8,7 @@ import {
 	nextJobId,
 	pidOwner,
 	readExitCode,
+	readJob,
 	reconcile,
 	tailLog,
 	writeJob,
@@ -78,13 +79,14 @@ export async function spawnAction(
 		await writeJob(root, job);
 		deps.updateStatus([...jobs, job]);
 
-		// Print and json modes have no idle wake, so block on the real exit instead of a timer.
-		if (ctx.mode === "print" || ctx.mode === "json") {
+		// One-shot modes and coder children must finish jobs before settling.
+		if (ctx.mode === "print" || ctx.mode === "json" || process.env.PI_CAPABILITY_CHILD === "1") {
 			await waitForExit(() => readExitCode(paths.exit), signal);
 			if (signal?.aborted) {
 				await terminateJob(spawned.pid, () => readExitCode(paths.exit));
 			}
-			const done = (await reconcile(root)).all.find((item) => item.id === id);
+			await reconcile(root);
+			const done = await readJob(root, id);
 			if (done) await writeJob(root, { ...done, notified: true });
 			const tail = await tailLog(paths.log, OUTPUT_DEFAULT_LINES);
 			const head = done ? jobLine(done) : `${id} unknown (exit file missing)`;

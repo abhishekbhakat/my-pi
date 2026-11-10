@@ -3,9 +3,11 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import * as path from "node:path";
 import type { AgentToolResult, ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
+import { registerCapabilityMessages } from "#capability-message";
+import { CoderProgress, type CoderChannel, type CoderSend } from "#capability-coder-progress";
 
 type Result = { content: Array<{ type: string; text?: string }>; details?: unknown };
-export type BackgroundWork = (signal: AbortSignal, directory: string) => Promise<Result>;
+export type BackgroundWork = (signal: AbortSignal, directory: string, channel?: CoderChannel) => Promise<Result>;
 export interface CapabilityRun {
 	id: string;
 	kind: string;
@@ -15,12 +17,15 @@ export interface CapabilityRun {
 	directory: string;
 	text: string;
 	completion?: Promise<void>;
+	progress?: CoderProgress;
+	send?: CoderSend;
 }
 
 export class CapabilityBackground {
 	readonly runs = new Map<string, CapabilityRun>();
 	private generation = 0;
 	private context?: ExtensionContext;
+	private paintTimer?: ReturnType<typeof setTimeout>;
 
 	constructor(private readonly pi: ExtensionAPI) {}
 
@@ -28,7 +33,11 @@ export class CapabilityBackground {
 
 	async cancelAll(): Promise<void> {
 		this.generation++;
+		if (this.paintTimer) clearTimeout(this.paintTimer);
+		this.paintTimer = undefined;
 		for (const run of this.runs.values()) this.stop(run.id);
+		this.context?.ui.setWidget("coder-live", undefined);
+		this.context?.ui.setWidget("helper-live", undefined);
 		this.context?.ui.setStatus("capability-background", undefined);
 		this.context = undefined;
 		// Session replacement must wait for writers to stop before a new runtime
@@ -45,8 +54,39 @@ export class CapabilityBackground {
 	}
 
 	private paint(): void {
-		const count = [...this.runs.values()].filter((run) => run.status === "running" || run.status === "cancelling").length;
-		this.context?.ui.setStatus("capability-background", count ? `Capabilities: ${count} running` : undefined);
+		const ctx = this.context;
+		if (!ctx) return;
+		const active = [...this.runs.values()].filter((run) => run.sessionId === ctx.sessionManager.getSessionId() && (run.status === "running" || run.status === "cancelling"));
+		ctx.ui.setStatus("capability-background", active.length ? `Capabilities: ${active.length} running` : undefined);
+		const coder = active.find((run) => run.kind === "coder");
+		ctx.ui.setWidget("coder-live", coder ? [
+			`Coder ${coder.id} | ${coder.status} | ${coder.progress?.phase ?? "starting"}`,
+			...(coder.progress?.lines() ?? []),
+			"PARTIAL | /coder-send <instruction> | /coder-stop",
+		] : undefined);
+		const helpers = active.filter((run) => run.kind !== "coder" && run.progress);
+		ctx.ui.setWidget("helper-live", helpers.length ? helpers.flatMap((run) => [
+			`${run.kind} ${run.id} | ${run.status} | ${run.progress!.phase}`,
+			...run.progress!.lines(4),
+			"PARTIAL - wait for final result. Stop with capability_jobs.",
+		]) : undefined);
+	}
+
+	private schedulePaint(): void {
+		if (this.paintTimer) return;
+		const generation = this.generation;
+		this.paintTimer = setTimeout(() => {
+			this.paintTimer = undefined;
+			if (generation === this.generation) this.paint();
+		}, 250);
+	}
+
+	async steer(id: string, message: string): Promise<string> {
+		const run = this.runs.get(id);
+		if (!message.trim()) throw new Error("Instruction must not be empty.");
+		if (!run || run.kind !== "coder") throw new Error("Only coder runs accept instructions.");
+		if (run.status !== "running" || !run.send) throw new Error("Coder is starting, stopping, or finished. Inspect capability_jobs output.");
+		return run.send(message);
 	}
 
 	start(kind: string, ctx: ExtensionContext, work: BackgroundWork): AgentToolResult {
@@ -74,10 +114,19 @@ export class CapabilityBackground {
 			if (old.status !== "running" && old.status !== "cancelling") this.runs.delete(oldId);
 		}
 		const generation = this.generation;
+		if (["coder", "reasoning_coach", "patch_reviewer"].includes(kind)) run.progress = new CoderProgress(directory);
+		const channel: CoderChannel | undefined = run.progress ? {
+			update: (update) => {
+				if (generation !== this.generation || run.status !== "running") return;
+				run.progress!.update(update);
+				this.schedulePaint();
+			},
+			attach: (send) => { run.send = kind === "coder" && run.status === "running" ? send : undefined; },
+		} : undefined;
 		this.paint();
 		run.completion = Promise.resolve().then(() => {
 			if (run.controller.signal.aborted) throw new Error("Capability cancelled before launch.");
-			return work(run.controller.signal, directory);
+			return work(run.controller.signal, directory, channel);
 		}).then(
 			(result) => {
 				run.text = result.content.filter((part) => part.type === "text").map((part) => part.text ?? "").join("\n");
@@ -89,6 +138,7 @@ export class CapabilityBackground {
 				run.status = run.controller.signal.aborted ? "cancelled" : "error";
 			},
 		).then(() => {
+			run.send = undefined;
 			writeFileSync(path.join(directory, "result.txt"), run.text, { mode: 0o600 });
 			this.paint();
 			const current = this.context;
@@ -109,6 +159,7 @@ export class CapabilityBackground {
 }
 
 export function registerBackground(pi: ExtensionAPI): CapabilityBackground {
+	registerCapabilityMessages(pi);
 	const background = new CapabilityBackground(pi);
 	pi.on("session_start", (_event, ctx) => background.bind(ctx));
 	pi.on("session_before_switch", () => background.cancelAll());
@@ -117,18 +168,33 @@ export function registerBackground(pi: ExtensionAPI): CapabilityBackground {
 	pi.on("session_shutdown", () => background.cancelAll());
 	pi.registerTool({
 		name: "capability_jobs", label: "Capability jobs",
-		description: "List background coder/reasoning/review runs, read output, or stop a run. Separate from shell jobs. Completion wakes this session.",
-		parameters: Type.Object({ action: Type.Union([Type.Literal("list"), Type.Literal("output"), Type.Literal("stop")]), id: Type.Optional(Type.String()) }),
+		description: "List background runs, read output, stop, or steer coder with a message. Coder, reasoning, and review output streams as PARTIAL, never a final verdict. Only coder accepts steering. Separate from shell jobs.",
+		parameters: Type.Object({ action: Type.Union([Type.Literal("list"), Type.Literal("output"), Type.Literal("stop"), Type.Literal("steer")]), id: Type.Optional(Type.String()), message: Type.Optional(Type.String()) }),
 		execute: async (_id, args, _signal, _update, ctx) => {
 			const runs = [...background.runs.values()].filter((run) => run.sessionId === ctx.sessionManager.getSessionId());
 			if (args.action === "list") return { content: [{ type: "text", text: runs.map((run) => `${run.id} ${run.status} ${run.directory}`).join("\n") || "No capability runs." }], details: {} };
 			const run = runs.find((item) => item.id === args.id);
 			if (!run) throw new Error("Unknown capability run in this session.");
+			if (args.action === "steer") return { content: [{ type: "text", text: await background.steer(run.id, args.message ?? "") }], details: { id: run.id } };
 			if (args.action === "stop") background.stop(run.id);
 			const stdout = path.join(run.directory, "report.txt");
-			const output = run.text || (existsSync(stdout) ? readFileSync(stdout, "utf8").slice(-16000) : "No final output yet.");
+			const partial = run.status === "running" || run.status === "cancelling";
+			const output = partial && run.progress ? run.progress.partial() : run.text || (existsSync(stdout) ? readFileSync(stdout, "utf8").slice(-16000) : "No final output yet.");
 			return { content: [{ type: "text", text: `${run.id} ${run.status}\n${output}\nFiles: ${run.directory}` }], details: { id: run.id, status: run.status } };
 		},
 	});
+	for (const command of ["coder-send", "coder-stop"]) {
+		pi.registerCommand(command, {
+			description: command === "coder-send" ? "Send instructions to active coder after its current tool turn" : "Stop active coder; keep edits already written",
+			handler: async (args, ctx) => {
+				const run = [...background.runs.values()].find((item) => item.kind === "coder" && item.sessionId === ctx.sessionManager.getSessionId() && item.status === "running");
+				if (!run) { ctx.ui.notify("No running coder in this session.", "warning"); return; }
+				try {
+					if (command === "coder-stop") { background.stop(run.id); ctx.ui.notify("Coder stopping. Existing edits stay on disk.", "info"); }
+					else ctx.ui.notify(await background.steer(run.id, args.trim()), "info");
+				} catch (error) { ctx.ui.notify(String(error), "error"); }
+			},
+		});
+	}
 	return background;
 }

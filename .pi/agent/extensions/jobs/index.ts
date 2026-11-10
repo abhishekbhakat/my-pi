@@ -1,6 +1,6 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { StringEnum } from "@earendil-works/pi-ai";
-import { JobMessageComponent } from "./message.ts";
+import { JobMessageComponent, jobToolRenderers } from "./message.ts";
 import { Type } from "@sinclair/typebox";
 import {
 	OUTPUT_DEFAULT_LINES,
@@ -310,13 +310,7 @@ export default function jobsExtension(pi: ExtensionAPI) {
 			"Foreground bash only for commands that finish at once. There is no `timeout` parameter to pass; it is stripped.",
 			"Check with `jobs list` or `jobs output <id>` only when you need the answer now. Do not poll a running job with sleep.",
 		],
-		renderResult(result, options, theme) {
-			const full = result.content
-				.filter((block) => block.type === "text")
-				.map((block) => block.text)
-				.join("\n");
-			return new JobMessageComponent(full, full, 0, theme, options.expanded, result.isError ? "error" : "success");
-		},
+		...jobToolRenderers,
 		parameters: Type.Object({
 			action: StringEnum(["spawn", "list", "output", "stop"] as const, {
 				description: "spawn starts a background job; list shows all; output tails one; stop kills one",

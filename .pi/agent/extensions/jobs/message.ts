@@ -1,7 +1,31 @@
 import { Box, Container, MouseRegion, Text, truncateToWidth } from "@earendil-works/pi-tui";
+import type { ToolDefinition } from "@earendil-works/pi-coding-agent";
 import { compactJobSummary } from "./format.ts";
 
 type JobTone = "success" | "error" | "pending";
+
+/** Render one row across both tool slots; arguments remain available on expansion. */
+export const jobToolRenderers: Pick<ToolDefinition, "renderShell" | "renderCall" | "renderResult"> = {
+	renderShell: "self",
+	renderCall(args, theme, context) {
+		const params = args as { action?: string; id?: string; label?: string };
+		return {
+			render(width) {
+				if (context.state.jobHasResult) return [];
+				const summary = `[job] ${params.action ?? "starting"} ${params.id ?? params.label ?? ""}`;
+				return [truncateToWidth(theme.fg("accent", summary.replace(/\s+/g, " ")), width, "...", true)];
+			},
+			invalidate() {},
+		};
+	},
+	renderResult(result, options, theme, context) {
+		context.state.jobHasResult = true;
+		const text = result.content.filter((block) => block.type === "text").map((block) => block.text).join("\n");
+		const full = `jobs ${JSON.stringify(context.args)}\n\n${text}`;
+		const tone = context.isError ? "error" : options.isPartial ? "pending" : "success";
+		return new JobMessageComponent(text, full, context.outputPad, theme, options.expanded, tone);
+	},
+};
 
 /** One terminal row while collapsed; full log on click or the host expansion shortcut. */
 export class JobMessageComponent extends Container {

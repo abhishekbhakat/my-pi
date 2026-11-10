@@ -1,6 +1,8 @@
 import { registerBackground, type CapabilityBackground } from "#capability-background";
 import { CAPABILITY_CHILD_ENV, registerCoderCommand, startCoder } from "#capability-coder";
 import { snapshotContext } from "#capability-snapshot";
+import { helperProgress } from "#capability-coder-progress";
+import { renderScoutResult } from "#capability-message";
 import type { ExtensionAPI, ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { registerCapabilityCommands, DEFAULT_TASKS } from "./commands";
@@ -33,6 +35,7 @@ function registerCapabilityTool(pi: ExtensionAPI, def: CapabilityDef, background
 		description: `${def.description}${["coder", "reasoning_coach", "patch_reviewer"].includes(def.toolName) ? " Runs asynchronously. Returns run ID immediately; completion wakes this chat. Use capability_jobs for output or cancellation." : ""}`,
 		promptSnippet: def.promptSnippet ?? def.description,
 		promptGuidelines: def.promptGuidelines.length > 0 ? def.promptGuidelines : undefined,
+		renderResult: def.toolName === "code_scout" ? renderScoutResult : undefined,
 		parameters: def.toolName === "coder" ? Type.Object({
 			task: Type.String({ minLength: 1, description: "Bounded code change, assigned files, and acceptance checks." }),
 			paths: Type.Optional(Type.Array(Type.String({ description: pathsDescription }))),
@@ -42,7 +45,7 @@ function registerCapabilityTool(pi: ExtensionAPI, def: CapabilityDef, background
 			if (def.toolName === "coder") return startCoder(background, def, input, ctx);
 			if (def.toolName === "reasoning_coach" || def.toolName === "patch_reviewer") {
 				const snapshot = snapshotContext(ctx);
-				return background.start(def.toolName, ctx, (ownedSignal) => executeCapability(pi, def, input, ownedSignal, undefined, snapshot));
+				return background.start(def.toolName, ctx, (ownedSignal, _directory, channel) => executeCapability(pi, def, { ...input, previewLines: input.previewLines ?? 6 }, ownedSignal, helperProgress(channel), snapshot));
 			}
 			return executeCapability(pi, def, input, signal, onUpdate, ctx);
 		},
