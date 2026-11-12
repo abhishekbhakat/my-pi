@@ -16,28 +16,28 @@ export type ClaudeCodeModelInfo = {
 const DEFAULT_MODELS: ClaudeCodeModelInfo[] = [
 	{
 		id: "sonnet",
-		name: "Claude Code Sonnet alias",
+		name: "Sonnet",
 		contextWindow: DEFAULT_CONTEXT_WINDOW,
 		maxTokens: DEFAULT_MAX_TOKENS,
 		reasoning: true,
 	},
 	{
 		id: "opus",
-		name: "Claude Code Opus alias",
+		name: "Opus",
 		contextWindow: DEFAULT_CONTEXT_WINDOW,
 		maxTokens: DEFAULT_MAX_TOKENS,
 		reasoning: true,
 	},
 	{
 		id: "haiku",
-		name: "Claude Code Haiku alias",
+		name: "Haiku",
 		contextWindow: DEFAULT_CONTEXT_WINDOW,
 		maxTokens: DEFAULT_MAX_TOKENS,
 		reasoning: true,
 	},
 	{
 		id: "fable",
-		name: "Claude Code Fable alias",
+		name: "Fable",
 		contextWindow: DEFAULT_CONTEXT_WINDOW,
 		maxTokens: DEFAULT_MAX_TOKENS,
 		reasoning: true,
@@ -70,7 +70,7 @@ export function configuredModels(raw?: string): ClaudeCodeModelInfo[] {
 		if (known && !contextWindow) return known;
 		return {
 			id,
-			name: known?.name ?? `Claude Code ${id}`,
+			name: known?.name ?? id,
 			contextWindow: contextWindow ?? known?.contextWindow ?? DEFAULT_CONTEXT_WINDOW,
 			maxTokens: known?.maxTokens ?? DEFAULT_MAX_TOKENS,
 			reasoning: true,
@@ -81,7 +81,7 @@ export function configuredModels(raw?: string): ClaudeCodeModelInfo[] {
 export function providerModels(models: ClaudeCodeModelInfo[], thinkingLevelMap?: ThinkingLevelMap) {
 	return models.map((model) => ({
 		id: model.id,
-		name: `${model.name} (Claude Agent SDK)`,
+		name: model.name,
 		reasoning: model.reasoning,
 		...(thinkingLevelMap ? { thinkingLevelMap } : {}),
 		input: ["text", "image"] as ("text" | "image")[],

@@ -171,7 +171,7 @@ export class CapabilityBackground {
 			if (generation === this.generation) this.context?.ui.notify(`Capability result delivery failed: ${String(error)}. Read ${directory}`, "error");
 		});
 		return {
-			content: [{ type: "text", text: `Started ${id} in background. Result wakes this session. Use capability_jobs to list, read output, or stop. ${kind === "coder" ? "Coder edits this workspace. Do not edit its assigned files until it finishes." : "Keep working on independent tasks; do not assume a verdict before completion."}` }],
+			content: [{ type: "text", text: `Started ${id} in background. Result wakes this session; the UI already shows this launch, so do not restate it to the user. ${kind === "coder" ? "Coder edits this workspace. Do not edit its assigned files until it finishes." : "Continue independent work or end the turn without commentary; do not assume a verdict before completion."}` }],
 			details: { status: "running", id, directory },
 		};
 	}

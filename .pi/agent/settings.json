@@ -13,8 +13,7 @@
     "kimi-coding/k3.1-pro-highspeed": "low",
     "openai/gpt-6.1-sol": "low",
     "openrouter/meta/muse-ember": "medium",
-    "openrouter/z-ai/glm-5.3": "low",
-    "opencode-go/hy4": "off"
+    "openrouter/z-ai/glm-5.3": "low"
   },
   "steeringMode": "all",
   "followUpMode": "all",
@@ -26,15 +25,11 @@
     "+codemode"
   ],
   "enabledModels": [
+    "claude-code-sdk/fable",
     "claude-code-sdk/haiku",
     "claude-code-sdk/opus",
     "claude-code-sdk/sonnet",
-    "cursor/claude-fable-5-2@1m",
-    "cursor/claude-opus-5-5@1m",
-    "cursor/claude-sonnet-5-5@1m",
     "cursor/composer-2.5",
-    "cursor/gemini-4-carbon",
-    "cursor/glm-5p3",
     "cursor/grok-4.7@256k:fast",
     "deepseek/deepseek-flash",
     "kimi-coding/k3.1-pro",
@@ -42,11 +37,6 @@
     "openai/gpt-6-astra",
     "openai/gpt-6.1-sol",
     "openai/gpt-6.1-terra",
-    "opencode-go/claude-haiku-5-5",
-    "opencode-go/deepseek-v4.1-flash",
-    "opencode-go/hy4",
-    "opencode-go/kimi-k3.1-pro",
-    "opencode-go/longcat-2.0",
     "openrouter/meta/muse-ember",
     "openrouter/z-ai/glm-5.3",
     "openrouter/z-ai/glm-5.3-flashx-legal",

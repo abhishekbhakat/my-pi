@@ -11,13 +11,14 @@ export class CapabilityMessageComponent extends Container {
 		private readonly theme: any,
 		private expanded: boolean,
 		private readonly status: string,
+		private readonly bgFn: (value: string) => string = (value) => value,
 	) { super(); this.rebuild(); }
 
 	setExpanded(expanded: boolean): void { this.expanded = expanded; this.rebuild(); }
 
 	private rebuild(): void {
 		this.clear();
-		const bg = (value: string) => value;
+		const bg = this.bgFn;
 		const prefix = this.theme.fg("accent", "[capability] ");
 		const body = this.expanded
 			? new Text(prefix + this.full + this.theme.fg("dim", "\n(click to collapse)"), 1, 1, bg)
@@ -64,9 +65,11 @@ export function renderCapabilityResult(label: string): NonNullable<ToolDefinitio
 	return (result, options, theme, context) => {
 		const raw = result.content.filter((part) => part.type === "text").map((part) => part.text).join("\n");
 		const full = stripVTControlCharacters(raw).replace(/[\x00-\x08\x0b-\x1f\x7f]/g, "");
-		const details = result.details as { status?: string } | undefined;
+		const details = result.details as { status?: string; id?: string } | undefined;
 		const failed = context.isError || details?.status === "error" || details?.status === "aborted";
 		const status = failed ? "error" : options.isPartial || details?.status === "running" || details?.status === "cancelling" ? "running" : "done";
+		// Background launch: the call row already names the capability and task; the live panel shows the run. One row is enough.
+		if (!failed && !options.isPartial && details?.status === "running" && details?.id && !options.expanded) return new Container();
 		const preview = (full.split("\n").find((line) => line.trim()) ?? "").trim().slice(0, 200);
 		return new CapabilityMessageComponent(`${label} | ${oneLine(preview)}`, full, 0, theme, options.expanded, status);
 	};
@@ -92,6 +95,9 @@ export function registerCapabilityMessages(pi: ExtensionAPI): void {
 		const full = stripVTControlCharacters(raw).replace(/[\x00-\x08\x0b-\x1f\x7f]/g, "");
 		const status = details?.status ?? "done";
 		const summary = `${details?.capability ?? "Capability"} ${status} | ${details?.id ?? full.split("\n")[0]}`.replace(/\s+/g, " ");
-		return new CapabilityMessageComponent(summary, full, options.outputPad, theme, options.expanded, status);
+		// Match tool-result rows: same success/error background as a finished tool call.
+		const bgKey = status === "done" ? "toolSuccessBg" : status === "running" || status === "cancelling" ? "toolPendingBg" : "toolErrorBg";
+		const bg = (value: string) => theme.bg(bgKey, value);
+		return new CapabilityMessageComponent(summary, full, options.outputPad, theme, options.expanded, status, bg);
 	});
 }
