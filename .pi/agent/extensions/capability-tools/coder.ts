@@ -14,10 +14,11 @@ export function startCoder(background: CapabilityBackground, def: CapabilityDef,
 	const session = coderSession(snapshot.sessionManager.getBranch(), snapshot.cwd);
 	const systemPrompt = `${snapshot.getSystemPrompt()}\n\n${def.systemPrompt}`;
 	const task = [input.task, input.paths?.length ? `Assigned paths:\n${input.paths.join("\n")}` : ""].filter(Boolean).join("\n\n");
+	const thinking = def.reasoningEffort ?? "high";
 	return background.start("coder", ctx, (signal, directory, channel) => runCoderChild({
-		cwd: snapshot.cwd, model: def.model, thinking: def.reasoningEffort ?? "high",
+		cwd: snapshot.cwd, model: def.model, thinking,
 		session, systemPrompt, task, directory, signal, channel,
-	}));
+	}), { model: def.model, effort: thinking });
 }
 
 export interface CoderChildOptions {

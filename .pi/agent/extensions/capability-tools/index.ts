@@ -2,7 +2,7 @@ import { registerBackground, type CapabilityBackground } from "#capability-backg
 import { CAPABILITY_CHILD_ENV, registerCoderCommand, startCoder } from "#capability-coder";
 import { snapshotContext } from "#capability-snapshot";
 import { helperProgress } from "#capability-coder-progress";
-import { renderCapabilityCall, renderCapabilityResult, renderScoutResult } from "#capability-message";
+import { renderCapabilityCall, renderCapabilityResult } from "#capability-message";
 import type { ExtensionAPI, ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { registerCapabilityCommands, DEFAULT_TASKS } from "./commands";
@@ -29,14 +29,15 @@ function capabilityInputSchema(pathsDescription: string) {
 
 function registerCapabilityTool(pi: ExtensionAPI, def: CapabilityDef, background: CapabilityBackground): void {
 	const pathsDescription = def.toolName === "code_scout" ? SCOUT_PATHS_DESCRIPTION : DEFAULT_PATHS_DESCRIPTION;
+	const runsInBackground = ["coder", "code_scout", "reasoning_coach", "patch_reviewer"].includes(def.toolName);
 	pi.registerTool({
 		name: def.toolName,
 		label: def.label,
-		description: `${def.description}${["coder", "reasoning_coach", "patch_reviewer"].includes(def.toolName) ? " Runs asynchronously. Returns run ID immediately; completion wakes this chat. Use capability_jobs for output or cancellation." : ""}`,
+		description: `${def.description}${runsInBackground ? " Runs asynchronously. Returns run ID immediately; completion wakes this chat. Use capability_jobs for output or cancellation." : ""}`,
 		promptSnippet: def.promptSnippet ?? def.description,
 		promptGuidelines: def.promptGuidelines.length > 0 ? def.promptGuidelines : undefined,
 		renderCall: renderCapabilityCall(def.label, DEFAULT_TASKS[def.toolName] ?? "default task"),
-		renderResult: def.toolName === "code_scout" ? renderScoutResult : ["coder", "reasoning_coach", "patch_reviewer"].includes(def.toolName) ? renderCapabilityResult(def.label) : undefined,
+		renderResult: runsInBackground ? renderCapabilityResult(def.label) : undefined,
 		parameters: def.toolName === "coder" ? Type.Object({
 			task: Type.String({ minLength: 1, description: "Bounded code change, assigned files, and acceptance checks." }),
 			paths: Type.Optional(Type.Array(Type.String({ description: pathsDescription }))),
@@ -44,9 +45,9 @@ function registerCapabilityTool(pi: ExtensionAPI, def: CapabilityDef, background
 		execute: async (_callId, args, signal, onUpdate, ctx) => {
 			const input = { ...args, task: args.task ?? DEFAULT_TASKS[def.toolName] } as CapabilityToolInput;
 			if (def.toolName === "coder") return startCoder(background, def, input, ctx);
-			if (def.toolName === "reasoning_coach" || def.toolName === "patch_reviewer") {
+			if (runsInBackground) {
 				const snapshot = snapshotContext(ctx);
-				return background.start(def.toolName, ctx, (ownedSignal, _directory, channel) => executeCapability(pi, def, { ...input, previewLines: input.previewLines ?? 6 }, ownedSignal, helperProgress(channel), snapshot));
+				return background.start(def.toolName, ctx, (ownedSignal, _directory, channel) => executeCapability(pi, def, { ...input, previewLines: input.previewLines ?? 6 }, ownedSignal, helperProgress(channel), snapshot), { model: def.model, effort: def.reasoningEffort });
 			}
 			return executeCapability(pi, def, input, signal, onUpdate, ctx);
 		},

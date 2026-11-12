@@ -150,7 +150,7 @@ export function registerCapabilityCommands(pi: ExtensionAPI, capabilities: Capab
 				const snapshot = snapshotContext(ctx);
 				background.start("patch_reviewer", ctx, (signal, _directory, channel) => executeCapability(
 					pi, patchReviewer, { task: note || DEFAULT_TASKS.patch_reviewer, stagedOnly: true, previewLines: 6 }, signal, helperProgress(channel), snapshot,
-				));
+				), { model: patchReviewer.model, effort: patchReviewer.reasoningEffort });
 				ctx.ui.notify("Patch review started in background. Result will appear in this chat.", "info");
 			},
 		});

@@ -12,6 +12,8 @@ export type BackgroundWork = (signal: AbortSignal, directory: string, channel?: 
 export interface CapabilityRun {
 	id: string;
 	kind: string;
+	model?: string;
+	effort?: string;
 	sessionId: string;
 	status: "running" | "cancelling" | "done" | "error" | "cancelled";
 	controller: AbortController;
@@ -61,9 +63,11 @@ export class CapabilityBackground {
 		const active = [...this.runs.values()].filter((run) => run.sessionId === ctx.sessionManager.getSessionId() && (run.status === "running" || run.status === "cancelling"));
 		ctx.ui.setStatus("capability-background", active.length ? `Capabilities: ${active.length} running` : undefined);
 		const panes: Pane[] = active.filter((run) => run.kind === "coder" || run.progress).map((run) => {
-			const tools = run.progress?.tools ?? 0;
 			return {
-				title: `${run.kind} ${run.id.slice(run.kind.length + 1, run.kind.length + 9)} | ${run.status} | ${run.progress?.phase ?? "starting"}${tools ? ` | ${tools} tools` : ""}`,
+				title: [
+					`${run.kind} ${run.id.slice(run.kind.length + 1, run.kind.length + 9)}`,
+					run.model, run.effort, run.status === "cancelling" ? "cancelling" : undefined,
+				].filter(Boolean).join(" | "),
 				body: run.progress?.lines(BODY_ROWS) ?? [],
 				footer: run.kind === "coder" ? "PARTIAL | /coder-send <instruction> | /coder-stop" : "PARTIAL | stop via capability_jobs",
 			};
@@ -101,7 +105,7 @@ export class CapabilityBackground {
 		return run.send(message);
 	}
 
-	start(kind: string, ctx: ExtensionContext, work: BackgroundWork): AgentToolResult {
+	start(kind: string, ctx: ExtensionContext, work: BackgroundWork, metadata: Pick<CapabilityRun, "model" | "effort"> = {}): AgentToolResult {
 		if ([...this.runs.values()].filter((run) => run.status === "running" || run.status === "cancelling").length >= 4) {
 			throw new Error("At most four background capabilities may run at once.");
 		}
@@ -116,7 +120,7 @@ export class CapabilityBackground {
 		try { writeFileSync(ignoreFile, "*\n", { flag: "wx", mode: 0o600 }); }
 		catch (error) { if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error; }
 		const run: CapabilityRun = {
-			id, kind, directory, sessionId: ctx.sessionManager.getSessionId(),
+			id, kind, directory, model: metadata.model, effort: metadata.effort, sessionId: ctx.sessionManager.getSessionId(),
 			status: "running", controller: new AbortController(), text: "",
 		};
 		this.runs.set(id, run);
@@ -126,7 +130,7 @@ export class CapabilityBackground {
 			if (old.status !== "running" && old.status !== "cancelling") this.runs.delete(oldId);
 		}
 		const generation = this.generation;
-		if (["coder", "reasoning_coach", "patch_reviewer"].includes(kind)) run.progress = new CoderProgress(directory);
+		if (["coder", "code_scout", "reasoning_coach", "patch_reviewer"].includes(kind)) run.progress = new CoderProgress(directory);
 		const channel: CoderChannel | undefined = run.progress ? {
 			update: (update) => {
 				if (generation !== this.generation || run.status !== "running") return;
@@ -211,7 +215,7 @@ export function registerBackground(pi: ExtensionAPI): CapabilityBackground {
 	pi.on("session_shutdown", () => background.cancelAll());
 	pi.registerTool({
 		name: "capability_jobs", label: "Capability jobs",
-		description: "List background runs, read output, stop, or steer coder with a message. Coder, reasoning, and review output streams as PARTIAL, never a final verdict. Only coder accepts steering. Separate from shell jobs. The live panel already shows helper progress, so no need to poll output while a run is still going.",
+		description: "List background runs, read output, stop, or steer coder with a message. Coder, scout, reasoning, and review output streams as PARTIAL, never a final verdict. Only coder accepts steering. Separate from shell jobs. The live panel already shows helper progress, so no need to poll output while a run is still going.",
 		renderCall: renderCapabilityJobsCall,
 		renderResult: renderCapabilityResult("Capability jobs"),
 		parameters: Type.Object({ action: Type.Union([Type.Literal("list"), Type.Literal("output"), Type.Literal("stop"), Type.Literal("steer")]), id: Type.Optional(Type.String()), message: Type.Optional(Type.String()) }),

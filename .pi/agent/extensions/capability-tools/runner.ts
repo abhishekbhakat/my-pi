@@ -1,6 +1,7 @@
 import * as path from "node:path";
 import { capabilityBudget } from "#capability-model-budget";
-import { getCurrentTools, normalizeContext, stream as piAiStream, type Message, type Tool, type ToolCall } from "@earendil-works/pi-ai";
+import { getCurrentTools, normalizeContext, type Message, type Tool, type ToolCall } from "@earendil-works/pi-ai";
+import { stream as piAiStream } from "@earendil-works/pi-ai/compat";
 import type { AgentToolUpdateCallback } from "@earendil-works/pi-coding-agent";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { cleanCommitMessage, NO_STAGED_CHANGES_MESSAGE } from "./commitMessage";
