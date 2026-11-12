@@ -151,6 +151,13 @@ export class CapabilityBackground {
 			},
 		).then(() => {
 			run.send = undefined;
+			const recoveryFile = path.join(directory, "recovery.json");
+			if (kind === "coder" && existsSync(recoveryFile)) {
+				const recovery = JSON.parse(readFileSync(recoveryFile, "utf8"));
+				const summary = `Recovery: class=${recovery.errorClass}, repairs=${recovery.repairCount}, retries=${recovery.retryCount}, tools=${recovery.toolsExecuted}`;
+				run.text = `${run.text}\n\n${summary}`;
+				run.progress?.update({ phase: run.status, text: summary });
+			}
 			writeFileSync(path.join(directory, "result.txt"), run.text, { mode: 0o600 });
 			this.paint();
 			const current = this.context;

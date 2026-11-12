@@ -641,9 +641,6 @@
         "gemini-4-argon": {
           "contextWindow": 262144
         },
-        "gemini-4-argon-contributor": {
-          "contextWindow": 262144
-        },
         "glm-5.3": {
           "contextWindow": 262144
         },

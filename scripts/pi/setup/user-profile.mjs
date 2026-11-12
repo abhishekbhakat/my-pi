@@ -197,14 +197,25 @@ function applyCapabilitiesProfile(agentDir, capabilities) {
     }
     targets[role] = ref;
   }
-  if (!Object.keys(targets).length) throw new SetupAbort("no capability roles in profile");
+  if (!Object.keys(targets).length && skipped.length) throw new SetupAbort("no capability roles in profile");
   // planCapabilityEdits validates target refs and frontmatter/literal anchors.
   const sources = loadCapabilitySources(agentDir);
   const edits = planCapabilityEdits(sources, targets);
+  const notices = [];
+  const warnings = [];
+  for (const cap of sources.caps) {
+    const role = CAP_ROLES.find(name => cap.fm.tool === name || cap.fm.tool?.split("_").includes(name));
+    if (!role) continue;
+    if (!Object.hasOwn(targets, role)) {
+      warnings.push(`userprofile.json capabilities.${role}: no profile entry; keeping repo model ${cap.fm.model}`);
+    }
+    const modelChange = edits.find(edit => edit.path === cap.path)?.changes.find(change => change.key === "model");
+    if (modelChange) notices.push(`${role}: ${modelChange.from} -> ${modelChange.to}`);
+  }
   for (const edit of edits) writeAtomic(edit.path, edit.after);
   return {
     applied: edits.map((edit) => path.relative(agentDir, edit.path).split(path.sep).join("/")),
-    skipped,
+    skipped, notices, warnings,
   };
 }
 
@@ -297,6 +308,8 @@ export function applyUserProfile(
     if (sectionData === undefined) continue;
     try {
       const result = applier(agentDir, sectionData);
+      for (const notice of result.notices ?? []) log(`userprofile.json capabilities ${notice}`);
+      for (const warning of result.warnings ?? []) { log(`WARNING: ${warning}`); warnings.push(warning); }
       if (result.applied.length) {
         applied.push(...result.applied.map((entry) => `${name}.${entry}`));
         log(`userprofile.json ${name}: applied (${result.applied.join(", ")})`);

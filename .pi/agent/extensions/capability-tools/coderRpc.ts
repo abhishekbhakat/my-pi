@@ -1,7 +1,8 @@
 import { spawn } from "node:child_process";
-import { openSync, closeSync, readFileSync, writeFileSync, writeSync } from "node:fs";
+import { appendFileSync, rmSync, openSync, closeSync, readFileSync, writeFileSync, writeSync } from "node:fs";
 import * as path from "node:path";
 import { StringDecoder } from "node:string_decoder";
+import { repairCoderTranscript } from "#capability-snapshot";
 import { coderEvent, type CoderChannel } from "#capability-coder-progress";
 
 export interface CoderRpcOptions {
@@ -14,14 +15,21 @@ export interface CoderRpcOptions {
 	channel?: CoderChannel;
 	executable?: string;
 }
-const CHILD_TOOLS = "read,bash,edit,write,grep,find,ls,tree,jobs,yolo,codemode";
+export const CHILD_TOOLS = "read,bash,edit,write,grep,find,ls,tree,jobs,yolo,codemode";
 
-export async function coderRpc(options: CoderRpcOptions): Promise<string> {
+async function coderRpcAttempt(options: CoderRpcOptions, recovery: CoderRecovery): Promise<string> {
 	const { directory, signal, channel } = options;
+	const inventory = path.join(directory, "tool-preflight.json");
+	rmSync(inventory, { force: true });
+	const preflight = path.join(directory, "tool-preflight.mjs");
+	writeFileSync(preflight, `import { writeFileSync } from "node:fs";
+export default function (pi) {
+  pi.on("session_start", () => writeFileSync(${JSON.stringify(inventory)}, JSON.stringify(pi.getActiveTools()), { mode: 0o600 }));
+}`, { mode: 0o600 });
 	if (signal.aborted) throw new Error("Coder cancelled before launch.");
-	const stdout = openSync(path.join(directory, "stdout.jsonl"), "w", 0o600);
+	const stdout = openSync(path.join(directory, "stdout.jsonl"), "a", 0o600);
 	const errorFile = path.join(directory, "stderr.txt");
-	const stderr = openSync(errorFile, "w", 0o600);
+	const stderr = openSync(errorFile, "a", 0o600);
 	let text = "";
 	try {
 		await new Promise<void>((resolve, reject) => {
@@ -42,6 +50,7 @@ export async function coderRpc(options: CoderRpcOptions): Promise<string> {
 				"--mode", "rpc", "--session", path.join(directory, "session.jsonl"),
 				"--model", options.model, "--thinking", options.thinking,
 				"--system-prompt", path.join(directory, "system.md"), "--tools", CHILD_TOOLS, "--no-mcp",
+				"--extension", preflight,
 			], {
 				cwd: options.cwd, env: { ...process.env, PI_CAPABILITY_CHILD: "1" },
 				stdio: ["pipe", "pipe", stderr], detached: process.platform !== "win32",
@@ -108,7 +117,8 @@ export async function coderRpc(options: CoderRpcOptions): Promise<string> {
 					}
 					return;
 				}
-				if (event.type === "agent_start") { settled = false; stopReason = undefined; }
+				if (event.type === "tool_execution_start") recovery.toolsExecuted++;
+				if (event.type === "agent_start") { settled = false; stopReason = undefined; modelFailure = undefined; }
 				if (event.type === "message_start" && event.message?.role === "user") {
 					const content = typeof event.message.content === "string" ? event.message.content :
 						(event.message.content ?? []).filter((part: any) => part.type === "text").map((part: any) => part.text).join("\n");
@@ -122,7 +132,7 @@ export async function coderRpc(options: CoderRpcOptions): Promise<string> {
 					text = (event.message.content ?? []).filter((part: any) => part.type === "text").map((part: any) => part.text).join("\n").trim();
 					writeFileSync(path.join(directory, "report.txt"), text, { mode: 0o600 });
 					modelFailure = event.message.errorMessage;
-					if (modelFailure) update({ phase: "model error", text: modelFailure });
+					if (modelFailure) update({ phase: classifyCoderError(modelFailure), text: modelFailure });
 				}
 				if (event.type === "agent_settled") {
 					settled = true;
@@ -158,9 +168,16 @@ export async function coderRpc(options: CoderRpcOptions): Promise<string> {
 			signal.addEventListener("abort", cancel, { once: true });
 			if (signal.aborted) { cancel(); return; }
 			update({ phase: "starting", text: `Connecting to ${options.model} (${options.thinking}).` });
-			const started = request({ type: "prompt", message: `Delegated coding task:\n\n${options.task}` });
+			const started = request({ type: "get_state" }).then(state => {
+				if (state.model?.provider + "/" + state.model?.id !== options.model) throw new Error("[tool-missing] Coder model selection did not resolve: " + options.model);
+				const active = new Set<string>(JSON.parse(readFileSync(inventory, "utf8")));
+				const missing = CHILD_TOOLS.split(",").filter(name => !active.has(name));
+				if (missing.length) throw new Error("[tool-missing] Coder missing tools: " + missing.join(", "));
+				return request({ type: "prompt", message: `Delegated coding task:\n\n${options.task}` });
+			});
 			started.then((data) => { if (data?.disposition === "handled") fail(new Error("Coder task consumed without starting a run.")); }).catch(fail);
 			channel?.attach(async (message) => {
+				recovery.steered = true;
 				await started;
 				if (settled || closing || stopped || signal.aborted) throw new Error("Coder is stopping or finished.");
 				const key = `instruction-${++sequence}`;
@@ -177,4 +194,81 @@ export async function coderRpc(options: CoderRpcOptions): Promise<string> {
 		});
 	} finally { closeSync(stdout); closeSync(stderr); }
 	return text;
+}
+
+export type CoderErrorClass = "transcript" | "auth" | "tool-missing" | "transient" | "unknown";
+interface CoderRecovery {
+	errorClass: CoderErrorClass | "none";
+	repairCount: number;
+	retryCount: number;
+	toolsExecuted: number;
+	steered: boolean;
+}
+
+export function classifyCoderError(message: string): CoderErrorClass {
+	if (/no tool call found for function call output|tool_use\s*ids|\[transcript\]/i.test(message)) return "transcript";
+	if (/expired|oauth|invalid_api_key|\b401\b/i.test(message)) return "auth";
+	if (/\[tool-missing\]|unknown tool|tool .*not (?:found|available)|missing tools/i.test(message)) return "tool-missing";
+	if (/\b429\b|\b5\d\d\b|ECONNRESET/i.test(message)) return "transient";
+	return "unknown";
+}
+
+export function canRetryCoder(errorClass: CoderErrorClass, recovery: Pick<CoderRecovery, "toolsExecuted" | "retryCount" | "steered">): boolean {
+	return recovery.toolsExecuted === 0 && recovery.retryCount === 0 && !recovery.steered &&
+		(errorClass === "transcript" || errorClass === "transient");
+}
+
+/** Only retry before any tool execution or steering; restore the same repaired seed. */
+export async function coderRpc(options: CoderRpcOptions): Promise<string> {
+	const recovery: CoderRecovery = { errorClass: "none", repairCount: 0, retryCount: 0, toolsExecuted: 0, steered: false };
+	const sessionFile = path.join(options.directory, "session.jsonl");
+	const record = (message: string) => {
+		writeFileSync(path.join(options.directory, "recovery.json"), JSON.stringify(recovery, null, 2), { mode: 0o600 });
+		appendFileSync(path.join(options.directory, "progress.log"), `\n[recovery] ${message}\n`, { mode: 0o600 });
+		options.channel?.update({ phase: "recovery", text: message });
+	};
+	try {
+		if (options.signal.aborted) throw new Error("Coder cancelled before launch.");
+		const rows = readFileSync(sessionFile, "utf8").trim().split("\n").map(line => JSON.parse(line));
+		const audit = rows.filter(row => row.type === "custom" && row.customType === "coder-transcript-repairs").at(-1);
+		recovery.repairCount = audit?.data?.repairCount ?? 0;
+		const prepare = () => {
+			const fixed = repairCoderTranscript(rows.slice(1), true);
+			recovery.repairCount += fixed.repairCount;
+			const seed = [rows[0], ...fixed.entries].map(row => JSON.stringify(row)).join("\n") + "\n";
+			writeFileSync(sessionFile, seed, { mode: 0o600 });
+			appendFileSync(path.join(options.directory, "transcript-repairs.jsonl"), JSON.stringify({
+				retryCount: recovery.retryCount, repairCount: recovery.repairCount,
+				repairs: [...(audit?.data?.repairs ?? []), ...fixed.repairs],
+			}) + "\n", { mode: 0o600 });
+			return seed;
+		};
+		let seed = prepare();
+		record(`preflight: repairs=${recovery.repairCount}, retries=0`);
+		for (let attempt = 0; attempt < 2; attempt++) {
+			try {
+				const text = await coderRpcAttempt(options, recovery);
+				record(`done: class=${recovery.errorClass}, repairs=${recovery.repairCount}, retries=${recovery.retryCount}, tools=${recovery.toolsExecuted}`);
+				return text;
+			} catch (error) {
+				const message = error instanceof Error ? error.message : String(error);
+				recovery.errorClass = classifyCoderError(message);
+				record(`error: class=${recovery.errorClass}, repairs=${recovery.repairCount}, retries=${recovery.retryCount}, tools=${recovery.toolsExecuted}`);
+				if (options.signal.aborted || !canRetryCoder(recovery.errorClass, recovery)) throw error;
+				recovery.retryCount++;
+				if (recovery.errorClass === "transcript") seed = prepare();
+				else writeFileSync(sessionFile, seed, { mode: 0o600 });
+				record(`retry ${recovery.retryCount}: ${recovery.errorClass}, same model ${options.model}`);
+			}
+		}
+		throw new Error("Coder retry budget spent.");
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error);
+		recovery.errorClass = classifyCoderError(message);
+		const hint = recovery.errorClass === "auth" ? " Re-authenticate the provider or pin a working model in userprofile.json capabilities.coder." : "";
+		const failure = `[${recovery.errorClass}] ${message}${hint} repairs=${recovery.repairCount}, retries=${recovery.retryCount}, tools=${recovery.toolsExecuted}`;
+		record(failure);
+		writeFileSync(path.join(options.directory, "result.txt"), failure, { mode: 0o600 });
+		throw new Error(failure);
+	}
 }

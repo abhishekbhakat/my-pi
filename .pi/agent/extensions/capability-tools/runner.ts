@@ -1,6 +1,6 @@
 import * as path from "node:path";
 import { capabilityBudget } from "#capability-model-budget";
-import { normalizeContext, stream as piAiStream, type Message, type Tool, type ToolCall } from "@earendil-works/pi-ai";
+import { getCurrentTools, normalizeContext, stream as piAiStream, type Message, type Tool, type ToolCall } from "@earendil-works/pi-ai";
 import type { AgentToolUpdateCallback } from "@earendil-works/pi-coding-agent";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { cleanCommitMessage, NO_STAGED_CHANGES_MESSAGE } from "./commitMessage";
@@ -11,6 +11,12 @@ import { classifyScoutPaths, formatMissingScoutPaths, formatNoFilesRead } from "
 import { buildScoutTools, executeScoutTool } from "./scoutTools";
 import { isHallucinatedToolAnswer } from "./toolish";
 import type { CapabilityDef, CapabilityToolInput } from "./types";
+
+export function assertCapabilityTools(required: readonly string[], tools: readonly Pick<Tool, "name">[], label: string): void {
+	const resolved = new Set(tools.map(tool => tool.name));
+	const missing = required.filter(name => !resolved.has(name));
+	if (missing.length) throw new Error(`[tool-missing] ${label}: missing tools ${missing.join(", ")}`);
+}
 
 function splitModelRef(modelRef: string): { provider: string; modelId: string } | null {
 	const index = modelRef.indexOf("/");
@@ -265,6 +271,7 @@ export async function executeCapability(
 	try {
 		const provider = ctx.modelRegistry.getProvider(model.provider);
 		const scoutToolDefs = buildScoutTools(def.scoutTools ?? []);
+		assertCapabilityTools(def.scoutTools ?? [], scoutToolDefs, `${def.toolName} on ${model.provider}/${model.id}`);
 		const scoutEnabled = scoutToolDefs.length > 0;
 		const maxRounds = scoutEnabled ? (def.maxToolRounds ?? 300) : 1;
 		const scoutRoots = [
@@ -297,8 +304,10 @@ export async function executeCapability(
 				tools,
 				messages,
 			};
+			const transcript = normalizeContext(requestContext);
+			assertCapabilityTools(tools.map(tool => tool.name), getCurrentTools(transcript.messages), `${model.provider}/${model.id}`);
 			const eventStream = provider
-				? provider.stream(model, normalizeContext(requestContext), requestOptions)
+				? provider.stream(model, transcript, requestOptions)
 				: piAiStream(model, requestContext, requestOptions);
 
 			let lastPublish = 0;
