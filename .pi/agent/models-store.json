@@ -1438,9 +1438,9 @@
           "image"
         ],
         "cost": {
-          "input": 0.006,
-          "output": 0.5,
-          "cacheRead": 0.005,
+          "input": 0.022,
+          "output": 0.4,
+          "cacheRead": 0.004,
           "cacheWrite": 0
         },
         "contextWindow": 1048576,
@@ -1555,13 +1555,13 @@
           "image"
         ],
         "cost": {
-          "input": 0.75,
-          "output": 3.75,
+          "input": 1.5,
+          "output": 7.5,
           "cacheRead": 0.075,
-          "cacheWrite": 0.041667
+          "cacheWrite": 0.083333
         },
         "contextWindow": 1048576,
-        "maxTokens": 65536,
+        "maxTokens": 943718,
         "compat": {
           "supportsDeveloperRole": false,
           "thinkingFormat": "openrouter",
@@ -1648,7 +1648,7 @@
         ],
         "cost": {
           "input": 0.1824,
-          "output": 9.3388,
+          "output": 11.0055,
           "cacheRead": 0.18,
           "cacheWrite": 0
         },
@@ -2203,9 +2203,9 @@
           "image"
         ],
         "cost": {
-          "input": 0.006,
-          "output": 0.5,
-          "cacheRead": 0.005,
+          "input": 0.022,
+          "output": 0.4,
+          "cacheRead": 0.004,
           "cacheWrite": 0
         },
         "contextWindow": 1048576,
@@ -2250,56 +2250,9 @@
           "image"
         ],
         "cost": {
-          "input": 0.006,
-          "output": 0.5,
-          "cacheRead": 0.005,
-          "cacheWrite": 0
-        },
-        "contextWindow": 1048576,
-        "maxTokens": 943718,
-        "compat": {
-          "supportsDeveloperRole": false,
-          "thinkingFormat": "openrouter",
-          "supportsStrictMode": true,
-          "sendSessionAffinityHeaders": true,
-          "requiresReasoningContentOnAssistantMessages": true
-        },
-        "inputLimits": {
-          "images": {
-            "resize": {
-              "maxWidth": 2000,
-              "maxHeight": 2000,
-              "maxBytes": 4718592,
-              "jpegQuality": 80
-            }
-          }
-        }
-      },
-      {
-        "type": "chat",
-        "id": "deepseek/deepseek-v4.1-flash-1017:batch",
-        "name": "DeepSeek: DeepSeek V4.1 Flash 1017 (batch)",
-        "api": "openai-completions",
-        "baseUrl": "https://openrouter.ai/api/v1",
-        "provider": "openrouter",
-        "reasoning": true,
-        "thinkingLevelMap": {
-          "off": "none",
-          "minimal": null,
-          "low": "low",
-          "medium": null,
-          "high": "high",
-          "xhigh": null,
-          "max": "max"
-        },
-        "input": [
-          "text",
-          "image"
-        ],
-        "cost": {
-          "input": 0.011,
-          "output": 0.2,
-          "cacheRead": 0.002,
+          "input": 0.022,
+          "output": 0.4,
+          "cacheRead": 0.004,
           "cacheWrite": 0
         },
         "contextWindow": 1048576,
@@ -3752,10 +3705,10 @@
           "input": 0.1,
           "output": 0.5,
           "cacheRead": 0.004,
-          "cacheWrite": 0.125
+          "cacheWrite": 0
         },
         "contextWindow": 1048576,
-        "maxTokens": 943718,
+        "maxTokens": 524288,
         "compat": {
           "supportsDeveloperRole": false,
           "thinkingFormat": "openrouter",
@@ -4067,8 +4020,8 @@
           "cacheRead": 0.06,
           "cacheWrite": 0
         },
-        "contextWindow": 1000000,
-        "maxTokens": 131072,
+        "contextWindow": 524288,
+        "maxTokens": 512000,
         "compat": {
           "supportsDeveloperRole": false,
           "thinkingFormat": "openrouter",
@@ -4108,12 +4061,12 @@
           "image"
         ],
         "cost": {
-          "input": 0.15,
-          "output": 0.6,
-          "cacheRead": 0.015,
+          "input": 0.075,
+          "output": 0.3,
+          "cacheRead": 0.0075,
           "cacheWrite": 0
         },
-        "contextWindow": 1000000,
+        "contextWindow": 1048576,
         "maxTokens": 524288,
         "compat": {
           "supportsDeveloperRole": false,
@@ -4351,7 +4304,7 @@
         ],
         "cost": {
           "input": 0.1824,
-          "output": 9.3388,
+          "output": 11.0055,
           "cacheRead": 0.18,
           "cacheWrite": 0
         },
@@ -4396,8 +4349,8 @@
           "image"
         ],
         "cost": {
-          "input": 0.19,
-          "output": 8.94,
+          "input": 0.2375,
+          "output": 8.7856,
           "cacheRead": 0.19,
           "cacheWrite": 0
         },
@@ -4645,7 +4598,7 @@
           "cacheWrite": 0
         },
         "contextWindow": 2000000,
-        "maxTokens": 65536,
+        "maxTokens": 128000,
         "compat": {
           "supportsDeveloperRole": false,
           "thinkingFormat": "openrouter",
@@ -4682,7 +4635,7 @@
           "cacheWrite": 0
         },
         "contextWindow": 2000000,
-        "maxTokens": 65536,
+        "maxTokens": 128000,
         "compat": {
           "supportsDeveloperRole": false,
           "thinkingFormat": "openrouter",
@@ -4995,7 +4948,7 @@
         ],
         "cost": {
           "input": 0.06,
-          "output": 2.3,
+          "output": 2.2,
           "cacheRead": 0.059,
           "cacheWrite": 0
         },
@@ -5111,9 +5064,9 @@
           "text"
         ],
         "cost": {
-          "input": 0.132,
-          "output": 0.528,
-          "cacheRead": 0.033,
+          "input": 0.0825,
+          "output": 0.33,
+          "cacheRead": 0.020625,
           "cacheWrite": 0
         },
         "contextWindow": 262144,
@@ -5192,12 +5145,12 @@
           "text"
         ],
         "cost": {
-          "input": 0.834,
-          "output": 2.501,
-          "cacheRead": 0.042,
+          "input": 0.7506,
+          "output": 2.2509,
+          "cacheRead": 0.0378,
           "cacheWrite": 0
         },
-        "contextWindow": 1000000,
+        "contextWindow": 1048576,
         "maxTokens": 64000,
         "compat": {
           "supportsDeveloperRole": false,
@@ -5225,7 +5178,7 @@
           "cacheWrite": 0
         },
         "contextWindow": 1000000,
-        "maxTokens": 65536,
+        "maxTokens": 128000,
         "compat": {
           "supportsDeveloperRole": false,
           "thinkingFormat": "openrouter",
@@ -5657,9 +5610,9 @@
           "text"
         ],
         "cost": {
-          "input": 0.0067,
+          "input": 0.0066,
           "output": 7.9833,
-          "cacheRead": 0.0067,
+          "cacheRead": 0.0066,
           "cacheWrite": 0
         },
         "contextWindow": 1048576,
@@ -5692,9 +5645,9 @@
           "text"
         ],
         "cost": {
-          "input": 0.527,
-          "output": 1.075,
-          "cacheRead": 0.178,
+          "input": 0.322,
+          "output": 0.989,
+          "cacheRead": 0.109,
           "cacheWrite": 0
         },
         "contextWindow": 1048576,
@@ -5770,52 +5723,6 @@
         },
         "contextWindow": 1048576,
         "maxTokens": 131072,
-        "compat": {
-          "supportsDeveloperRole": false,
-          "thinkingFormat": "openrouter",
-          "supportsStrictMode": true,
-          "sendSessionAffinityHeaders": true
-        },
-        "inputLimits": {
-          "images": {
-            "resize": {
-              "maxWidth": 2000,
-              "maxHeight": 2000,
-              "maxBytes": 4718592,
-              "jpegQuality": 80
-            }
-          }
-        }
-      },
-      {
-        "type": "chat",
-        "id": "z-ai/glm-5.3-flash:batch",
-        "name": "Z.ai: GLM 5.3 Flash (batch)",
-        "api": "openai-completions",
-        "baseUrl": "https://openrouter.ai/api/v1",
-        "provider": "openrouter",
-        "reasoning": true,
-        "thinkingLevelMap": {
-          "off": null,
-          "minimal": null,
-          "low": "low",
-          "medium": null,
-          "high": "high",
-          "xhigh": null,
-          "max": "max"
-        },
-        "input": [
-          "text",
-          "image"
-        ],
-        "cost": {
-          "input": 0.03,
-          "output": 0.061,
-          "cacheRead": 0.013,
-          "cacheWrite": 0
-        },
-        "contextWindow": 1048576,
-        "maxTokens": 943718,
         "compat": {
           "supportsDeveloperRole": false,
           "thinkingFormat": "openrouter",
@@ -5923,41 +5830,6 @@
               "jpegQuality": 80
             }
           }
-        }
-      },
-      {
-        "type": "chat",
-        "id": "z-ai/glm-5.3:batch",
-        "name": "Z.ai: GLM 5.3 (batch)",
-        "api": "openai-completions",
-        "baseUrl": "https://openrouter.ai/api/v1",
-        "provider": "openrouter",
-        "reasoning": true,
-        "thinkingLevelMap": {
-          "off": null,
-          "minimal": null,
-          "low": "low",
-          "medium": null,
-          "high": "high",
-          "xhigh": null,
-          "max": "max"
-        },
-        "input": [
-          "text"
-        ],
-        "cost": {
-          "input": 0.527,
-          "output": 1.075,
-          "cacheRead": 0.178,
-          "cacheWrite": 0
-        },
-        "contextWindow": 1048576,
-        "maxTokens": 943718,
-        "compat": {
-          "supportsDeveloperRole": false,
-          "thinkingFormat": "openrouter",
-          "supportsStrictMode": true,
-          "sendSessionAffinityHeaders": true
         }
       },
       {
@@ -8264,12 +8136,12 @@
           "image"
         ],
         "cost": {
-          "input": 0.24,
+          "input": 0.192,
           "output": 0,
           "cacheRead": 0,
           "cacheWrite": 0
         },
-        "contextWindow": 65536,
+        "contextWindow": 65537,
         "compat": {
           "imageInput": "state-image-urls",
           "sendImageOptInHeader": false
@@ -8861,9 +8733,186 @@
           "imageInput": "state-image-urls",
           "sendImageOptInHeader": false
         }
+      },
+      {
+        "type": "chat",
+        "id": "google/gemini-4-carbon",
+        "name": "Google: Gemini 4 Carbon",
+        "api": "openai-completions",
+        "baseUrl": "https://openrouter.ai/api/v1",
+        "provider": "openrouter",
+        "reasoning": true,
+        "thinkingLevelMap": {
+          "off": null,
+          "minimal": null,
+          "low": "low",
+          "medium": "medium",
+          "high": "high",
+          "xhigh": null,
+          "max": null
+        },
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 2,
+          "output": 10,
+          "cacheRead": 0.1,
+          "cacheWrite": 0.1875
+        },
+        "contextWindow": 1048576,
+        "maxTokens": 943718,
+        "compat": {
+          "supportsDeveloperRole": false,
+          "thinkingFormat": "openrouter",
+          "supportsStrictMode": true,
+          "sendSessionAffinityHeaders": true
+        },
+        "inputLimits": {
+          "images": {
+            "resize": {
+              "maxWidth": 2000,
+              "maxHeight": 2000,
+              "maxBytes": 4718592,
+              "jpegQuality": 80
+            }
+          }
+        }
+      },
+      {
+        "type": "chat",
+        "id": "google/gemini-4-carbon:batch",
+        "name": "Google: Gemini 4 Carbon (batch)",
+        "api": "openai-completions",
+        "baseUrl": "https://openrouter.ai/api/v1",
+        "provider": "openrouter",
+        "reasoning": true,
+        "thinkingLevelMap": {
+          "off": null,
+          "minimal": null,
+          "low": "low",
+          "medium": "medium",
+          "high": "high",
+          "xhigh": null,
+          "max": null
+        },
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 1,
+          "output": 5,
+          "cacheRead": 0.05,
+          "cacheWrite": 0.1875
+        },
+        "contextWindow": 1048576,
+        "maxTokens": 943718,
+        "compat": {
+          "supportsDeveloperRole": false,
+          "thinkingFormat": "openrouter",
+          "supportsStrictMode": true,
+          "sendSessionAffinityHeaders": true
+        },
+        "inputLimits": {
+          "images": {
+            "resize": {
+              "maxWidth": 2000,
+              "maxHeight": 2000,
+              "maxBytes": 4718592,
+              "jpegQuality": 80
+            }
+          }
+        }
+      },
+      {
+        "type": "image",
+        "id": "minimax/minimax-h3-image",
+        "name": "MiniMax: MiniMax H3 Image",
+        "api": "openrouter-images",
+        "provider": "openrouter",
+        "baseUrl": "https://openrouter.ai/api/v1",
+        "input": [
+          "text",
+          "image"
+        ],
+        "output": [
+          "image"
+        ],
+        "cost": {
+          "input": 2.3,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        },
+        "inputLimits": {
+          "images": {
+            "resize": {
+              "maxWidth": 2000,
+              "maxHeight": 2000,
+              "maxBytes": 4718592,
+              "jpegQuality": 80
+            }
+          }
+        }
+      },
+      {
+        "type": "image",
+        "id": "minimax/minimax-h3-image-highspeed",
+        "name": "MiniMax: MiniMax H3 Image Highspeed",
+        "api": "openrouter-images",
+        "provider": "openrouter",
+        "baseUrl": "https://openrouter.ai/api/v1",
+        "input": [
+          "text",
+          "image"
+        ],
+        "output": [
+          "image"
+        ],
+        "cost": {
+          "input": 2.3,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        },
+        "inputLimits": {
+          "images": {
+            "resize": {
+              "maxWidth": 2000,
+              "maxHeight": 2000,
+              "maxBytes": 4718592,
+              "jpegQuality": 80
+            }
+          }
+        }
+      },
+      {
+        "type": "classifier",
+        "id": "google/gemini-decision-1",
+        "name": "Google: Gemini Decision 1",
+        "api": "typesafe-system-one",
+        "provider": "openrouter",
+        "baseUrl": "https://openrouter.ai/api/v1",
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0.1,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        },
+        "contextWindow": 262144,
+        "compat": {
+          "imageInput": "state-image-urls",
+          "sendImageOptInHeader": false
+        }
       }
     ],
-    "checkedAt": 1794317571670
+    "checkedAt": 1794510942338
   },
   "kimi-coding": {
     "models": [
@@ -9168,7 +9217,7 @@
     ],
     "lastModified": 1794312479000,
     "etag": "W/\"0bc760599260dca2e039c70cbb3d26c6\"",
-    "checkedAt": 1794317571194
+    "checkedAt": 1794510938424
   },
   "opencode": {
     "models": [
@@ -9863,7 +9912,7 @@
       },
       {
         "id": "deepseek-v4.1-flash",
-        "name": "DeepSeek V4.1 Flash",
+        "name": "DeepSeek V4.1 Flash 1017",
         "api": "openai-completions",
         "provider": "opencode",
         "baseUrl": "https://opencode.ai/inference/openai/v1",
@@ -10283,6 +10332,46 @@
       {
         "id": "gemini-4-argon",
         "name": "Gemini 4 Argon",
+        "api": "google-generative-ai",
+        "provider": "opencode",
+        "baseUrl": "https://opencode.ai/inference/google/v1beta",
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 2,
+          "output": 10,
+          "cacheRead": 0.1,
+          "cacheWrite": 0
+        },
+        "contextWindow": 1048576,
+        "maxTokens": 65536,
+        "thinkingLevelMap": {
+          "off": null,
+          "minimal": null,
+          "low": "low",
+          "medium": "medium",
+          "high": "high",
+          "xhigh": null,
+          "max": null
+        },
+        "inputLimits": {
+          "images": {
+            "resize": {
+              "maxWidth": 2000,
+              "maxHeight": 2000,
+              "maxBytes": 4718592,
+              "jpegQuality": 80
+            }
+          }
+        },
+        "type": "chat"
+      },
+      {
+        "id": "gemini-4-carbon",
+        "name": "Gemini 4 Carbon",
         "api": "google-generative-ai",
         "provider": "opencode",
         "baseUrl": "https://opencode.ai/inference/google/v1beta",
@@ -12348,7 +12437,16 @@
           "input": 0.1,
           "output": 0.5,
           "cacheRead": 0.004,
-          "cacheWrite": 0
+          "cacheWrite": 0,
+          "tiers": [
+            {
+              "inputTokensAbove": 200000,
+              "input": 0.3,
+              "output": 1.5,
+              "cacheRead": 0.012,
+              "cacheWrite": 0
+            }
+          ]
         },
         "contextWindow": 1048576,
         "maxTokens": 270000,
@@ -12756,9 +12854,9 @@
         "contextWindow": 32000
       }
     ],
-    "lastModified": 1794312504000,
-    "etag": "W/\"f661da4b836fc6f56d16a5f7d8a50cb3\"",
-    "checkedAt": 1794317569963
+    "lastModified": 1794492064000,
+    "etag": "W/\"6a863df712e6334d56669a362280388b\"",
+    "checkedAt": 1794510938250
   },
   "opencode-go": {
     "models": [
@@ -12883,7 +12981,7 @@
       },
       {
         "id": "deepseek-v4.1-flash",
-        "name": "DeepSeek V4.1 Flash",
+        "name": "DeepSeek V4.1 Flash 1017",
         "api": "openai-completions",
         "provider": "opencode-go",
         "baseUrl": "https://opencode.ai/inference/go/openai/v1",
@@ -14044,9 +14142,9 @@
         "type": "chat"
       }
     ],
-    "lastModified": 1794312507000,
-    "etag": "W/\"b5b0db66a128f2404bed0bc661f5f369\"",
-    "checkedAt": 1794317569908
+    "lastModified": 1794492067000,
+    "etag": "W/\"23eb8dd30bc414d02f3010e266981c8f\"",
+    "checkedAt": 1794510938261
   },
   "google": {
     "models": [
@@ -14765,6 +14863,48 @@
         "type": "chat"
       },
       {
+        "id": "gemini-4-carbon",
+        "name": "Gemini 4 Carbon",
+        "api": "google-generative-ai",
+        "provider": "google",
+        "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 2,
+          "output": 10,
+          "cacheRead": 0.1,
+          "cacheWrite": 0
+        },
+        "contextWindow": 1048576,
+        "maxTokens": 32768,
+        "thinkingLevelMap": {
+          "off": null,
+          "minimal": null,
+          "low": "low",
+          "medium": "medium",
+          "high": "high",
+          "xhigh": null,
+          "max": null
+        },
+        "inputLimits": {
+          "maxRequestBytes": 20971520,
+          "images": {
+            "maxPerRequest": 3600,
+            "resize": {
+              "maxWidth": 2000,
+              "maxHeight": 2000,
+              "maxBytes": 4718592,
+              "jpegQuality": 80
+            }
+          }
+        },
+        "type": "chat"
+      },
+      {
         "id": "gemini-flash-latest",
         "name": "Gemini Flash Latest",
         "api": "google-generative-ai",
@@ -15022,9 +15162,9 @@
         "type": "chat"
       }
     ],
-    "lastModified": 1794312469000,
-    "etag": "W/\"20396079cd2507fb8189b3efb13daba1\"",
-    "checkedAt": 1794317570190
+    "lastModified": 1794492026000,
+    "etag": "W/\"b59aec66c835bd222313011a22a771e4\"",
+    "checkedAt": 1794510938263
   },
   "huggingface": {
     "models": [
@@ -17451,7 +17591,7 @@
     ],
     "lastModified": 1794312477000,
     "etag": "W/\"c7a184b596963232e9f5cf60923b0156\"",
-    "checkedAt": 1794317569904
+    "checkedAt": 1794510938444
   },
   "groq": {
     "models": [
@@ -17686,7 +17826,7 @@
     ],
     "lastModified": 1792760266000,
     "etag": "W/\"7ee868bd5a7cb0b47f6bc794733f8a73\"",
-    "checkedAt": 1794317570431
+    "checkedAt": 1794510938446
   },
   "anthropic": {
     "models": [
@@ -18455,7 +18595,7 @@
         "type": "chat"
       }
     ],
-    "checkedAt": 1794317570350,
+    "checkedAt": 1794510938456,
     "lastModified": 1790763435000,
     "etag": "W/\"833a51b4211b57d882564ca5f56383e8\""
   },
@@ -18541,7 +18681,7 @@
     ],
     "lastModified": 1794312453000,
     "etag": "W/\"8eed262c2b8b6180a519dabdb297276d\"",
-    "checkedAt": 1794317570069
+    "checkedAt": 1794510938439
   },
   "xiaomi-token-plan-ams": {
     "models": [
@@ -18822,7 +18962,7 @@
     ],
     "lastModified": 1794312534000,
     "etag": "W/\"3010fd1c5362b426cdc8505b13ce363c\"",
-    "checkedAt": 1794317570395
+    "checkedAt": 1794510938433
   },
   "xiaomi-token-plan-sgp": {
     "models": [
@@ -18921,7 +19061,7 @@
     ],
     "lastModified": 1794312543000,
     "etag": "W/\"8623a44eab9d145eda9fda1c25535511\"",
-    "checkedAt": 1794317570114
+    "checkedAt": 1794510938456
   },
   "vercel-ai-gateway": {
     "models": [
@@ -19317,6 +19457,40 @@
         "type": "chat"
       },
       {
+        "id": "alibaba/qwen3.6-35b-a3b",
+        "name": "Qwen 3.6 35B A3B",
+        "api": "anthropic-messages",
+        "baseUrl": "https://ai-gateway.vercel.sh",
+        "provider": "vercel-ai-gateway",
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "compat": {
+          "allowEmptySignature": true
+        },
+        "cost": {
+          "input": 0.375,
+          "output": 2.25,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        },
+        "contextWindow": 262144,
+        "maxTokens": 65536,
+        "inputLimits": {
+          "images": {
+            "resize": {
+              "maxWidth": 2000,
+              "maxHeight": 2000,
+              "maxBytes": 4718592,
+              "jpegQuality": 80
+            }
+          }
+        },
+        "type": "chat"
+      },
+      {
         "id": "alibaba/qwen3.6-plus",
         "name": "Qwen 3.6 Plus",
         "api": "anthropic-messages",
@@ -19525,7 +19699,7 @@
         },
         "cost": {
           "input": 0.06,
-          "output": 2.3,
+          "output": 2.2,
           "cacheRead": 0.059,
           "cacheWrite": 0
         },
@@ -21191,92 +21365,6 @@
         "type": "chat"
       },
       {
-        "id": "bytedance/seed-1.6",
-        "name": "Seed 1.6",
-        "api": "anthropic-messages",
-        "baseUrl": "https://ai-gateway.vercel.sh",
-        "provider": "vercel-ai-gateway",
-        "reasoning": true,
-        "input": [
-          "text",
-          "image"
-        ],
-        "compat": {
-          "allowEmptySignature": true
-        },
-        "cost": {
-          "input": 0.25,
-          "output": 2,
-          "cacheRead": 0.05,
-          "cacheWrite": 0,
-          "tiers": [
-            {
-              "inputTokensAbove": 128000,
-              "input": 0.5,
-              "output": 4,
-              "cacheRead": 0.05,
-              "cacheWrite": 0
-            }
-          ]
-        },
-        "contextWindow": 256000,
-        "maxTokens": 32000,
-        "inputLimits": {
-          "images": {
-            "resize": {
-              "maxWidth": 2000,
-              "maxHeight": 2000,
-              "maxBytes": 4718592,
-              "jpegQuality": 80
-            }
-          }
-        },
-        "type": "chat"
-      },
-      {
-        "id": "bytedance/seed-1.8",
-        "name": "Bytedance Seed 1.8",
-        "api": "anthropic-messages",
-        "baseUrl": "https://ai-gateway.vercel.sh",
-        "provider": "vercel-ai-gateway",
-        "reasoning": true,
-        "input": [
-          "text",
-          "image"
-        ],
-        "compat": {
-          "allowEmptySignature": true
-        },
-        "cost": {
-          "input": 0.25,
-          "output": 2,
-          "cacheRead": 0.05,
-          "cacheWrite": 0,
-          "tiers": [
-            {
-              "inputTokensAbove": 128000,
-              "input": 0.5,
-              "output": 4,
-              "cacheRead": 0.05,
-              "cacheWrite": 0
-            }
-          ]
-        },
-        "contextWindow": 256000,
-        "maxTokens": 64000,
-        "inputLimits": {
-          "images": {
-            "resize": {
-              "maxWidth": 2000,
-              "maxHeight": 2000,
-              "maxBytes": 4718592,
-              "jpegQuality": 80
-            }
-          }
-        },
-        "type": "chat"
-      },
-      {
         "id": "bytedance/seed-2.1-turbo",
         "name": "Seed 2.1 Turbo",
         "api": "anthropic-messages",
@@ -22492,6 +22580,40 @@
       {
         "id": "google/gemini-4-argon",
         "name": "Gemini 4 Argon",
+        "api": "anthropic-messages",
+        "baseUrl": "https://ai-gateway.vercel.sh",
+        "provider": "vercel-ai-gateway",
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "compat": {
+          "allowEmptySignature": true
+        },
+        "cost": {
+          "input": 2,
+          "output": 10,
+          "cacheRead": 0.1,
+          "cacheWrite": 0
+        },
+        "contextWindow": 1000000,
+        "maxTokens": 1000000,
+        "inputLimits": {
+          "images": {
+            "resize": {
+              "maxWidth": 2000,
+              "maxHeight": 2000,
+              "maxBytes": 4718592,
+              "jpegQuality": 80
+            }
+          }
+        },
+        "type": "chat"
+      },
+      {
+        "id": "google/gemini-4-carbon",
+        "name": "Gemini 4 Carbon",
         "api": "anthropic-messages",
         "baseUrl": "https://ai-gateway.vercel.sh",
         "provider": "vercel-ai-gateway",
@@ -29475,6 +29597,24 @@
       },
       {
         "type": "classifier",
+        "id": "google/gemini-decision-1",
+        "name": "Gemini Decision 1",
+        "api": "typesafe-system-one",
+        "provider": "vercel-ai-gateway",
+        "baseUrl": "https://ai-gateway.vercel.sh/typesafe/v1",
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0.1,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        },
+        "contextWindow": 262144
+      },
+      {
+        "type": "classifier",
         "id": "liquid/d1",
         "name": "Liquid d1",
         "api": "typesafe-system-one",
@@ -29726,9 +29866,9 @@
         "contextWindow": 32000
       }
     ],
-    "lastModified": 1794312529000,
-    "etag": "W/\"4ef1cac238345af99b7e24aab36ec3be\"",
-    "checkedAt": 1794317570527
+    "lastModified": 1794492091000,
+    "etag": "W/\"02df4c58d95b48e96528331fb19fd828\"",
+    "checkedAt": 1794510938254
   },
   "openai": {
     "models": [
@@ -31798,10 +31938,59 @@
     ],
     "lastModified": 1794312499000,
     "etag": "W/\"9cb1a79c50b9cf662b2087060a30e5dc\"",
-    "checkedAt": 1794317569901
+    "checkedAt": 1794510938445
   },
   "meta": {
     "models": [
+      {
+        "id": "muse-ember-1.0",
+        "name": "Muse Ember",
+        "api": "openai-responses",
+        "provider": "meta",
+        "baseUrl": "https://api.meta.ai/v1",
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0.1,
+          "output": 0.5,
+          "cacheRead": 0.004,
+          "cacheWrite": 0,
+          "tiers": [
+            {
+              "inputTokensAbove": 200000,
+              "input": 0.3,
+              "output": 1.5,
+              "cacheRead": 0.012,
+              "cacheWrite": 0
+            }
+          ]
+        },
+        "contextWindow": 1048576,
+        "maxTokens": 524288,
+        "thinkingLevelMap": {
+          "off": null,
+          "minimal": "minimal",
+          "low": "low",
+          "medium": "medium",
+          "high": "high",
+          "xhigh": "xhigh",
+          "max": "max"
+        },
+        "inputLimits": {
+          "images": {
+            "resize": {
+              "maxWidth": 2000,
+              "maxHeight": 2000,
+              "maxBytes": 4718592,
+              "jpegQuality": 80
+            }
+          }
+        },
+        "type": "chat"
+      },
       {
         "id": "muse-spark-1.1",
         "name": "Muse Spark 1.1",
@@ -32043,9 +32232,9 @@
         "type": "chat"
       }
     ],
-    "lastModified": 1792760275000,
-    "etag": "W/\"d2397a60589efbabef99ee05f91cc968\"",
-    "checkedAt": 1793071173677
+    "lastModified": 1794492040000,
+    "etag": "W/\"4734aba09818a066c7f2dca4bb08da6c\"",
+    "checkedAt": 1794510938250
   },
   "mistral": {
     "models": [
@@ -33100,6 +33289,6 @@
     ],
     "lastModified": 1794312489000,
     "etag": "W/\"49a149bcb3a6d53406df6fd1eb55e357\"",
-    "checkedAt": 1794317570449
+    "checkedAt": 1794510938444
   }
 }
