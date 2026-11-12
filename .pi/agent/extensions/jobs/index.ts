@@ -236,7 +236,7 @@ export default function jobsExtension(pi: ExtensionAPI) {
 		const details = message.details as { fullContent?: string; summary?: string; tone?: JobTone } | undefined;
 		const content = String(message.content);
 		const summary = details?.summary ?? content;
-		return new JobMessageComponent(summary, details?.fullContent ?? content, options.outputPad, theme, options.expanded, details?.tone ?? "success");
+		return new JobMessageComponent(summary, details?.fullContent ?? content, theme, options.expanded, details?.tone ?? "success");
 	});
 
 	pi.on("tool_call", (event) => {

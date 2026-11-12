@@ -1,4 +1,5 @@
 import { Type } from "@sinclair/typebox";
+import { compactToolRenderers } from "#compact-blocks";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 
 const EXTENSION_ID = "yolo";
@@ -68,6 +69,7 @@ function statusText(enabled: boolean): string {
 function registerYoloTool(pi: ExtensionAPI): void {
 	pi.registerTool({
 		name: "yolo",
+		...compactToolRenderers("yolo"),
 		label: "Yolo",
 		description: "Read-only YOLO status tool. Returns current session state as ON or OFF. State can change via /yolo, so call this tool when status matters instead of assuming.",
 		promptSnippet: "Yolo status: call this status-only tool when current ON/OFF state matters.",

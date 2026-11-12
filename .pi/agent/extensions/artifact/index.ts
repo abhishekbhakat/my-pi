@@ -13,6 +13,7 @@
 
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
+import { compactToolRenderers } from "#compact-blocks";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -382,6 +383,7 @@ export default function (pi: ExtensionAPI) {
 
 	pi.registerTool({
 		name: "artifact",
+		...compactToolRenderers("artifact"),
 		label: "Artifact",
 		description:
 			"List or read project artifacts saved under .agents/artifacts/. " +

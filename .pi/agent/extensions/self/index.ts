@@ -1,5 +1,6 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
+import { compactToolRenderers } from "#compact-blocks";
 import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
@@ -45,6 +46,7 @@ export default function (pi: ExtensionAPI) {
 
 	pi.registerTool({
 		name: "self",
+		...compactToolRenderers("self"),
 		label: "Self",
 		description,
 		promptSnippet: "Self rules anchor: obey self tool description every response.",

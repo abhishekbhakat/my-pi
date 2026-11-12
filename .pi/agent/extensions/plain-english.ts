@@ -19,10 +19,9 @@ import {
 	type ExtensionAPI,
 	type ExtensionCommandContext,
 	getAgentDir,
-	getMarkdownTheme,
 } from "@earendil-works/pi-coding-agent";
 import type { AutocompleteItem } from "@earendil-works/pi-tui";
-import { Box, Markdown, Text } from "@earendil-works/pi-tui";
+import { CompactBlock, blockPreview } from "#compact-blocks";
 
 type Style = "plain" | "tldr" | "5y";
 type PlainConfig = { style: Style; model: string };
@@ -200,19 +199,12 @@ export default function plainEnglishExtension(pi: ExtensionAPI) {
 			modelLabel: "?",
 			timestamp: Date.now(),
 		};
-		const box = new Box(1, 1, (text) => theme.bg("customMessageBg", text));
-		box.addChild(
-			new Text(
-				theme.fg("accent", theme.bold(`${STYLE_LABEL[data.style] ?? "Plain"} · ${data.modelLabel}`)),
-				0,
-				0,
-			),
-		);
-		box.addChild(new Markdown(data.rewrite, 0, 0, getMarkdownTheme()));
-		if (expanded) {
-			box.addChild(new Text(theme.fg("dim", new Date(data.timestamp).toLocaleString()), 0, 0));
-		}
-		return box;
+		return new CompactBlock({
+			name: STYLE_LABEL[data.style] ?? "Plain",
+			detail: data.modelLabel,
+			summary: blockPreview(data.rewrite),
+			full: `${data.rewrite}\n${new Date(data.timestamp).toLocaleString()}`,
+		}, theme, expanded);
 	});
 
 	const rewrite = async (ctx: ExtensionCommandContext, style: Style, config: PlainConfig) => {

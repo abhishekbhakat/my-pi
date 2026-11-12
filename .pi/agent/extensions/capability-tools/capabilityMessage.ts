@@ -1,103 +1,32 @@
-import { Box, Container, MouseRegion, Text, truncateToWidth } from "@earendil-works/pi-tui";
 import type { ExtensionAPI, ToolDefinition } from "@earendil-works/pi-coding-agent";
-import { stripVTControlCharacters } from "node:util";
+import { CompactBlock, blockOneLine, blockPreview, blockText, compactToolRenderers } from "#compact-blocks";
 
-/** Compact completion row with mouse and host expansion support. */
-export class CapabilityMessageComponent extends Container {
-	constructor(
-		private readonly summary: string,
-		private readonly full: string,
-		private readonly outputPad: number,
-		private readonly theme: any,
-		private expanded: boolean,
-		private readonly status: string,
-		private readonly bgFn: (value: string) => string = (value) => value,
-	) { super(); this.rebuild(); }
+export const oneLine = blockOneLine;
 
-	setExpanded(expanded: boolean): void { this.expanded = expanded; this.rebuild(); }
-
-	private rebuild(): void {
-		this.clear();
-		const bg = this.bgFn;
-		const prefix = this.theme.fg("accent", "[capability] ");
-		const body = this.expanded
-			? new Text(prefix + this.full + this.theme.fg("dim", "\n(click to collapse)"), 1, 1, bg)
-			: {
-				render: (width: number) => [bg(truncateToWidth(prefix + this.summary + this.theme.fg("dim", " (click or ctrl+o)"), width, "...", true))],
-				invalidate() {},
-			};
-		const box = new Box(this.outputPad, this.expanded ? 1 : 0, bg);
-		box.addChild(body);
-		this.addChild(new MouseRegion(box, (event) => {
-			if (event.type !== "click" || event.button !== "left") return;
-			this.setExpanded(!this.expanded);
-			return { handled: true };
-		}));
-	}
-}
-
-export function oneLine(raw: string): string {
-	return stripVTControlCharacters(raw).replace(/[\x00-\x08\x0b-\x1f\x7f]/g, "").replace(/\s+/g, " ").trim();
-}
-
-/** One-line call row: label plus collapsed task. Full args expand via ctrl+o or click. */
+/** Call and result slots share one two-line block through the row-local state. */
 export function renderCapabilityCall(label: string, fallbackTask: string): NonNullable<ToolDefinition["renderCall"]> {
-	return (args, theme, context) => {
-		const input = args as { task?: string; paths?: string[] };
-		const task = input?.task ?? fallbackTask;
-		const paths = Array.isArray(input?.paths) ? input.paths : [];
-		const summary = oneLine(`${label} | ${task}${paths.length ? ` | ${paths.length} paths` : ""}`);
-		const full = stripVTControlCharacters([label, task, ...paths.map((item) => oneLine(item))].filter(Boolean).join("\n"));
-		return new CapabilityMessageComponent(summary, full, 0, theme, context.expanded, "running");
-	};
+	return compactToolRenderers(label, { fallbackTask }).renderCall!;
 }
 
-export const renderCapabilityJobsCall: NonNullable<ToolDefinition["renderCall"]> = (args, theme, context) => {
-	const input = args as { action?: string; id?: string; message?: string };
-	const id = input?.id?.replace(/-([0-9a-f]{8})-.*/i, "-$1") ?? "";
-	const summary = oneLine(`jobs ${input?.action ?? "list"} ${id}`);
-	const full = [summary, input?.id, input?.message].filter(Boolean).map((line) => stripVTControlCharacters(line!)).join("\n");
-	return new CapabilityMessageComponent(summary, full, 0, theme, context.expanded, "running");
-};
+export const renderCapabilityJobsCall: NonNullable<ToolDefinition["renderCall"]> = compactToolRenderers("Capability jobs").renderCall!;
 
-/** One-line result row: model-facing content unchanged, display collapses to first line. */
 export function renderCapabilityResult(label: string): NonNullable<ToolDefinition["renderResult"]> {
-	return (result, options, theme, context) => {
-		const raw = result.content.filter((part) => part.type === "text").map((part) => part.text).join("\n");
-		const full = stripVTControlCharacters(raw).replace(/[\x00-\x08\x0b-\x1f\x7f]/g, "");
-		const details = result.details as { status?: string; id?: string } | undefined;
-		const failed = context.isError || details?.status === "error" || details?.status === "aborted";
-		const status = failed ? "error" : options.isPartial || details?.status === "running" || details?.status === "cancelling" ? "running" : "done";
-		// Background launch: the call row already names the capability and task; the live panel shows the run. One row is enough.
-		if (!failed && !options.isPartial && details?.status === "running" && details?.id && !options.expanded) return new Container();
-		const preview = (full.split("\n").find((line) => line.trim()) ?? "").trim().slice(0, 200);
-		return new CapabilityMessageComponent(`${label} | ${oneLine(preview)}`, full, 0, theme, options.expanded, status);
-	};
+	return compactToolRenderers(label).renderResult!;
 }
 
-/** Keep scout tool output compact without trimming model-facing results. */
-export const renderScoutResult: NonNullable<ToolDefinition["renderResult"]> = (result, options, theme, context) => {
-	const raw = result.content.filter((part) => part.type === "text").map((part) => part.text).join("\n");
-	const full = stripVTControlCharacters(raw).replace(/[\x00-\x08\x0b-\x1f\x7f]/g, "");
-	const details = result.details as { status?: string } | undefined;
-	const failed = context.isError || details?.status === "error" || details?.status === "aborted";
-	const status = failed ? "error" : options.isPartial ? "running" : "done";
-	const preview = (full.split("\n").find((line) => line.trim()) ?? "").trim().slice(0, 160);
-	const summary = `Code Scout ${options.isPartial && !failed ? details?.status ?? "running" : status} | ${preview}`;
-	return new CapabilityMessageComponent(summary, full, 0, theme, options.expanded, status);
-};
+export const renderScoutResult = renderCapabilityResult("Code Scout");
 
 export function registerCapabilityMessages(pi: ExtensionAPI): void {
 	pi.registerMessageRenderer("capability_result", (message, options, theme) => {
 		const details = message.details as { capability?: string; status?: string; id?: string } | undefined;
-		const raw = typeof message.content === "string" ? message.content : message.content
-			.filter((part) => part.type === "text").map((part) => part.text).join("\n");
-		const full = stripVTControlCharacters(raw).replace(/[\x00-\x08\x0b-\x1f\x7f]/g, "");
+		const full = blockText(message.content);
 		const status = details?.status ?? "done";
-		const summary = `${details?.capability ?? "Capability"} ${status} | ${details?.id ?? full.split("\n")[0]}`.replace(/\s+/g, " ");
-		// Match tool-result rows: same success/error background as a finished tool call.
-		const bgKey = status === "done" ? "toolSuccessBg" : status === "running" || status === "cancelling" ? "toolPendingBg" : "toolErrorBg";
-		const bg = (value: string) => theme.bg(bgKey, value);
-		return new CapabilityMessageComponent(summary, full, options.outputPad, theme, options.expanded, status, bg);
+		return new CompactBlock({
+			name: details?.capability ?? "Capability",
+			detail: details?.id,
+			summary: `${status} | ${blockPreview(full.split("\n").slice(1).join("\n")) || blockPreview(full)}`,
+			full,
+			status: ["running", "cancelling"].includes(status) ? "running" : status === "done" ? "done" : "error",
+		}, theme, options.expanded);
 	});
 }

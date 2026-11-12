@@ -131,6 +131,26 @@ export class WidthAwareLines {
 	}
 }
 
+export interface BlockLines {
+	name: string;
+	icon?: string;
+	color?: string;
+	detail?: string;
+	summary: string;
+	isPartial?: boolean;
+	isError?: boolean;
+	expandedLines?: string[];
+}
+
+/** Shared two-line transcript shape. Extra lines appear only on expansion. */
+export function buildBlockLines({ name, icon = ">", color = CYAN, detail, summary, isPartial, isError, expandedLines = [] }: BlockLines): string[] {
+	const mark = isPartial ? `${DIM}·${RESET}` : isError ? `${RED}✗${RESET}` : `${GREEN}✓${RESET}`;
+	const line2 = !detail
+		? `${INDENT}${DIM}→${RESET} ${summary}`
+		: `${INDENT}${DIM}${detail}${RESET} ${DIM}→${RESET} ${summary}`;
+	return [`${GUTTER} ${mark} ${color}${icon} ${BOLD}${name}${RESET}`, line2, ...expandedLines];
+}
+
 export function buildToolBlock(
 	name: ToolName,
 	args: Record<string, unknown>,
@@ -140,19 +160,11 @@ export function buildToolBlock(
 	const { isError = false, isPartial = false, expanded = false, elapsedMs = 0 } = opts;
 	const detail = argDetail(name, args);
 	const { icon, color } = style(name);
-	const mark = isPartial
-		? `${DIM}·${RESET}`
-		: isError
-			? `${RED}✗${RESET}`
-			: `${GREEN}✓${RESET}`;
 	const summary = isPartial
 		? `${DIM}${formatElapsed(elapsedMs)}${RESET}`
 		: summarize(name, result, isError, args, elapsedMs);
-	const line2 = !detail
-		? `${INDENT}${DIM}→${RESET} ${summary}`
-		: `${INDENT}${DIM}${detail}${RESET} ${DIM}→${RESET} ${summary}`;
-
-	const lines = [`${GUTTER} ${mark} ${color}${icon} ${BOLD}${name}${RESET}`, line2];
-	if (expanded) lines.push(...expandedLines(name, args, result));
-	return lines;
+	return buildBlockLines({
+		name, icon, color, detail, summary, isPartial, isError,
+		expandedLines: expanded ? expandedLines(name, args, result) : [],
+	});
 }

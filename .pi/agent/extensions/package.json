@@ -2,6 +2,9 @@
 	"name": "pi-agent-extensions",
 	"version": "1.0.0",
 	"imports": {
+		"#compact-cards": "./compact-tools/cards.ts",
+		"#compact-blocks": "./compact-tools/blocks.ts",
+		"#compact-constants": "./compact-tools/constants.ts",
 		"#compact-codemode": "./compact-tools/codemode.ts",
 		"#capability-model-budget": "./capability-tools/modelBudget.ts",
 		"#capability-background": "./capability-tools/background.ts",

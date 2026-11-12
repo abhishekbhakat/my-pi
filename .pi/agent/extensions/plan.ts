@@ -22,6 +22,7 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { StringEnum } from "@earendil-works/pi-ai";
 import { Type } from "@sinclair/typebox";
+import { compactToolRenderers } from "#compact-blocks";
 import { execFile } from "node:child_process";
 import { mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -280,6 +281,7 @@ function settleIfDone(state: PlanState): boolean {
 export default function planExtension(pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "plan",
+		...compactToolRenderers("plan"),
 		label: "Plan",
 		description:
 			"Tool-enforced checklist state for multi-step plans. create stores goal + items with a declared check per item; " +

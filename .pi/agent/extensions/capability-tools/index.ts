@@ -1,3 +1,4 @@
+import { compactToolRenderers } from "#compact-blocks";
 import { registerBackground, type CapabilityBackground } from "#capability-background";
 import { CAPABILITY_CHILD_ENV, registerCoderCommand, startCoder } from "#capability-coder";
 import { snapshotContext } from "#capability-snapshot";
@@ -36,8 +37,9 @@ function registerCapabilityTool(pi: ExtensionAPI, def: CapabilityDef, background
 		description: `${def.description}${runsInBackground ? " Runs asynchronously. Returns run ID immediately; completion wakes this chat. Use capability_jobs for output or cancellation." : ""}`,
 		promptSnippet: def.promptSnippet ?? def.description,
 		promptGuidelines: def.promptGuidelines.length > 0 ? def.promptGuidelines : undefined,
+		renderShell: "self",
 		renderCall: renderCapabilityCall(def.label, DEFAULT_TASKS[def.toolName] ?? "default task"),
-		renderResult: runsInBackground ? renderCapabilityResult(def.label) : undefined,
+		renderResult: renderCapabilityResult(def.label),
 		parameters: def.toolName === "coder" ? Type.Object({
 			task: Type.String({ minLength: 1, description: "Bounded code change, assigned files, and acceptance checks." }),
 			paths: Type.Optional(Type.Array(Type.String({ description: pathsDescription }))),
@@ -68,6 +70,7 @@ export default function (pi: ExtensionAPI) {
 
 	pi.registerTool({
 		name: BOOLEAN_GUY_DEF.toolName,
+		...compactToolRenderers(BOOLEAN_GUY_DEF.label),
 		label: BOOLEAN_GUY_DEF.label,
 		description: BOOLEAN_GUY_DEF.description,
 		promptSnippet: BOOLEAN_GUY_DEF.promptSnippet,

@@ -6,7 +6,7 @@
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { Text } from "@earendil-works/pi-tui";
+import { CompactBlock, blockPreview, blockText, compactToolRenderers } from "#compact-blocks";
 import { Type } from "@sinclair/typebox";
 import { getAgentDirPath } from "../mailbox.ts";
 import { registerUser } from "./client.ts";
@@ -42,8 +42,8 @@ export function registerUserMail(pi: ExtensionAPI): void {
 	});
 
 	pi.registerMessageRenderer(USER_MAIL_CUSTOM_TYPE, (message, options, theme) => {
-		const head = theme.fg("accent", "[user-mail] ");
-		return new Text(head + String(message.content), options.outputPad, 0);
+		const full = blockText(message.content);
+		return new CompactBlock({ name: "user_mail", summary: blockPreview(full), full }, theme, options.expanded);
 	});
 
 	pi.registerCommand("pi-user-mail", {
@@ -88,6 +88,7 @@ export function registerUserMail(pi: ExtensionAPI): void {
 
 	pi.registerTool({
 		name: "user_mail",
+		...compactToolRenderers("user_mail"),
 		description:
 			"Passive mailbox between pi users on one local network (team mail), via the one network server. " +
 			"send queues a message for a remote user; inbox syncs unread headers into the local mirror; " +

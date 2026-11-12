@@ -216,6 +216,7 @@ export function registerBackground(pi: ExtensionAPI): CapabilityBackground {
 	pi.registerTool({
 		name: "capability_jobs", label: "Capability jobs",
 		description: "List background runs, read output, stop, or steer coder with a message. Coder, scout, reasoning, and review output streams as PARTIAL, never a final verdict. Only coder accepts steering. Separate from shell jobs. The live panel already shows helper progress, so no need to poll output while a run is still going.",
+		renderShell: "self",
 		renderCall: renderCapabilityJobsCall,
 		renderResult: renderCapabilityResult("Capability jobs"),
 		parameters: Type.Object({ action: Type.Union([Type.Literal("list"), Type.Literal("output"), Type.Literal("stop"), Type.Literal("steer")]), id: Type.Optional(Type.String()), message: Type.Optional(Type.String()) }),

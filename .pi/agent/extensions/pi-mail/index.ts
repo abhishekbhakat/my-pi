@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { Text } from "@earendil-works/pi-tui";
+import { CompactBlock, blockPreview, blockText, compactToolRenderers } from "#compact-blocks";
 import { Type } from "@sinclair/typebox";
 import { registerUserMail } from "./user-mail/index.ts";
 import {
@@ -36,11 +36,12 @@ export default function piMailExtension(pi: ExtensionAPI) {
 	registerUserMail(pi);
 
 	pi.registerMessageRenderer(MAIL_CUSTOM_TYPE, (message, options, theme) => {
-		const head = theme.fg("accent", "[mail] ");
-		return new Text(head + String(message.content), options.outputPad, 0);
+		const full = blockText(message.content);
+		return new CompactBlock({ name: "mail", summary: blockPreview(full), full }, theme, options.expanded);
 	});
 	pi.registerTool({
 		name: "mail",
+		...compactToolRenderers("mail"),
 		description:
 			"Passive mailbox between pi sessions on this machine. send queues a message " +
 			"into the target session mailbox (queued, never delivered to a background process). " +
