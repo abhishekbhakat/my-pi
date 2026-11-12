@@ -25,8 +25,10 @@ export { buildQueryOptions } from "./queryOptions.ts";
 let registeredModels: ClaudeCodeModelInfo[] = configuredModels();
 let effortLevels: string[] = [];
 let lastCliStatus: CliStatus | undefined;
+const registeredProviders = new WeakSet<ExtensionAPI>();
 
 function registerProvider(pi: ExtensionAPI) {
+	if (registeredProviders.has(pi)) return;
 	pi.registerProvider(PROVIDER_ID, {
 		name: "Claude Agent SDK",
 		baseUrl: "sdk:claude-agent",
@@ -35,6 +37,7 @@ function registerProvider(pi: ExtensionAPI) {
 		models: providerModels(registeredModels, buildThinkingLevelMap(effortLevels)),
 		streamSimple: ((model: any, context: any, options: any) => streamClaudeSdk(model, context, options)) as any,
 	});
+	registeredProviders.add(pi);
 }
 
 function statusLines(status?: CliStatus): string[] {
@@ -67,16 +70,7 @@ export default async function claudeCodeSdkExtension(pi: ExtensionAPI) {
 	registeredModels = configuredModels();
 	effortLevels = detectEffortLevels();
 	const status = await checkCliStatus();
-	if (!status.ok) {
-		pi.registerCommand("claude-code-sdk", {
-			description: "Claude Agent SDK provider status (disabled: `claude` not usable)",
-			handler: async (_args: string, ctx: any) => {
-				for (const line of statusLines(status)) ctx.ui.notify(line, "warning");
-				ctx.ui.notify(setupGuidance(status.detail ?? status.summary), "warning");
-			},
-		});
-		return;
-	}
+	lastCliStatus = status;
 	registerProvider(pi);
 
 	pi.registerCommand("claude-sdk-refresh", {
@@ -113,11 +107,12 @@ export default async function claudeCodeSdkExtension(pi: ExtensionAPI) {
 	});
 
 	pi.registerCommand("claude-code-sdk", {
-		description: "Claude Agent SDK provider status",
+		description: status.ok ? "Claude Agent SDK provider status" : "Claude Agent SDK provider status (`claude` unavailable)",
 		handler: async (args: string, ctx: any) => {
 			const sub = args.trim().split(/\s+/).filter(Boolean)[0] ?? "status";
 			if (sub === "status") {
 				lastCliStatus = await checkCliStatus();
+				if (!lastCliStatus.ok) ctx.ui.notify(setupGuidance(lastCliStatus.detail ?? lastCliStatus.summary), "warning");
 				for (const line of statusLines(lastCliStatus)) {
 					ctx.ui.notify(line, lastCliStatus.ok ? "info" : "warning");
 				}
@@ -139,7 +134,7 @@ export default async function claudeCodeSdkExtension(pi: ExtensionAPI) {
 			}
 			if (sub === "help") {
 				ctx.ui.notify("Usage: /claude-code-sdk [status|models|help]", "info");
-				ctx.ui.notify("Models: claude-code-sdk/haiku|sonnet|opus", "info");
+				ctx.ui.notify(`Models: ${registeredModels.map((model) => `${PROVIDER_ID}/${model.id}`).join(", ")}`, "info");
 				ctx.ui.notify("Idle: CLAUDE_CODE_SDK_IDLE_MS (default 300000)", "info");
 				return;
 			}

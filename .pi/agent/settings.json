@@ -1,11 +1,10 @@
 {
-  "lastChangelogVersion": "1.5.1",
+  "lastChangelogVersion": "1.5.2",
   "theme": "everforest",
   "quietStartup": true,
   "hideThinkingBlock": false,
   "defaultThinkingLevel": "max",
   "modelThinkingLevels": {
-    "grok-cli/grok-4.5": "high",
     "claude-code-sdk/haiku": "max",
     "claude-code-sdk/opus": "max",
     "claude-code-sdk/sonnet": "xhigh",
@@ -30,9 +29,14 @@
     "claude-code-sdk/haiku",
     "claude-code-sdk/opus",
     "claude-code-sdk/sonnet",
+    "cursor/claude-fable-5-2@1m",
+    "cursor/claude-opus-5-5@1m",
+    "cursor/claude-sonnet-5-5@1m",
+    "cursor/composer-2.5",
+    "cursor/gemini-4-carbon",
+    "cursor/glm-5p3",
+    "cursor/grok-4.7@256k:fast",
     "deepseek/deepseek-flash",
-    "grok-cli/grok-4.5",
-    "grok-cli/grok-4.7-build-fast",
     "kimi-coding/k3.1-pro",
     "kimi-coding/k3.1-pro-highspeed",
     "openai/gpt-6-astra",
@@ -61,7 +65,7 @@
     "mermaid": "final"
   },
   "packages": [
-    "npm:pi-grok-cli"
+    "npm:pi-cursor-sdk"
   ],
   "collapseChangelog": true,
   "deviceId": "2d341a24-08f8-459c-b97b-bdf52a88cfaf"

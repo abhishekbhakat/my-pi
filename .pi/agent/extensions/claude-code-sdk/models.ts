@@ -61,7 +61,7 @@ export function configuredModels(raw?: string): ClaudeCodeModelInfo[] {
 		.map((part) => part.trim())
 		.filter(Boolean);
 
-	const ids = configured && configured.length > 0 ? dedupe(configured) : DEFAULT_MODELS.map((model) => model.id);
+	const ids = dedupe([...DEFAULT_MODELS.map((model) => model.id), ...(configured ?? [])]);
 	const defaults = new Map(DEFAULT_MODELS.map((model) => [model.id, model]));
 	const contextWindow = contextWindowOverride();
 

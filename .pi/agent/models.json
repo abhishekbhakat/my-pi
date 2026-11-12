@@ -68,6 +68,31 @@
         }
       }
     },
+    "cursor": {
+      "modelOverrides": {
+        "claude-fable-5-2@1m": {
+          "contextWindow": 262144
+        },
+        "claude-opus-5-5@1m": {
+          "contextWindow": 262144
+        },
+        "claude-sonnet-5-5@1m": {
+          "contextWindow": 262144
+        },
+        "composer-2.5": {
+          "contextWindow": 262144
+        },
+        "gemini-4-carbon": {
+          "contextWindow": 262144
+        },
+        "glm-5p3": {
+          "contextWindow": 262144
+        },
+        "grok-4.7@256k:fast": {
+          "contextWindow": 262144
+        }
+      }
+    },
     "deepseek": {
       "modelOverrides": {
         "deepseek-flash": {
@@ -339,49 +364,6 @@
             "off": null,
             "minimal": null,
             "low": null
-          }
-        }
-      }
-    },
-    "grok-cli": {
-      "modelOverrides": {
-        "grok-4.5": {
-          "contextWindow": 262144
-        },
-        "grok-4.7": {
-          "contextWindow": 262144,
-          "thinkingLevelMap": {
-            "off": null,
-            "minimal": null,
-            "low": "low",
-            "medium": "medium",
-            "high": "high",
-            "xhigh": "xhigh",
-            "max": null
-          }
-        },
-        "grok-4.7-build-fast": {
-          "contextWindow": 262144,
-          "thinkingLevelMap": {
-            "off": null,
-            "minimal": null,
-            "low": "low",
-            "medium": "medium",
-            "high": "high",
-            "xhigh": "xhigh",
-            "max": null
-          }
-        },
-        "grok-composer-2.5-fast": {
-          "reasoning": true,
-          "thinkingLevelMap": {
-            "off": null,
-            "minimal": null,
-            "low": null,
-            "medium": null,
-            "high": null,
-            "xhigh": null,
-            "max": null
           }
         }
       }

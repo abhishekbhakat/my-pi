@@ -28,32 +28,6 @@ export function patchTemplateJs(source: string): string {
 	const sections = [
 		["      function renderTree() {", "      function forceTreeRerender()", WINDOWED_TREE_JS + "\n"],
 		["        function findVisibleAncestor(nodeId) {", "        // Build visible tree structure", VISIBLE_ANCESTOR_JS + "\n"],
-		["        function sortChildren(node) {", "        return roots;", `        const pendingSort = [...roots];
-        while (pendingSort.length) {
-          const node = pendingSort.pop();
-          node.children.sort((a, b) => new Date(a.entry.timestamp).getTime() - new Date(b.entry.timestamp).getTime());
-          for (const child of node.children) pendingSort.push(child);
-        }
-\n`],
-		["        function markActive(node) {", "        // Stack: [node, indent", `        const pendingActive = roots.map(node => [node, false]);
-        while (pendingActive.length) {
-          const [node, visited] = pendingActive.pop();
-          if (!visited) {
-            pendingActive.push([node, true]);
-            for (const child of node.children) pendingActive.push([child, false]);
-          } else {
-            containsActive.set(node, activePathIds.has(node.entry.id) || node.children.some(child => containsActive.get(child)));
-          }
-        }
-\n`],
-		["          function mapNodes(node) {", "        const node = treeNodeMap.get(nodeId);", `          const pendingNodes = [...tree];
-          while (pendingNodes.length) {
-            const node = pendingNodes.pop();
-            treeNodeMap.set(node.entry.id, node);
-            for (const child of node.children) pendingNodes.push(child);
-          }
-        }
-\n`],
 	];
 	for (const [start, end, replacement] of sections) {
 		if (source.split(start).length !== 2 || source.split(end).length !== 2) {

@@ -380,7 +380,7 @@ export class ActiveBridgeTurn {
 		for (const message of messages) {
 			if (message.role !== "toolResult") continue;
 			const nativeId = message.toolCallId;
-			if (!nativeId) continue;
+			if (!nativeId || !this.parsedUses.some((use) => use.nativeId === nativeId)) continue;
 			if (this.resolvedUses.has(nativeId) && !this.outcomeWaiters.has(nativeId)) continue;
 			const content: McpResultContent = [];
 			const raw = message.content;
