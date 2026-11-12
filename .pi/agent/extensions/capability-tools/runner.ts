@@ -283,7 +283,7 @@ export async function executeCapability(
 		const streamTurn = async (
 			messages: Message[],
 			tools: Tool[],
-			toolChoice: "auto" | "none",
+			toolChoice: "auto" | undefined,
 			capabilityTools: boolean,
 			roundLabel: string,
 		) => {
@@ -357,7 +357,7 @@ export async function executeCapability(
 		for (let round = 0; round < maxRounds; round++) {
 			const lastRound = round >= maxRounds - 1 || totalToolChars >= MAX_TOOL_CHARS;
 			const tools = scoutEnabled && !lastRound ? scoutToolDefs : [];
-			const toolChoice = tools.length > 0 ? "auto" : "none";
+			const toolChoice = tools.length > 0 ? "auto" : undefined;
 			const roundLabel = scoutEnabled ? `round ${round + 1}/${maxRounds} · ` : "";
 
 			try {
@@ -372,7 +372,7 @@ export async function executeCapability(
 							timestamp: Date.now(),
 						},
 					];
-					response = await streamTurn(messages, [], "none", false, roundLabel);
+					response = await streamTurn(messages, [], undefined, false, roundLabel);
 					text = extractText(response);
 					break;
 				}
@@ -443,7 +443,7 @@ export async function executeCapability(
 						(def.toolName === "code_scout" ? "Write the report now, starting with ## Relevant Files. List missing files under Unknowns." : "Answer the task now.") }],
 					timestamp: Date.now(),
 				}];
-				response = await streamTurn(messages, [], "none", false, roundLabel);
+				response = await streamTurn(messages, [], undefined, false, roundLabel);
 				text = extractText(response);
 			}
 
@@ -467,7 +467,7 @@ export async function executeCapability(
 						timestamp: Date.now(),
 					},
 				];
-				response = await streamTurn(messages, [], "none", false, roundLabel);
+				response = await streamTurn(messages, [], undefined, false, roundLabel);
 				text = extractText(response);
 			}
 			break;

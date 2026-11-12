@@ -52,14 +52,20 @@ export function inheritCapabilityTargets(targets) {
     : targets;
 }
 
-/** Match pi-ai's supported-level rules for custom models and modelOverrides. */
-export function supportedThinkingLevels(ref, models = {}) {
-  const provider = models?.providers?.[providerOf(ref)];
+/** Catalog metadata fills missing fields; models.json definitions and overrides take precedence. */
+export function supportedThinkingLevels(ref, models = {}, catalog = {}) {
+  const providerId = providerOf(ref);
+  const provider = models?.providers?.[providerId];
   const id = modelIdOf(ref);
   const custom = provider?.models?.find((model) => model.id === id);
+  const cachedModels = catalog?.[providerId]?.models;
+  const cached = Array.isArray(cachedModels) ? cachedModels.find((model) => model?.id === id) : undefined;
   const override = provider?.modelOverrides?.[id];
-  const reasoning = override?.reasoning ?? custom?.reasoning;
-  const map = override?.thinkingLevelMap ?? custom?.thinkingLevelMap;
+  const reasoning = override?.reasoning ?? custom?.reasoning ?? cached?.reasoning;
+  const map = {
+    ...(custom?.thinkingLevelMap ?? cached?.thinkingLevelMap),
+    ...override?.thinkingLevelMap,
+  };
   if (reasoning === false) return ["off"];
   const levels = THINKING_LEVELS.filter((level) => {
     const mapped = map?.[level];
@@ -67,6 +73,17 @@ export function supportedThinkingLevels(ref, models = {}) {
     return level === "xhigh" || level === "max" ? mapped !== undefined : true;
   });
   return levels.length ? levels : ["off"];
+}
+
+/** Keep unsupported defaults at the highest supported level not above the request. */
+export function thinkingLevelDefaultIndex(levels, requested) {
+  const exact = levels.indexOf(requested);
+  if (exact >= 0) return exact;
+  for (let i = THINKING_LEVELS.indexOf(requested); i >= 0; i -= 1) {
+    const index = levels.indexOf(THINKING_LEVELS[i]);
+    if (index >= 0) return index;
+  }
+  return 0;
 }
 
 export function formatCapabilityTargets(targets) {

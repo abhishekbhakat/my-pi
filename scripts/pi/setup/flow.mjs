@@ -122,7 +122,7 @@ export async function setup(_flags = {}) {
 
     const settingsPlan = planSettings(inputs.settings, staged, order);
     await promptDefaultModel({ settings: inputs.settings, plan: settingsPlan, order, prompter });
-    await promptThinkingLevel({ settings: inputs.settings, plan: settingsPlan, models: inputs.models, prompter });
+    await promptThinkingLevel({ settings: inputs.settings, plan: settingsPlan, models: inputs.models, catalog: inputs.catalog, prompter });
     console.log(describeSettingsPlan(settingsPlan, inputs.settings));
 
     const resolvedCaps = resolveCapabilityModels(settingsPlan.kept, order);
@@ -132,6 +132,7 @@ export async function setup(_flags = {}) {
       resolved: resolvedCaps,
       sources: capSources,
       models: inputs.models,
+      catalog: inputs.catalog,
       prompter,
     });
     const capEdits = planCapabilityEdits(capSources, capTargets);

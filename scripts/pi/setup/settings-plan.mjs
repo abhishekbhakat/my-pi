@@ -1,5 +1,5 @@
 import { SetupAbort } from "../errors.mjs";
-import { filterEnabledModels, modelIdOf, providerOf, resolveDefaults, supportedThinkingLevels, THINKING_LEVELS } from "./providers.mjs";
+import { filterEnabledModels, modelIdOf, providerOf, resolveDefaults, supportedThinkingLevels, thinkingLevelDefaultIndex, THINKING_LEVELS } from "./providers.mjs";
 
 export { THINKING_LEVELS };
 
@@ -79,12 +79,12 @@ export async function promptDefaultModel({ settings, plan, order, prompter, log 
   };
 }
 
-export async function promptThinkingLevel({ settings, plan, models, prompter }) {
+export async function promptThinkingLevel({ settings, plan, models, catalog, prompter }) {
   const ref = `${plan.next.defaultProvider}/${plan.next.defaultModel}`;
   const existing =
     settings?.modelThinkingLevels?.[ref] ?? settings?.defaultThinkingLevel ?? "low";
-  const levels = supportedThinkingLevels(ref, models);
-  const defIdx = Math.max(levels.indexOf(existing), 0);
+  const levels = supportedThinkingLevels(ref, models, catalog);
+  const defIdx = thinkingLevelDefaultIndex(levels, existing);
   const idx = await prompter.askPick(`Thinking level for ${ref}`, levels, defIdx);
   const level = levels[idx];
   const map = { ...(plan.next.modelThinkingLevels ?? {}) };

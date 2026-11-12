@@ -58,9 +58,9 @@
       "timeoutMs": 10000
     },
     {
-      "id": "perplexity/pplx-decider-v1-27b",
+      "id": "perplexity/pplx-decider-v1.3",
       "provider": "perplexity",
-      "model": "pplx-decider-v1-27b",
+      "model": "pplx-decider-v1.3",
       "kinds": [
         "noul",
         "choice",

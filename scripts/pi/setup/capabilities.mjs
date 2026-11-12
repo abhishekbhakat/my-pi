@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { SetupAbort } from "../errors.mjs";
 import { exists } from "../fs/read-write.mjs";
-import { CAPABILITY_PREFERRED, CAP_ROLES, THINKING_LEVELS, firstByPriority, providerOf, parseCapabilityTarget, inheritCapabilityTargets, formatCapabilityTargets, supportedThinkingLevels } from "./providers.mjs";
+import { CAPABILITY_PREFERRED, CAP_ROLES, THINKING_LEVELS, firstByPriority, providerOf, parseCapabilityTarget, inheritCapabilityTargets, formatCapabilityTargets, supportedThinkingLevels, thinkingLevelDefaultIndex } from "./providers.mjs";
 
 const CAP_DIR = ["extensions", "capability-tools", "capabilities"];
 const CAP_ROLE_BY_TOOL = {
@@ -247,7 +247,7 @@ function sourceEffort(sources, role) {
   return [cap?.fm[key], literal, "high"].find((value) => THINKING_LEVELS.includes(value));
 }
 
-export async function resolveCapabilityTargets({ kept, order, resolved, prompter, sources, models, previous = {}, log = console.log }) {
+export async function resolveCapabilityTargets({ kept, order, resolved, prompter, sources, models, catalog, previous = {}, log = console.log }) {
   const choices = prioritySortedKept(kept, order);
   if (!choices.length) throw new SetupAbort("enable at least one provider");
   const prior = previous;
@@ -268,8 +268,8 @@ export async function resolveCapabilityTargets({ kept, order, resolved, prompter
     }
     const defaultEffort = existing?.model === model && existing.reasoningEffort
       ? existing.reasoningEffort : sourceEffort(sources, role);
-    const efforts = supportedThinkingLevels(model, models);
-    const effortDefIdx = Math.max(0, efforts.indexOf(defaultEffort));
+    const efforts = supportedThinkingLevels(model, models, catalog);
+    const effortDefIdx = thinkingLevelDefaultIndex(efforts, defaultEffort);
     const effortIndex = await prompter.askPick(`${label} reasoning effort (${model})`, efforts, effortDefIdx);
     targets[role] = { model, reasoningEffort: efforts[effortIndex] };
   }
