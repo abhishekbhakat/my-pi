@@ -117,19 +117,17 @@ Edit rejects with "must match exactly including all whitespace and newlines": re
 
 ## Jobs and slow commands
 
-Never use `sleep N`, `sleep N && check`, a trailing `&`, nohup, or bash `timeout`. Each one guesses a duration, and every model guesses wrong. A guessed `timeout` also kills work that was about to finish.
+Build, test, install, download, server, watch, grep, and find go through `jobs spawn "<command>"`. Any build is a job. Spawn returns an id at once. Exit wakes you with the exit code and the log tail. End the turn.
 
-Slow work (build, test, install, download, server, watch) goes through `jobs spawn "<command>"`. It returns an id at once and wakes you when the process exits, with the exit code and the log tail. No duration is chosen anywhere.
+Foreground bash is a command you already know returns at once, such as `git status` or `pwd`. Unknown duration is a job. You broke this rule if a foreground call runs into the tool timeout.
 
-Use jobs even when the command might finish fast. Do not run it foreground to save one step. Foreground bash is for commands that finish at once only.
+Never use `sleep N`, `sleep N && check`, a trailing `&`, nohup, or bash `timeout`. Each guesses a duration. A guessed timeout kills work that was about to finish.
 
-Always run grep and find through jobs, never as standalone foreground calls. To search or grep, spawn the shell command with `jobs spawn`. The only codemode exception is a certain, batched read/grep step where the search target is already known.
+Grep and find are `jobs spawn` of the shell command. Do not call plain `grep` or plain `find`. `codemode` may call grep only when the path and pattern are already known.
 
-- Keep working, or end the turn. Exit wakes you. Do not poll with sleep.
-- `jobs list` and `jobs output <id>` give instant facts when you need them now.
-- `jobs stop <id>` is the only kill. Never kill by guessing.
-- Servers: spawn the server, then spawn a readiness loop such as `until curl -sf http://localhost:3000; do sleep 0.2; done`. Sleep inside a spawned loop is fine, because that loop ends on a condition, not a clock. A foreground loop is blocked.
-- Foreground bash only for commands that finish at once. The bash `timeout` parameter is stripped, and sleep and detach patterns are blocked by the tool guard.
+- `jobs list` and `jobs output <id>` when you need the fact now. Do not poll. Repeating the same `jobs output` stops the response and leaves the job running.
+- `jobs stop <id>` is the only kill.
+- Server: spawn the server, then spawn `until curl -sf http://localhost:3000; do sleep 0.2; done`. Sleep inside that loop ends on a condition. A foreground loop is blocked.
 
 ## Helper tools
 
@@ -151,11 +149,9 @@ Use `code_scout` for unclear area. Use `reasoning_coach` for judgment calls; wai
 
 ## Codemode
 
-Prefer `codemode` once two or more tool calls are coming. Each plain call dumps full output into context. One JS script calls tools and returns only the summary. `await` chains steps; step 2 sees step 1. Use for parallel calls, mixed-tool chains, big output you filter, `models.classify` batches, or `models.generateImages`. One call, or one shell pipeline, stays a plain tool.
+Known steps go through `codemode`: two or more tool calls, parallel calls, a chain, a big output you filter, `models.classify` batches, or `models.generateImages`. One JS script calls the tools and returns only the summary. `await` chains steps; step 2 sees step 1. A plain call dumps the full output into context. One `read`, or one command that returns at once, stays a plain tool.
 
-Prefer codemode and jobs over standalone tool calls. Codemode batches reads and edits into one step; jobs runs anything slow without blocking. Reach for a standalone `read` or `bash` only when codemode cannot express the step or a single foreground command finishes at once.
-
-Where you are certain of the steps use codemode. Where the work may take time or outcome is uncertain, search, grep, and find included, use jobs. Codemode may run grep only for a certain batched step where the search target is already known; all other grep and find go through jobs.
+Long or unknown work is `jobs`, and any build is a job. `codemode` may call grep only when the path and pattern are already known. Every other grep or find is `jobs spawn`.
 
 Raw JS, no fence. No Node, file system, network, timers. `tools.<name>({})` and `models` only. Bad identifier chars become `_`. `describeTool` before reading fields. Fail rejects; use `Promise.allSettled`. Output: `return`, `text()`, `image()`. Never print image `data`. `store`/`load` for small JSON. Image jobs: first line `// @options: {"timeout_ms": 300000}`. Models: read `~/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/docs/codemode.md`.
 

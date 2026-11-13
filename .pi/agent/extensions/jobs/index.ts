@@ -302,13 +302,12 @@ export default function jobsExtension(pi: ExtensionAPI) {
 			"immediately; its exit sends you the exit code and log tail, so no sleep and no timeout is ever needed. " +
 			"list shows every job with status, exit code, and elapsed time. output tails one job's log. stop kills " +
 			"one job's process group. There is no wait and no timeout parameter by design: durations are never guessed.",
-		promptSnippet: "Run slow commands in background; exit wakes you. No sleep, no timeout.",
+		promptSnippet: "Build, test, install, grep, and find are jobs. Exit wakes you. No sleep, no timeout.",
 		promptGuidelines: [
 			"Never use `sleep N`, `sleep N && check`, a trailing `&`, nohup, or bash `timeout`. Each guesses a duration, and every model guesses wrong.",
-			'Anything that takes time (build, test, install, server, watch) goes through `jobs spawn "<command>"`. It wakes you when the process exits, with the exit code and log tail.',
-			'Use jobs even when the command might finish fast. Always run grep and find through jobs via `jobs spawn`; never as standalone foreground calls. Use codemode only for certain, batched read/grep steps where the search target is already known.',
+			'Build, test, install, download, server, watch, grep, and find go through `jobs spawn "<command>"`. Any build is a job. Unknown duration is a job. `codemode` may call grep only when the path and pattern are already known.',
 			"For a server: spawn it, then spawn a readiness loop such as `until curl -sf http://localhost:3000; do sleep 0.2; done`. Sleep inside a spawned loop is fine because the loop ends on a condition.",
-			"Foreground bash only for commands that finish at once. There is no `timeout` parameter to pass; it is stripped.",
+			"Foreground bash is only a command you already know returns at once. A call that hits the tool timeout broke this rule. There is no `timeout` parameter; it is stripped.",
 			"Check with `jobs list` or `jobs output <id>` only when you need the answer now. Do not poll a running job with sleep.",
 			"Do not poll; end the turn and wait for the exit wake. Repeating the same jobs output call with the same parameters stops the current response without cancelling background work.",
 		],
