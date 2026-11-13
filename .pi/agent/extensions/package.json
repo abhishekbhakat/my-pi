@@ -6,6 +6,7 @@
 		"#compact-blocks": "./compact-tools/blocks.ts",
 		"#compact-constants": "./compact-tools/constants.ts",
 		"#compact-codemode": "./compact-tools/codemode.ts",
+		"#jobs-format": "./jobs/format.ts",
 		"#capability-model-budget": "./capability-tools/modelBudget.ts",
 		"#capability-background": "./capability-tools/background.ts",
 		"#capability-message": "./capability-tools/capabilityMessage.ts",

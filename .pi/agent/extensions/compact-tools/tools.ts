@@ -10,7 +10,9 @@ import {
 } from "@earendil-works/pi-coding-agent";
 import { Container } from "@earendil-works/pi-tui";
 import { buildToolBlock, WidthAwareLines } from "#compact-cards";
+import { compactToolRenderers } from "#compact-blocks";
 import { compactCodemodeRenderers } from "#compact-codemode";
+import { compactJobSummary } from "#jobs-format";
 import { ELAPSED_KEY, TOOL_NAMES, type ToolName } from "#compact-constants";
 
 type BuiltInTools = {
@@ -195,6 +197,7 @@ export function registerCompactTools(pi: ExtensionAPI): void {
 		const canonical = name.slice("muse_".length);
 		if (registered.has(name) || canonical.startsWith("muse_") || !registered.has(canonical)) return next();
 		if (canonical === "codemode") return compactCodemodeRenderers;
+		if (canonical === "jobs") return compactToolRenderers("jobs", { icon: "$", summary: compactJobSummary });
 		return owned.has(canonical) ? compactToolRenderersFor(canonical as ToolName) : next();
 	});
 }
