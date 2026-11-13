@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ToolRenderers } from "@earendil-works/pi-coding-agent";
 import {
 	createBashTool,
 	createEditTool,
@@ -9,8 +9,9 @@ import {
 	createWriteTool,
 } from "@earendil-works/pi-coding-agent";
 import { Container } from "@earendil-works/pi-tui";
-import { buildToolBlock, WidthAwareLines } from "./cards";
-import { ELAPSED_KEY, TOOL_NAMES, type ToolName } from "./constants";
+import { buildToolBlock, WidthAwareLines } from "#compact-cards";
+import { compactCodemodeRenderers } from "#compact-codemode";
+import { ELAPSED_KEY, TOOL_NAMES, type ToolName } from "#compact-constants";
 
 type BuiltInTools = {
 	read: ReturnType<typeof createReadTool>;
@@ -105,19 +106,9 @@ export function registerCompactTools(pi: ExtensionAPI): void {
 		startedAtByCallId.clear();
 	});
 
-	function register(name: ToolName, source: BuiltInTools[ToolName], description?: string): void {
-		pi.registerTool({
-			name,
-			label: name,
-			description: description ?? source.description,
-			parameters: source.parameters,
-			promptSnippet: (source as any).promptSnippet,
-			promptGuidelines: (source as any).promptGuidelines,
+	function compactToolRenderersFor(name: ToolName): ToolRenderers {
+		return {
 			renderShell: "self",
-			async execute(toolCallId, params, signal, onUpdate, ctx) {
-				const tools = getTools(ctx.cwd);
-				return tools[name].execute(toolCallId, params as never, signal, onUpdate);
-			},
 			renderCall(args, theme, context) {
 				if (!context?.isPartial) return new Container();
 				const id = context.toolCallId;
@@ -167,6 +158,22 @@ export function registerCompactTools(pi: ExtensionAPI): void {
 					{ wrap: expanded },
 				);
 			},
+		};
+	}
+
+	function register(name: keyof BuiltInTools, source: BuiltInTools[keyof BuiltInTools], description?: string): void {
+		pi.registerTool({
+			name,
+			label: name,
+			description: description ?? source.description,
+			parameters: source.parameters,
+			promptSnippet: (source as any).promptSnippet,
+			promptGuidelines: (source as any).promptGuidelines,
+			...compactToolRenderersFor(name),
+			async execute(toolCallId, params, signal, onUpdate, ctx) {
+				const tools = getTools(ctx.cwd);
+				return tools[name].execute(toolCallId, params as never, signal, onUpdate);
+			},
 		});
 	}
 
@@ -181,4 +188,13 @@ export function registerCompactTools(pi: ExtensionAPI): void {
 	register("grep", seed.grep);
 	register("find", seed.find);
 	register("ls", seed.ls);
+
+	pi.registerToolRenderer((name, next) => {
+		if (!name.startsWith("muse_")) return next();
+		const registered = new Set(pi.getAllTools().map((tool) => tool.name));
+		const canonical = name.slice("muse_".length);
+		if (registered.has(name) || canonical.startsWith("muse_") || !registered.has(canonical)) return next();
+		if (canonical === "codemode") return compactCodemodeRenderers;
+		return owned.has(canonical) ? compactToolRenderersFor(canonical as ToolName) : next();
+	});
 }

@@ -20,7 +20,7 @@ export const PROVIDER_ENV_KEYS = { refuseless: ["REFUSELESS_API_KEY"] };
 // Local CLI bridges: no API key in setup; auth is the CLI login on PATH.
 export const CLI_PROVIDERS = new Set(["claude-code-sdk", "mistral-vibe-cli"]);
 // Login via /login in pi; setup never prompts for a key.
-export const OAUTH_PROVIDERS = new Set(["openai", "kimi-coding", "grok-cli"]);
+export const OAUTH_PROVIDERS = new Set(["openai", "kimi-coding", "grok-cli", "muse"]);
 export const THINKING_LEVELS = ["off", "minimal", "low", "medium", "high", "xhigh", "max"];
 export const CAPABILITY_PREFERRED = {
   timeline: "claude-code-sdk/haiku",
@@ -55,10 +55,13 @@ export function inheritCapabilityTargets(targets) {
 /** Catalog metadata fills missing fields; models.json definitions and overrides take precedence. */
 export function supportedThinkingLevels(ref, models = {}, catalog = {}) {
   const providerId = providerOf(ref);
+  // pi-muse-provider wraps Pi core's built-in meta models; neither muse
+  // in models.json nor `muse` in the catalog exist, so fall back to meta.
+  const catalogProviderId = providerId === "muse" ? "meta" : providerId;
   const provider = models?.providers?.[providerId];
   const id = modelIdOf(ref);
   const custom = provider?.models?.find((model) => model.id === id);
-  const cachedModels = catalog?.[providerId]?.models;
+  const cachedModels = catalog?.[catalogProviderId]?.models;
   const cached = Array.isArray(cachedModels) ? cachedModels.find((model) => model?.id === id) : undefined;
   const override = provider?.modelOverrides?.[id];
   const reasoning = override?.reasoning ?? custom?.reasoning ?? cached?.reasoning;

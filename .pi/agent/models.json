@@ -70,22 +70,7 @@
     },
     "cursor": {
       "modelOverrides": {
-        "claude-fable-5-2@1m": {
-          "contextWindow": 262144
-        },
-        "claude-opus-5-5@1m": {
-          "contextWindow": 262144
-        },
-        "claude-sonnet-5-5@1m": {
-          "contextWindow": 262144
-        },
         "composer-2.5": {
-          "contextWindow": 262144
-        },
-        "gemini-4-carbon": {
-          "contextWindow": 262144
-        },
-        "glm-5p3": {
           "contextWindow": 262144
         },
         "grok-4.7@256k:fast": {

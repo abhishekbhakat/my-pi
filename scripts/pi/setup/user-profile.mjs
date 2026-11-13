@@ -7,7 +7,7 @@ import { copyDirReplace, rmTree } from "../fs/tree.mjs";
 import { PROFILE_PATCH, REPO_AGENT, REPO_ROOT, USER_PROFILE } from "../paths.mjs";
 import { loadCapabilitySources, planCapabilityEdits } from "./capabilities.mjs";
 import { DECIDER_ROLES } from "./deciders.mjs";
-import { isOauthEntry, CAP_ROLES } from "./providers.mjs";
+import { isOauthEntry, CAP_ROLES, OAUTH_PROVIDERS } from "./providers.mjs";
 import { THINKING_LEVELS } from "./settings-plan.mjs";
 
 export const USER_PROFILE_VERSION = 1;
@@ -19,7 +19,8 @@ const SETTINGS_KEYS = new Set(["enabledModels", "defaultProvider", "defaultModel
 export function apiKeyEntries(auth) {  const out = {};
   for (const [provider, entry] of Object.entries(auth ?? {})) {
     if (
-      entry
+      !OAUTH_PROVIDERS.has(provider)
+      && entry
       && typeof entry === "object"
       && !Array.isArray(entry)
       && entry.type === "api_key"
@@ -234,7 +235,8 @@ function applyAuthProfile(agentDir, auth) {
   const skipped = [];
   for (const [provider, entry] of Object.entries(auth)) {
     if (
-      !isPlainObject(entry)
+      OAUTH_PROVIDERS.has(provider)
+      || !isPlainObject(entry)
       || entry.type !== "api_key"
       || typeof entry.key !== "string"
       || !entry.key.trim()

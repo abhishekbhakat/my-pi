@@ -15,7 +15,7 @@ import {
 } from "./deciders.mjs";
 import { loadSetupInputs } from "./inputs.mjs";
 import { describePersistSummary, persistSetup, printPostSetupHints } from "./persist.mjs";
-import { orderProviders } from "./providers.mjs";
+import { orderProviders, OAUTH_PROVIDERS } from "./providers.mjs";
 import { createPrompter, isInteractive } from "./prompts.mjs";
 import { setupRepoGate } from "./branch-gate.mjs";
 import {
@@ -156,7 +156,9 @@ export async function setup(_flags = {}) {
     });
 
     const auth = { ...(inputs.auth ?? {}) };
-    for (const [provider, key] of staged.apiKeys) auth[provider] = { type: "api_key", key };
+    for (const [provider, key] of staged.apiKeys) {
+      if (!OAUTH_PROVIDERS.has(provider)) auth[provider] = { type: "api_key", key };
+    }
 
     profileInfo = writeUserProfile({
       profile: buildUserProfile({ settingsPlan, deciderPlan, capTargets, auth }),

@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { SetupAbort } from "../errors.mjs";
 import { exists, parseJsonObjectFile, writeAtomic } from "../fs/read-write.mjs";
-import { isOauthEntry, formatCapabilityTargets } from "./providers.mjs";
+import { isOauthEntry, formatCapabilityTargets, OAUTH_PROVIDERS } from "./providers.mjs";
 
 const PROVIDER_ID_RE = /^[A-Za-z0-9._-]+$/;
 
@@ -10,6 +10,7 @@ function mergeStagedKeys(current, apiKeys) {
   const entries = new Map(Object.entries(current ?? {}));
   const updated = [];
   for (const [provider, key] of apiKeys) {
+    if (OAUTH_PROVIDERS.has(provider)) continue;
     if (!PROVIDER_ID_RE.test(provider)) throw new SetupAbort(`invalid provider id: ${provider}`);
     const prev = entries.get(provider);
     if (isOauthEntry(prev)) throw new SetupAbort(`${provider}: refusing to overwrite oauth entry`);
