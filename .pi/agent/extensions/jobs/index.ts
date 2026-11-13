@@ -306,6 +306,7 @@ export default function jobsExtension(pi: ExtensionAPI) {
 		promptGuidelines: [
 			"Never use `sleep N`, `sleep N && check`, a trailing `&`, nohup, or bash `timeout`. Each guesses a duration, and every model guesses wrong.",
 			'Anything that takes time (build, test, install, server, watch) goes through `jobs spawn "<command>"`. It wakes you when the process exits, with the exit code and log tail.',
+			'Use jobs even when the command might finish fast. Always run grep and find through jobs via `jobs spawn`; never as standalone foreground calls. Use codemode only for certain, batched read/grep steps where the search target is already known.',
 			"For a server: spawn it, then spawn a readiness loop such as `until curl -sf http://localhost:3000; do sleep 0.2; done`. Sleep inside a spawned loop is fine because the loop ends on a condition.",
 			"Foreground bash only for commands that finish at once. There is no `timeout` parameter to pass; it is stripped.",
 			"Check with `jobs list` or `jobs output <id>` only when you need the answer now. Do not poll a running job with sleep.",

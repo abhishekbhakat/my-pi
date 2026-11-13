@@ -121,6 +121,10 @@ Never use `sleep N`, `sleep N && check`, a trailing `&`, nohup, or bash `timeout
 
 Slow work (build, test, install, download, server, watch) goes through `jobs spawn "<command>"`. It returns an id at once and wakes you when the process exits, with the exit code and the log tail. No duration is chosen anywhere.
 
+Use jobs even when the command might finish fast. Do not run it foreground to save one step. Foreground bash is for commands that finish at once only.
+
+Always run grep and find through jobs, never as standalone foreground calls. To search or grep, spawn the shell command with `jobs spawn`. The only codemode exception is a certain, batched read/grep step where the search target is already known.
+
 - Keep working, or end the turn. Exit wakes you. Do not poll with sleep.
 - `jobs list` and `jobs output <id>` give instant facts when you need them now.
 - `jobs stop <id>` is the only kill. Never kill by guessing.
@@ -148,6 +152,10 @@ Use `code_scout` for unclear area. Use `reasoning_coach` for judgment calls; wai
 ## Codemode
 
 Prefer `codemode` once two or more tool calls are coming. Each plain call dumps full output into context. One JS script calls tools and returns only the summary. `await` chains steps; step 2 sees step 1. Use for parallel calls, mixed-tool chains, big output you filter, `models.classify` batches, or `models.generateImages`. One call, or one shell pipeline, stays a plain tool.
+
+Prefer codemode and jobs over standalone tool calls. Codemode batches reads and edits into one step; jobs runs anything slow without blocking. Reach for a standalone `read` or `bash` only when codemode cannot express the step or a single foreground command finishes at once.
+
+Where you are certain of the steps use codemode. Where the work may take time or outcome is uncertain, search, grep, and find included, use jobs. Codemode may run grep only for a certain batched step where the search target is already known; all other grep and find go through jobs.
 
 Raw JS, no fence. No Node, file system, network, timers. `tools.<name>({})` and `models` only. Bad identifier chars become `_`. `describeTool` before reading fields. Fail rejects; use `Promise.allSettled`. Output: `return`, `text()`, `image()`. Never print image `data`. `store`/`load` for small JSON. Image jobs: first line `// @options: {"timeout_ms": 300000}`. Models: read `~/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/docs/codemode.md`.
 
