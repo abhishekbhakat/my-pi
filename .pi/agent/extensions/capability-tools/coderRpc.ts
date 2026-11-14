@@ -25,6 +25,9 @@ async function coderRpcAttempt(options: CoderRpcOptions, recovery: CoderRecovery
 	writeFileSync(preflight, `import { writeFileSync } from "node:fs";
 export default function (pi) {
   pi.on("session_start", () => writeFileSync(${JSON.stringify(inventory)}, JSON.stringify(pi.getActiveTools()), { mode: 0o600 }));
+  pi.on("tool_call", (event) => {
+    if (event.toolName === "bash" && (event.input.timeout === undefined || event.input.timeout < 180)) event.input.timeout = 180;
+  });
 }`, { mode: 0o600 });
 	if (signal.aborted) throw new Error("Coder cancelled before launch.");
 	const stdout = openSync(path.join(directory, "stdout.jsonl"), "a", 0o600);
@@ -37,6 +40,9 @@ export default function (pi) {
 			let closing = false;
 			let stopped = false;
 			let resuming = false;
+			let interrupting = false;
+			let controls = 0;
+			let controlQueue: Promise<unknown> = Promise.resolve();
 			let stopReason: string | undefined;
 			let failure: string | undefined;
 			let modelFailure: string | undefined;
@@ -56,10 +62,11 @@ export default function (pi) {
 				stdio: ["pipe", "pipe", stderr], detached: process.platform !== "win32",
 			});
 			const finish = () => {
-				if (closing || !settled || pending.size) return;
+				if (closing || !settled || pending.size || controls) return;
 				if (instructions.size && !resuming) {
 					resuming = true;
 					void request({ type: "get_state" }).then(async (state) => {
+						if (controls) { resuming = false; return; }
 						if (state.isStreaming) { settled = false; return; }
 						if (!state.pendingMessageCount) throw new Error("Instruction delivery unconfirmed; coder queue is empty.");
 						update({ phase: "instruction queued", text: "Resuming coder to consume queued instructions." });
@@ -136,7 +143,7 @@ export default function (pi) {
 				}
 				if (event.type === "agent_settled") {
 					settled = true;
-					if (event.aborted && !signal.aborted) failure = "Coder run aborted.";
+					if (event.aborted && !signal.aborted && !interrupting) failure = "Coder run aborted.";
 					finish();
 				}
 			};
@@ -176,20 +183,43 @@ export default function (pi) {
 				return request({ type: "prompt", message: `Delegated coding task:\n\n${options.task}` });
 			});
 			started.then((data) => { if (data?.disposition === "handled") fail(new Error("Coder task consumed without starting a run.")); }).catch(fail);
-			channel?.attach(async (message) => {
+			channel?.attach((message, interrupt = false) => {
 				recovery.steered = true;
-				await started;
-				if (settled || closing || stopped || signal.aborted) throw new Error("Coder is stopping or finished.");
-				const key = `instruction-${++sequence}`;
-				const directive = `[parent-instruction ${key}]\nAdditional instructions from parent:\n\n${message}`;
-				instructions.set(key, directive);
-				update({ phase: "instruction sending", text: message });
-				try {
-					const data = await request({ type: "prompt", message: directive, streamingBehavior: "steer" });
-					if (data?.disposition === "handled") throw new Error("Instruction consumed without reaching coder.");
-					if (instructions.has(key)) update({ phase: "instruction queued", text: message });
-					return `Instruction ${instructions.has(key) ? "queued for next tool boundary" : "delivered"}.`;
-				} catch (error) { instructions.delete(key); update({ phase: "instruction rejected", text: String(error) }); throw error; }
+				controls++;
+				const operation = controlQueue.then(async () => {
+					await started;
+					if (closing || stopped || signal.aborted) throw new Error("Coder is stopping or finished.");
+					const key = `instruction-${++sequence}`;
+					const directive = `[parent-instruction ${key}]\nAdditional instructions from parent:\n\n${message}`;
+					instructions.set(key, directive);
+					update({ phase: interrupt ? "interrupting" : "instruction sending", text: message });
+					try {
+						let prompt = directive;
+						let active = false;
+						if (interrupt) {
+							interrupting = true;
+							active = (await request({ type: "get_state" })).isStreaming;
+							const queued = await request({ type: "clear_queue" });
+							await request({ type: "abort_bash" });
+							await request({ type: "abort" });
+							failure = modelFailure = stopReason = undefined;
+							text = "";
+							prompt = [...(queued?.steering ?? []), ...(queued?.followUp ?? []),
+								"Parent interrupted the previous turn. Do not rerun interrupted commands unless the latest instruction asks for it.", directive].join("\n\n");
+						}
+						const data = await request({ type: "prompt", message: prompt, ...(interrupt ? {} : { streamingBehavior: "steer" }) });
+						if (data?.disposition === "handled") throw new Error("Instruction consumed without reaching coder.");
+						if (instructions.has(key)) update({ phase: "instruction queued", text: message });
+						return `${interrupt ? active ? "Coder turn interrupted. " : "Nothing to interrupt. " : ""}Instruction ${instructions.has(key) ? "queued for next tool boundary" : "delivered"}.`;
+					} catch (error) {
+						instructions.delete(key);
+						update({ phase: "instruction rejected", text: String(error) });
+						if (interrupt) fail(new Error(`Coder interrupt failed: ${String(error)}`));
+						throw error;
+					} finally { interrupting = false; }
+				}).finally(() => { controls--; queueMicrotask(finish); });
+				controlQueue = operation.catch(() => undefined);
+				return operation;
 			});
 		});
 	} finally { closeSync(stdout); closeSync(stderr); }

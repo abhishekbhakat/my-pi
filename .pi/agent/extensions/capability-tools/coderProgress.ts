@@ -3,7 +3,7 @@ import * as path from "node:path";
 import { stripVTControlCharacters } from "node:util";
 import type { AgentToolUpdateCallback } from "@earendil-works/pi-coding-agent";
 
-export type CoderSend = (message: string) => Promise<string>;
+export type CoderSend = (message: string, interrupt?: boolean) => Promise<string>;
 export interface CoderUpdate { phase: string; text: string; delta?: boolean; replace?: boolean; tool?: boolean }
 export interface CoderChannel {
 	update: (update: CoderUpdate) => void;

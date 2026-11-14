@@ -15,9 +15,12 @@ The child loads the usual Pi extensions, including permission guards, enables `c
 Coder streams text, thinking summaries when available, tool arguments, and tool activity into an editor widget. The widget keeps a short tail and repaints at most four times per second. Full progress stays in `progress.log`; raw child events stay in `stdout.jsonl`. No progress updates enter the chat transcript or wake the driver.
 
 - `/coder-send <instruction>` sends instructions to the active coder without changing its toggle. Coder receives them after its current assistant turn and tool calls. The widget distinguishes sending, queued, delivered, and rejected instructions. Queued means accepted for delivery, not applied.
+- `/coder-send --interrupt <instruction>` aborts the current assistant turn and its active tools, then sends the instruction in the same child session. This can cancel other tool calls from that turn. Edits already written remain on disk. Coder keeps earlier context and receives any queued messages before the new instruction. An idle interrupt still sends the instruction.
 - `/coder-stop` cancels the active coder. Edits already written remain on disk.
-- `capability_jobs` with `action: "steer"`, `id`, and `message` lets the driver forward instructions. Only coder runs accept steering.
+- `capability_jobs` with `action: "steer"`, `id`, and `message` lets the driver forward instructions. Add `interrupt: true` to interrupt first. Both forms require a non-empty message. Only coder runs accept steering.
 - `capability_jobs output` shows coder progress while running, labelled `PARTIAL - not a result`. Wait for completion before treating output as a verified change or final report.
+
+Child foreground bash uses Pi's closed stdin and a 180-second default timeout. The child applies a 180-second minimum to explicit shorter values and preserves longer timeouts. The guard also covers nested bash calls from codemode. Background shell jobs keep their separate lifecycle; use `jobs stop` for those jobs.
 
 Plain chat messages still go to the driver. Use `/coder-send` to address coder directly, or ask the driver to forward a message. Existing runs started before installing this version do not gain live controls. Reload cancels them; start a new run afterward.
 

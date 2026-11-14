@@ -69,7 +69,7 @@ export class CapabilityBackground {
 					run.model, run.effort, run.status === "cancelling" ? "cancelling" : undefined,
 				].filter(Boolean).join(" | "),
 				body: run.progress?.lines(BODY_ROWS) ?? [],
-				footer: run.kind === "coder" ? "PARTIAL | /coder-send <instruction> | /coder-stop" : "PARTIAL | stop via capability_jobs",
+				footer: run.kind === "coder" ? "PARTIAL | /coder-send [--interrupt] <instruction> | /coder-stop" : "PARTIAL | stop via capability_jobs",
 			};
 		});
 		if (!panes.length) {
@@ -97,12 +97,12 @@ export class CapabilityBackground {
 		}, 250);
 	}
 
-	async steer(id: string, message: string): Promise<string> {
+	async steer(id: string, message: string, interrupt = false): Promise<string> {
 		const run = this.runs.get(id);
 		if (!message.trim()) throw new Error("Instruction must not be empty.");
 		if (!run || run.kind !== "coder") throw new Error("Only coder runs accept instructions.");
 		if (run.status !== "running" || !run.send) throw new Error("Coder is starting, stopping, or finished. Inspect capability_jobs output.");
-		return run.send(message);
+		return run.send(message, interrupt);
 	}
 
 	start(kind: string, ctx: ExtensionContext, work: BackgroundWork, metadata: Pick<CapabilityRun, "model" | "effort"> = {}): AgentToolResult {
@@ -215,17 +215,17 @@ export function registerBackground(pi: ExtensionAPI): CapabilityBackground {
 	pi.on("session_shutdown", () => background.cancelAll());
 	pi.registerTool({
 		name: "capability_jobs", label: "Capability jobs",
-		description: "List background runs, read output, stop, or steer coder with a message. Coder, scout, reasoning, and review output streams as PARTIAL, never a final verdict. Only coder accepts steering. Separate from shell jobs. The live panel already shows helper progress, so no need to poll output while a run is still going.",
+		description: "List background runs, read output, stop, or steer coder with a message. Coder, scout, reasoning, and review output streams as PARTIAL, never a final verdict. Only coder accepts steering. Set interrupt on steer to abort its current turn and send instructions without ending the run. Separate from shell jobs. The live panel already shows helper progress, so no need to poll output while a run is still going.",
 		renderShell: "self",
 		renderCall: renderCapabilityJobsCall,
 		renderResult: renderCapabilityResult("Capability jobs"),
-		parameters: Type.Object({ action: Type.Union([Type.Literal("list"), Type.Literal("output"), Type.Literal("stop"), Type.Literal("steer")]), id: Type.Optional(Type.String()), message: Type.Optional(Type.String()) }),
+		parameters: Type.Object({ action: Type.Union([Type.Literal("list"), Type.Literal("output"), Type.Literal("stop"), Type.Literal("steer")]), id: Type.Optional(Type.String()), message: Type.Optional(Type.String()), interrupt: Type.Optional(Type.Boolean({ description: "Steer only: abort current coder turn, then deliver message in the same session. Written edits remain." })) }),
 		execute: async (_id, args, _signal, _update, ctx) => {
 			const runs = [...background.runs.values()].filter((run) => run.sessionId === ctx.sessionManager.getSessionId());
 			if (args.action === "list") return { content: [{ type: "text", text: runs.map((run) => `${run.id} ${run.status} ${run.directory}`).join("\n") || "No capability runs." }], details: {} };
 			const run = runs.find((item) => item.id === args.id);
 			if (!run) throw new Error("Unknown capability run in this session.");
-			if (args.action === "steer") return { content: [{ type: "text", text: await background.steer(run.id, args.message ?? "") }], details: { id: run.id } };
+			if (args.action === "steer") return { content: [{ type: "text", text: await background.steer(run.id, args.message ?? "", args.interrupt) }], details: { id: run.id } };
 			if (args.action === "stop") background.stop(run.id);
 			const stdout = path.join(run.directory, "report.txt");
 			const partial = run.status === "running" || run.status === "cancelling";
@@ -235,13 +235,17 @@ export function registerBackground(pi: ExtensionAPI): CapabilityBackground {
 	});
 	for (const command of ["coder-send", "coder-stop"]) {
 		pi.registerCommand(command, {
-			description: command === "coder-send" ? "Send instructions to active coder after its current tool turn" : "Stop active coder; keep edits already written",
+			description: command === "coder-send" ? "Send instructions to active coder; --interrupt aborts its current turn first" : "Stop active coder; keep edits already written",
 			handler: async (args, ctx) => {
 				const run = [...background.runs.values()].find((item) => item.kind === "coder" && item.sessionId === ctx.sessionManager.getSessionId() && item.status === "running");
 				if (!run) { ctx.ui.notify("No running coder in this session.", "warning"); return; }
 				try {
 					if (command === "coder-stop") { background.stop(run.id); ctx.ui.notify("Coder stopping. Existing edits stay on disk.", "info"); }
-					else ctx.ui.notify(await background.steer(run.id, args.trim()), "info");
+					else {
+						const interrupt = /^--interrupt(?:\s|$)/.test(args.trim());
+						const message = interrupt ? args.trim().replace(/^--interrupt\s*/, "") : args.trim();
+						ctx.ui.notify(await background.steer(run.id, message, interrupt), "info");
+					}
 				} catch (error) { ctx.ui.notify(String(error), "error"); }
 			},
 		});
