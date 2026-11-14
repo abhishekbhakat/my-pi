@@ -3,7 +3,7 @@ name: code-scout
 tool: code_scout
 label: Code Scout
 description: Use fast explorer model to map relevant code, call flow, and likely edit points. Pass absolute paths when the target is not under the session cwd. Relative paths resolve against cwd. Errors when every given path is missing. Does not continue the chat.
-model: claude-code-sdk/haiku
+model: anthropic/claude-haiku-5-5
 promptSnippet: Explore codebase and return relevant files, symbols, call flow, and edit points. Pass absolute paths if the target repo is not the session cwd.
 promptGuidelines: Use this before editing unfamiliar areas|Prefer this when you only need repo map|Pass concrete files or narrow dirs; use absolute paths when they are outside the session cwd. Dirs auto-expand to ~6 task-ranked files|Report files and line cites only; do not answer a design question or continue the chat
 includeConversation: false
@@ -12,7 +12,7 @@ includeGitStatus: true
 includeGitDiff: false
 includeChangedFiles: true
 includeTimeline: false
-timelineModel: claude-code-sdk/haiku
+timelineModel: anthropic/claude-haiku-5-5
 timelineReasoningEffort: xhigh
 reasoningEffort: max
 expandDirectories: true

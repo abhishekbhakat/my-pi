@@ -6,7 +6,7 @@ import { parseSetupArgs, printSetupHelp, setup } from "./pi/setup/flow.mjs";
 import { install } from "./pi/transfer/install.mjs";
 import { sync } from "./pi/transfer/sync.mjs";
 
-// Public surface consumed by tests/setup and any embedding caller.
+// Public surface for any embedding caller.
 export { SetupAbort } from "./pi/errors.mjs";
 export { loadSetupInputs } from "./pi/setup/inputs.mjs";
 export {
@@ -39,7 +39,6 @@ export {
   syncProfileAuth,
   writeUserProfile,
 } from "./pi/setup/user-profile.mjs";
-export { probeClaude, updateClaude } from "./pi/toolchain/claude.mjs";
 
 function parseArgs(argv) {
   const flags = { yes: false, prune: false, host: null, configOnly: false, noProfile: false };

@@ -38,33 +38,19 @@
         }
       ]
     },
-    "claude-code-sdk": {
+    "anthropic": {
       "modelOverrides": {
-        "fable": {
-          "contextWindow": 262144,
-          "thinkingLevelMap": {
-            "xhigh": "xhigh",
-            "max": "max"
-          }
+        "claude-fable-5-2": {
+          "contextWindow": 262144
         },
-        "haiku": {
-          "contextWindow": 500000,
-          "thinkingLevelMap": {
-            "xhigh": "xhigh",
-            "max": "max"
-          }
+        "claude-haiku-5-5": {
+          "contextWindow": 262144
         },
-        "opus": {
-          "contextWindow": 262144,
-          "thinkingLevelMap": {
-            "max": "max"
-          }
+        "claude-opus-5-5": {
+          "contextWindow": 262144
         },
-        "sonnet": {
-          "contextWindow": 262144,
-          "thinkingLevelMap": {
-            "max": "max"
-          }
+        "claude-sonnet-5-5": {
+          "contextWindow": 262144
         }
       }
     },

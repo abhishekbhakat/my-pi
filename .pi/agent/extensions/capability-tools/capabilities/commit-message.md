@@ -3,7 +3,7 @@ name: commit-message
 tool: commit_message
 label: Commit Message
 description: Generate concise one-liner commit message from staged diff and recent git history. Pass the target repo in paths if session cwd is not that repo.
-model: claude-code-sdk/haiku
+model: anthropic/claude-haiku-5-5
 promptSnippet: Suggest single-line conventional commit message from staged changes
 promptGuidelines: Use this when user want commit message|Do not invent message yourself if this tool is available|Call this before committing
 includeConversation: false

@@ -30,7 +30,6 @@ import {
   promptDefaultModel,
   promptThinkingLevel,
 } from "./settings-plan.mjs";
-import { probeClaude, updateClaude } from "../toolchain/claude.mjs";
 
 export function parseSetupArgs(argv) {
   const flags = {};
@@ -71,10 +70,6 @@ onto repo .pi/agent in a temp staging dir, then copies to ~/.pi.
 userprofile.json is plain JSON and safe to edit by hand; re-run make setup
 anytime to regenerate it.
 
-Enabling claude-code-sdk also requires an OpenRouter API key: Claude sometimes
-emits broken tool XML; Morph (morph/morph-v3-fast) repairs it so Pi can run
-tools. Needed even if you decline openrouter chat models.
-
 Needs a TTY. Never writes ~/.pi.
 A bad or stale userprofile.json never breaks install: invalid sections warn
 and fall back to repo defaults.`);
@@ -94,28 +89,14 @@ export async function setup(_flags = {}) {
       : `Detached HEAD (no new branch). base=${gate.baseSha.slice(0, 12)}`,
   );
 
-  const claude = probeClaude();
-  console.log(claude.found ? `Claude Code CLI: ${claude.version}` : "Claude Code CLI: not found on PATH");
-  if (claude.found) {
-    const upd = updateClaude();
-    if (upd.ok) console.log(`Claude update: ran ${upd.path}`);
-    else console.log(`WARNING: Claude update failed (${upd.detail}); continuing.`);
-  }
-
   let staged = null;
   let profileInfo = null;
   const prompter = createPrompter();
   try {
-    const wantClaude = await prompter.askYesNo(
-      "Do you have Claude Code / want claude-code-sdk models?",
-    );
-    console.log(`Phase 1: claude-code-sdk=${wantClaude ? "yes" : "no"}`);
-
     staged = await collectProviders({
       order,
       auth: inputs.auth,
       models: inputs.models,
-      wantClaude,
       prompter,
     });
     console.log(describeStaged(staged, order));

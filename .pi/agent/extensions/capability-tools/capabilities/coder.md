@@ -3,7 +3,7 @@ name: coder
 tool: coder
 label: Coder
 description: Delegate code changes to a smart model in background. Takes a full current-branch snapshot and edits this workspace. Returns a run ID immediately; completion wakes this session. Only one coder may run at a time. Live widget shows progress; capability_jobs can steer or stop this coder.
-model: claude-code-sdk/opus
+model: anthropic/claude-opus-5-5
 reasoningEffort: medium
 promptSnippet: Delegate code writing with full branch context; returns background run ID
 promptGuidelines: Use coder for bounded code changes with explicit acceptance checks|Coder edits the current workspace; do not edit its assigned files until completion|Keep working on independent reads or planning while coder runs|Wait for actual completion before claiming implementation or verification succeeded|Use capability_jobs to inspect or stop runs

@@ -26,7 +26,7 @@ const DEFAULTS = {
 	includeGitDiff: false,
 	includeChangedFiles: true,
 	includeTimeline: false,
-	timelineModel: "claude-code-sdk/haiku",
+	timelineModel: "anthropic/claude-haiku-5-5",
 	timelineReasoningEffort: "xhigh",
 	maxContextChars: 360000,
 	maxConversationChars: 40000,

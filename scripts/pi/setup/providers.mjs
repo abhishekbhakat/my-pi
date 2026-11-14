@@ -4,7 +4,7 @@ export function isOauthEntry(value) {
 
 export const PROVIDER_PRIORITY = [
   "google",
-  "claude-code-sdk",
+  "anthropic",
   "opencode-go",
   "mistral-vibe-cli",
   "openai",
@@ -18,17 +18,17 @@ export const PROVIDER_PRIORITY = [
 export const PROVIDER_ENV_KEYS = { refuseless: ["REFUSELESS_API_KEY"] };
 
 // Local CLI bridges: no API key in setup; auth is the CLI login on PATH.
-export const CLI_PROVIDERS = new Set(["claude-code-sdk", "mistral-vibe-cli"]);
+export const CLI_PROVIDERS = new Set(["mistral-vibe-cli"]);
 // Login via /login in pi; setup never prompts for a key.
 export const OAUTH_PROVIDERS = new Set(["openai", "kimi-coding", "grok-cli", "muse"]);
 export const THINKING_LEVELS = ["off", "minimal", "low", "medium", "high", "xhigh", "max"];
 export const CAPABILITY_PREFERRED = {
-  timeline: "claude-code-sdk/haiku",
-  scout: "claude-code-sdk/haiku",
-  commit: "claude-code-sdk/haiku",
-  coach: "claude-code-sdk/opus",
-  reviewer: "claude-code-sdk/opus",
-  coder: "claude-code-sdk/opus",
+  timeline: "anthropic/claude-haiku-5-5",
+  scout: "anthropic/claude-haiku-5-5",
+  commit: "anthropic/claude-haiku-5-5",
+  coach: "anthropic/claude-opus-5-5",
+  reviewer: "anthropic/claude-opus-5-5",
+  coder: "anthropic/claude-opus-5-5",
 };
 
 export const CAP_ROLES = Object.keys(CAPABILITY_PREFERRED);
