@@ -20,7 +20,9 @@ export function inputBudget(
 	const contextWindow = positive(baseline?.contextWindow) ? Math.floor(baseline.contextWindow) : model.contextWindow;
 	if (!positive(contextWindow)) throw new Error("Capability model has no valid context window");
 	// Preserve the configured output allowance rather than requesting the provider maximum.
-	const output = positive(model.maxTokens) ? Math.ceil(model.maxTokens) : 0;
+	// Some models advertise an output limit near or above the window (or above a chat
+	// override used as fallback); cap the reservation at half so input keeps room.
+	const output = positive(model.maxTokens) ? Math.min(Math.ceil(model.maxTokens), Math.floor(contextWindow * 0.5)) : 0;
 	// UTF-8 bytes are a conservative token estimate, not an exact tokenizer.
 	// Reserve tool results and framing, plus 10% for tokenizer/protocol differences.
 	const reserve = Buffer.byteLength(reservedText, "utf8") + Math.min(65536, Math.floor(contextWindow * 0.1));
@@ -41,7 +43,9 @@ async function readJson(url: URL): Promise<any> {
 
 export async function capabilityBudget(ctx: ExtensionContext, model: Model<Api>, reservedText: string) {
 	const store = await readJson(new URL("../../models-store.json", import.meta.url));
-	const catalog = store[model.provider]?.models?.find((item: { id: string }) => item.id === model.id);
+	// pi-muse-provider wraps Pi core's built-in meta models, so the catalog has no muse entry.
+	const catalogProvider = model.provider === "muse" ? "meta" : model.provider;
+	const catalog = store[catalogProvider]?.models?.find((item: { id: string }) => item.id === model.id);
 	const registered = ctx.modelRegistry.getRegisteredProviderConfig(model.provider)?.models
 		?.find((item) => item.id === model.id);
 	// models.json supplies custom models absent from the catalog. Its modelOverrides
