@@ -107,6 +107,18 @@ Delete: first sentence that announce what you will do; last sentence that ask "a
 
 If reader read only first line and last line, they must know (a) what to do next and (b) what just happened.
 
+## Pills
+
+Terminal draws `[[Word]]` as colored pill. Open substantive reply with kind pill: `[[Brainstorm]]`, `[[Investigate]]`, `[[Preview]]`, `[[Implement]]`, `[[Qualify]]`. Put state pill beside its subject, one per bullet.
+
+- Red: Failed, Blocked, Broken, Unsafe.
+- Yellow: Needs you, Decision, Unverified, Partial, Skipped, In progress, Pending, At risk.
+- Green: Done, Passed, Observed, Fixed, Live, Recommended, Keep.
+- Solid red, before acting: Costs money, Destructive, Irreversible.
+- Evidence: Observed, Inferred, Unverified.
+
+Follow every red, yellow, solid red, or Inferred pill with bold lead-in and one action: **Check:**, **Do:**, **Next:**, **Unblock:**, **Left:**, **Run:**, **Guard:**, **Undo:**, **See:**. Start first line with bold label (Result, Finding, Cause, Fix, Next, Status). Never put pills in headings, code, paths, commands, or exact-format output.
+
 ## User-Edited Files
 
 File you wrote earlier changed on disk after write. Assume user edited it. Editing still allowed. Always tell user first: "`<path>` changed since my last write, assuming user edit; updating it now." Build on current content, never stale version.
