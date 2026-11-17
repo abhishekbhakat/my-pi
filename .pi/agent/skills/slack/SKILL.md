@@ -125,7 +125,63 @@ Use Slack mrkdwn syntax in messages and drafts:
 | Bulleted list | `- item`         |                      |
 | Numbered list | `1. item`        |                      |
 
-Tables, markdown headers (`#`), and image embeds (`![alt](url)`) are **not supported** in messages.
+Markdown headers (`#`) and image embeds (`![alt](url)`) are **not supported** in messages. Tables are supported as native Slack tables, or as monospace box tables inside code blocks.
+
+### Tables
+
+Native table (Ask AI format). Standard Markdown with `|` delimiters, one header, separator, then rows. Do not escape structural `|`; only escape a literal pipe inside a cell as `\|`. Max 5000 chars per text element.
+
+```
+| Fruit  | Color  | In stock | Price |
+| ---    | ---    | ---      | ---   |
+| mango  | yellow | 20 of 26 | 40    |
+| apple  | red    | 117      | 30    |
+```
+
+Send it as plain message text (not in a code block) for a native table. Keep separator compact (`| --- | --- |`); columns need no padding, Slack renders them.
+
+Reference pattern. Lead with one bold sentence, then a short intro paragraph, then the table, then `*Key takeaway:*` with `•` bullets. Bold the key terms in the intro and bullet labels; use backticks for exact identifiers like `branch code`.
+
+```
+Riverton has *12 branch libraries*, plus the *central library*.
+
+In the *city catalog* used by almost all branches, the universal identifier is the *branch code*. However, individual branches have local nicknames for the weekend desk:
+
+| Branch   | Weekend desk |
+| ---      | ---          |
+| North    | window 1     |
+| Harbor   | window 2     |
+| Hilltop  | counter A    |
+| Lakeside | counter B    |
+| Old town | kiosk        |
+| Market   | kiosk 2      |
+
+*Key takeaway for weekend plans:*
+
+• *Catalog layer:* Every branch maps checkouts to a **`branch code` + `card year`** and prints a receipt.
+• *Desk layer:* Weekend pickups usually cite the local label (e.g. _window 1_ at North, _counter A_ at Hilltop).
+```
+
+Cells may hold long descriptive text; Slack wraps them. Long prose still belongs in bullets below the table, not inside cells.
+
+Box table in code block (fallback, preserves alignment). Use when recipients need copy-paste alignment or narrow columns. Put the whole box inside triple backticks so it stays monospace.
+
+```
+| Fruit | Color  | In stock |
+└───────┴────────┴──────────┘
+```
+
+```
+┌───────┬────────┐
+│ Fruit │ Color  │
+├───────┼────────┤
+│ mango │ yellow │
+└───────┴────────┘
+```
+
+### Structured reports
+
+For status notes: `*Bold heading*` line, short `•` bullets, `◦` sub-bullets or `1.` numbered steps, then `What:`, `Why:`, `Fix:` lines per item. Keep each bullet one fact. Code blocks for commands and multi-line values.
 
 **Tips:** lead with point, keep messages short, use line breaks, reply in threads when appropriate, and use `slack_send_message_draft` for long or sensitive messages.
 
