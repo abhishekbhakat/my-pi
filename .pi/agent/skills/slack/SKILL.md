@@ -97,6 +97,10 @@ slack call slack_send_message '{"channel_id":"C1234567890","message":"Hello"}'
 
 Do not add manual signatures to Slack sends. Slack appends its own attribution (`Sent using Pi`) to every message sent through the MCP app. A manual signature line renders as a double signature.
 
+## Writing style
+
+Apply `stop-slop` when you draft message text. Read `.pi/agent/skills/stop-slop/SKILL.md` before long or sensitive sends. Cut filler openers and adverbs. Use active voice with a human subject. Name specifics, no vague claims. Vary sentence length. No em dashes. State facts direct, no softening. If it sounds like a pull-quote, rewrite it.
+
 ## Slack Message Formatting
 
 Send multiline text as ONE shell argument with real newline characters (literal line breaks inside the quotes). The CLI joins separate arguments with spaces, so passing bullets as separate args collapses to one paragraph.
