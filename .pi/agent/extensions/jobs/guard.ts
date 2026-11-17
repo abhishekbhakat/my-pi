@@ -2,6 +2,7 @@
  * Command guards. Every rule exists because a duration was guessed or an exit code
  * was thrown away. Foreground bash may not sleep at all; a spawned job may sleep
  * only inside a retry loop, which ends on a condition instead of a clock.
+ * Repeated status polling stops the response without cancelling background work.
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
@@ -16,10 +17,10 @@ const RETRY_LOOP = /\b(?:until|while)\b/;
 export const SPAWN_HINT = 'Use jobs spawn "<command>". Exit wakes you with the code and output.';
 
 /**
- * Stop idle polling of the same jobs call with the same parameters.
- * Only `jobs output` repeats count (`jobs list` is never blocked). Any
- * other call, or an output call with different parameters, breaks the streak.
- * Jobs themselves keep running; the exit wake starts a fresh run.
+ * Stop identical `jobs output` polling on the second consecutive call, and
+ * `capability_jobs list/output` polling on the third. `jobs list` is never blocked.
+ * Other calls or changed parameters break the streak. Background work keeps
+ * running; user input and completion wakes reset the allowance.
  */
 export function registerIdlePollingGuard(pi: ExtensionAPI): void {
 	let sessionId: string | undefined;
@@ -46,13 +47,15 @@ export function registerIdlePollingGuard(pi: ExtensionAPI): void {
 	}
 
 	function jobStatusKey(name: string, input: unknown): string | undefined {
-		if (name !== "jobs") return undefined;
 		const args = input as { action?: unknown; id?: unknown } | null;
 		const action = args?.action;
-		if (action !== "output") return undefined;
-		// Jobs parameters are scalar. Sorting keys makes property order irrelevant,
-		// while changes to id, action, lines, or any other parameter break the streak.
-		return JSON.stringify(Object.entries(input as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)));
+		const shellOutput = name === "jobs" && action === "output";
+		const capabilityStatus = name === "capability_jobs" && (action === "list" || action === "output");
+		if (!shellOutput && !capabilityStatus) return undefined;
+		// Include the tool name so shell and capability status checks never combine.
+		// Sorting keys makes property order irrelevant, while any changed value
+		// (id, action, lines, or another parameter) breaks the streak.
+		return `${name}:${JSON.stringify(Object.entries(input as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)))}`;
 	}
 
 	pi.on("input", () => reset());
@@ -75,7 +78,7 @@ export function registerIdlePollingGuard(pi: ExtensionAPI): void {
 		if (ctx.mode === "print" || ctx.mode === "json" || process.env.PI_CAPABILITY_CHILD === "1") return;
 		const currentSession = ctx.sessionManager.getSessionId();
 		if (sessionId !== currentSession) { sessionId = currentSession; reset(); }
-		if (stopped) return { block: true, terminate: true, reason: "Response stopped after repeated identical jobs status polling." };
+		if (stopped) return { block: true, terminate: true, reason: "Response stopped after repeated identical background status polling." };
 		if (event.parentToolCallId && wrappers.has(event.parentToolCallId)) wrappers.set(event.parentToolCallId, true);
 		// Codemode is a transparent wrapper. Nested calls determine the streak;
 		// a script with no tool calls breaks it when the wrapper finishes.
@@ -88,15 +91,17 @@ export function registerIdlePollingGuard(pi: ExtensionAPI): void {
 		if (key === lastKey) streak++;
 		else { streak = 1; lastKey = key; }
 		lastCountedTurn = turnIndex;
-		if (streak < 2) return;
+		const capability = event.toolName === "capability_jobs";
+		if (streak < (capability ? 3 : 2)) return;
 		stopped = true;
 		const input = event.input as { action: string; id?: string };
-		const target = `jobs ${input.action}${input.id ? ` ${input.id}` : ""}`;
-		const reason = `Repeated identical status polling blocked (${target}). End the turn and wait for the completion wake. Background work was not cancelled.`;
+		const target = `${event.toolName} ${input.action}${input.id ? ` ${input.id}` : ""}`;
+		const wake = capability ? "capability_result wake" : "completion wake";
+		const reason = `Repeated identical status polling blocked (${target}). End the turn and wait for the ${wake}. Background work was not cancelled.`;
 		// abort() is synchronous at this API boundary. Do not await session idle
 		// from inside a tool hook; the blocked call must finalize first.
 		ctx.abort();
-		ctx.ui.notify(`Stopped idle job polling (${target}). Background work was not cancelled.`, "warning");
+		ctx.ui.notify(`Stopped idle ${capability ? "capability" : "job"} polling (${target}). Background work was not cancelled.`, "warning");
 		return { block: true, terminate: true, reason };
 	});
 }

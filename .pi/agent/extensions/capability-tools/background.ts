@@ -215,7 +215,7 @@ export function registerBackground(pi: ExtensionAPI): CapabilityBackground {
 	pi.on("session_shutdown", () => background.cancelAll());
 	pi.registerTool({
 		name: "capability_jobs", label: "Capability jobs",
-		description: "List background runs, read output, stop, or steer coder with a message. Coder, scout, reasoning, and review output streams as PARTIAL, never a final verdict. Only coder accepts steering. Set interrupt on steer to abort its current turn and send instructions without ending the run. Separate from shell jobs. The live panel already shows helper progress, so no need to poll output while a run is still going.",
+		description: "List background runs, read output, stop, or steer coder with a message. Coder, scout, reasoning, and review output streams as PARTIAL, never a final verdict. Only coder accepts steering. Set interrupt on steer to abort its current turn and send instructions without ending the run. Separate from shell jobs. The live panel already shows helper progress. The third consecutive identical list or output call stops the response without cancelling background work. End the turn and wait for the completion wake instead of polling.",
 		renderShell: "self",
 		renderCall: renderCapabilityJobsCall,
 		renderResult: renderCapabilityResult("Capability jobs"),
