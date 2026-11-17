@@ -60,6 +60,7 @@
     "mermaid": "final"
   },
   "packages": [
+    "git:github.com/johnlindquist/pi-emphasis",
     "npm:pi-cursor-sdk",
     "npm:pi-muse-provider"
   ],

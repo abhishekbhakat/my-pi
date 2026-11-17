@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const NAME = "slack";
 const SERVER = "slack";
-const HELP = "slack list\nslack describe <tool>\nslack call <tool> '<arguments-json>'\nslack read <channel>\nslack search <query>\nslack send <channel> <text...>\n\nToken: SLACK_MCP_TOKEN, then slack-auth.json, then slack-token.json.\nSend signed text or set SLACK_SIGN_NAME to append italic attribution.\nOAuth: bun slack-auth.mjs. Outputs compact JSON.\nLegacy --list, --describe and --call forms also work.";
+const HELP = "slack list\nslack describe <tool>\nslack call <tool> '<arguments-json>'\nslack read <channel>\nslack search <query>\nslack send <channel> <text...>\n\nToken: SLACK_MCP_TOKEN, then slack-auth.json, then slack-token.json.\nDo not add manual signatures; Slack appends Sent using Pi attribution.\nOAuth: bun slack-auth.mjs. Outputs compact JSON.\nLegacy --list, --describe and --call forms also work.";
 
 function shortcut(command, args) {
   if (command === "read") {
@@ -21,21 +21,17 @@ function shortcut(command, args) {
       throw new Error("send needs a channel ID and message text");
     }
     return { action: "call", tool: "slack_send_message",
-      arguments: { channel_id: args[0], text: args.slice(1).join(" ") } };
+      arguments: { channel_id: args[0], message: args.slice(1).join(" ") } };
   }
   throw new Error("Unknown command. Use --help.");
 }
 function prepare(request) {
   if (request.action !== "call" ||
       !["slack_send_message", "slack_schedule_message"].includes(request.tool)) return;
-  const text = request.arguments.text;
+  const text = request.arguments.message ?? request.arguments.text;
   if (typeof text !== "string" || !text.trim()) throw new Error("Message text is required");
-  if (/(?:^|\n)_sent by [^\r\n<>_]+?'s bot_\s*$/.test(text)) return;
-  const name = process.env.SLACK_SIGN_NAME?.trim();
-  if (!name || /[\r\n<>_]/.test(name)) {
-    throw new Error("Resolve the current user's name with slack_read_user_profile, then set SLACK_SIGN_NAME or include a final italic signature. No message sent.");
-  }
-  request.arguments.text = text.trimEnd() + "\n_sent by " + name + "'s bot_";
+  request.arguments.message = text.trimEnd();
+  delete request.arguments.text;
 }
 function environment() {
   let token = process.env.SLACK_MCP_TOKEN;

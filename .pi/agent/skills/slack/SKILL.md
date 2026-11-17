@@ -18,7 +18,7 @@ slack call slack_read_user_profile '{}'
 slack send CHANNEL_ID 'Message text'
 ```
 
-Resolve current user's name, then set `SLACK_SIGN_NAME` for `send`. CLI appends italic signature. Without name, supply signed text; unsigned sends fail before network call. Same rule applies to generic send/schedule calls. Only write when user requests it.
+Only write when user requests it. Do not add manual signatures; Slack appends its own `Sent using Pi` attribution. Use `message`, not `text` (server rejects `text` with `no_text`).
 
 ## Authentication
 
@@ -73,14 +73,14 @@ slack describe <tool_name>
 slack describe <tool_name>
 ```
 
-**Step 2:** Build call JSON. Every outbound message (`slack_send_message`, `slack_schedule_message`) MUST end with the signature line `_sent by <user's name>'s bot_`. Resolve the name with `slack_read_user_profile` (defaults to current user) if unknown.
+**Step 2:** Build call JSON with `message` field (server requires `message`; `text` is rejected with `no_text`). Do not append manual signatures; Slack adds its own attribution.
 
 ```json
 {
   "tool": "slack_send_message",
   "arguments": {
     "channel_id": "C1234567890",
-    "text": "Hello\n_sent by <user's name>'s bot_"
+    "message": "Hello"
   }
 }
 ```
@@ -88,20 +88,28 @@ slack describe <tool_name>
 **Step 3:** Execute it:
 
 ```bash
-slack call slack_send_message '{"channel_id":"C1234567890","text":"Hello"}'
+slack call slack_send_message '{"channel_id":"C1234567890","message":"Hello"}'
 ```
 
-Set `SLACK_SIGN_NAME` to resolved user's name first, or include final italic signature in `text`. `call` takes tool name and arguments object separately. Do not send literal name placeholders.
+`call` takes tool name and arguments object separately.
 
-## Signing
+## Signatures
 
-Sign every outbound message on the user's behalf with a final italic line:
-
-`_sent by <user's name>'s bot_`
-
-Append it on its own line at the end of `text`. Example: `... \n_sent by <user's name>'s bot_`. Apply to `slack_send_message` and `slack_schedule_message`. Resolve `<user's name>` from `slack_read_user_profile` when unknown. Do not omit because the message is short.
+Do not add manual signatures to Slack sends. Slack appends its own attribution (`Sent using Pi`) to every message sent through the MCP app. A manual signature line renders as a double signature.
 
 ## Slack Message Formatting
+
+Send multiline text as ONE shell argument with real newline characters (literal line breaks inside the quotes). The CLI joins separate arguments with spaces, so passing bullets as separate args collapses to one paragraph.
+
+```bash
+slack send C1234567890 'Line one
+- bullet
+```python
+print("hi")
+```'
+```
+
+Triple-backtick code blocks with a language specifier (`` ```python ``, `` ```bash ``, `` ```sql ``) render highlighted. Use them for commands, SQL, and multi-line values instead of inline code or plain quotes.
 
 Use Slack mrkdwn syntax in messages and drafts:
 
@@ -120,6 +128,8 @@ Use Slack mrkdwn syntax in messages and drafts:
 Tables, markdown headers (`#`), and image embeds (`![alt](url)`) are **not supported** in messages.
 
 **Tips:** lead with point, keep messages short, use line breaks, reply in threads when appropriate, and use `slack_send_message_draft` for long or sensitive messages.
+
+Caveat: `slack read` displays `*bold*` wrapped in underscores, so read output is not proof of how recipients see it; confirm rendering in the Slack UI. There are no edit or delete tools (send only), so a badly formatted send cannot be fixed in place; resend a corrected copy labeled final/formatted.
 
 ## Slack Search Modifiers
 
