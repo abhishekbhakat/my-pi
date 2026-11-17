@@ -20,6 +20,18 @@ slack send CHANNEL_ID 'Message text'
 
 Only write when user requests it. Do not add manual signatures; Slack appends its own `Sent using Pi` attribution. Use `message`, not `text` (server rejects `text` with `no_text`).
 
+## Readability gate
+
+`slack_send_message`, `slack_schedule_message`, and `slack_send_message_draft` pass `format-check.mjs` before the CLI calls Slack. Blocked message exit nonzero with reasons; nothing is sent. Rewrite and resend. No bypass flag.
+
+1. **Lint** (hard deny): literal `\n`, unclosed ```` ``` ````, `#` headings, `![alt](url)` images outside code blocks.
+2. **Decider** (`deciders.json` role `guard`): three Noul questions, each must score >= 0.5:
+   - `line_breaks_ok`: one idea, list item, or block per line; no wall of text.
+   - `markdown_ok`: valid Slack mrkdwn, balanced markers, code in code blocks.
+   - `adhd_readable`: point or ask first, short scannable chunks, no filler.
+
+Short single-point messages pass without structure. Decider outage (no key, timeout, HTTP error) fails open and prints `format check skipped: <reason>` on stderr.
+
 ## Authentication
 
 Slack MCP require **user access token** (`xoxp-...`) with workspace API scopes listed in `mcp-config.json`. Bot token (`xoxb-...`) is not used.

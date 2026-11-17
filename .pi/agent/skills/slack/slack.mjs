@@ -3,9 +3,12 @@ import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
+const { checkMessage } = await import(new URL("./format-check.mjs", import.meta.url).href);
+
 const NAME = "slack";
+const GATED_TOOLS = ["slack_send_message", "slack_schedule_message", "slack_send_message_draft"];
 const SERVER = "slack";
-const HELP = "slack list\nslack describe <tool>\nslack call <tool> '<arguments-json>'\nslack read <channel>\nslack search <query>\nslack send <channel> <text...>\n\nToken: SLACK_MCP_TOKEN, then slack-auth.json, then slack-token.json.\nDo not add manual signatures; Slack appends Sent using Pi attribution.\nOAuth: bun slack-auth.mjs. Outputs compact JSON.\nLegacy --list, --describe and --call forms also work.";
+const HELP = "slack list\nslack describe <tool>\nslack call <tool> '<arguments-json>'\nslack read <channel>\nslack search <query>\nslack send <channel> <text...>\n\nToken: SLACK_MCP_TOKEN, then slack-auth.json, then slack-token.json.\nDo not add manual signatures; Slack appends Sent using Pi attribution.\nSend, schedule, and draft messages pass a readability check (lint + decider) first.\nOAuth: bun slack-auth.mjs. Outputs compact JSON.\nLegacy --list, --describe and --call forms also work.";
 
 function shortcut(command, args) {
   if (command === "read") {
@@ -24,6 +27,16 @@ function shortcut(command, args) {
       arguments: { channel_id: args[0], message: args.slice(1).join(" ") } };
   }
   throw new Error("Unknown command. Use --help.");
+}
+async function gate(request) {
+  if (request.action !== "call" || !GATED_TOOLS.includes(request.tool)) return;
+  const text = request.arguments.message;
+  if (typeof text !== "string" || !text.trim()) return;
+  const verdict = await checkMessage(text);
+  if (verdict.warning) process.stderr.write(`${NAME}: ${verdict.warning}\n`);
+  if (verdict.ok) return;
+  const by = verdict.model ? ` (${verdict.model})` : "";
+  throw new Error(`message blocked by readability check${by}. Fix and resend:\n- ${verdict.problems.join("\n- ")}`);
 }
 function prepare(request) {
   if (request.action !== "call" ||
@@ -131,7 +144,7 @@ function run(request, env) {
   if (failed) process.exitCode = 1;
 }
 
-function main() {
+async function main() {
   const args = process.argv.slice(2);
   if (!args.length || args[0] === "--help" || args[0] === "-h") {
     console.log(HELP);
@@ -139,10 +152,12 @@ function main() {
   }
   const request = parse(args);
   prepare(request);
-  run(request, environment());
+  const env = environment();
+  await gate(request);
+  run(request, env);
 }
 
-try { main(); }
+try { await main(); }
 catch (error) {
   console.error(`${NAME}: ${error.message}`);
   process.exitCode = 1;
