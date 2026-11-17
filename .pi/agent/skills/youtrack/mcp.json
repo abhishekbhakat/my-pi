@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "youtrack": {
+      "url": "https://rowlock.youtrack.cloud/mcp",
+      "headers": {
+        "Authorization": "Bearer ${YOUTRACK_MCP_TOKEN}"
+      }
+    }
+  }
+}

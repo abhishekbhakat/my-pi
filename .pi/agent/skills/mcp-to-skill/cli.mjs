@@ -1,7 +1,8 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
+import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
 
 const USAGE = `mcp-to-skill: generate skills and invoke MCP tools without Python
@@ -153,6 +154,14 @@ function loadSdk() {
   }
 }
 
+function piVersion() {
+  try {
+    const file = path.join(homedir(), ".bun", "install", "global", "node_modules", "@earendil-works", "pi-coding-agent", "package.json");
+    const version = JSON.parse(fs.readFileSync(file, "utf8")).version;
+    return typeof version === "string" && version.trim() ? version : "1.5.2";
+  } catch { return "1.5.2"; }
+}
+
 async function withClient(raw, configPath, callback) {
   rememberSecrets(raw);
   const config = expand(raw);
@@ -184,7 +193,7 @@ async function withClient(raw, configPath, callback) {
   } else {
     throw new Error(`Unsupported transport: ${type}. Use stdio or Streamable HTTP.`);
   }
-  const client = new sdk.Client({ name: "mcp-to-skill", version: "1.0.0" }, { capabilities: {} });
+  const client = new sdk.Client({ name: "Pi", version: piVersion() }, { capabilities: {} });
   try {
     await client.connect(transport);
     return await callback(client);

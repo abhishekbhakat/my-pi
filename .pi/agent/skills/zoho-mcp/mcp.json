@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "zoho-mcp": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "${ZOHO_MCP_URL}",
+        "--transport",
+        "http-only"
+      ]
+    }
+  }
+}

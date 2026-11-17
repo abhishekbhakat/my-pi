@@ -22,8 +22,8 @@
   "followUpMode": "all",
   "enableInstallTelemetry": true,
   "defaultProjectTrust": "always",
-  "defaultProvider": "muse",
-  "defaultModel": "muse-wonder-1.0",
+  "defaultProvider": "anthropic",
+  "defaultModel": "claude-sonnet-5-5",
   "defaultTools": [
     "+codemode"
   ],

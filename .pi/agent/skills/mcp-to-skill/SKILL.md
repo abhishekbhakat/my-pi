@@ -1,7 +1,7 @@
 ---
 name: mcp-to-skill
 description: >-
-  Convert MCP servers into agent skills with the Node mcp-to-skill CLI. Use when
+  Convert MCP servers into agent skills with the Bun mcp-to-skill CLI. Use when
   the user wants an MCP-to-skill conversion, an MCP skill, or a CLI that lists,
   describes, and calls MCP tools without Python. Supports stdio and Streamable
   HTTP servers, single-server configs, and mcpServers JSON configs.
@@ -11,6 +11,13 @@ description: >-
 
 CLI: `$HOME/.pi/agent/bin/mcp-to-skill`. No Python. The SDK installs with pi
 extensions. If missing, run `make install` in the my-pi repository.
+
+## Runtime and client identity
+
+Use Bun for CLI and generated wrappers. Keep child launches on `process.execPath`.
+MCP client name must always be `Pi`. Version must match live Pi version read at runtime
+from `~/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/package.json`.
+If reading fails, fall back to current release, `1.5.2`. Do not hardcode the normal path's version.
 
 ## Convert
 
