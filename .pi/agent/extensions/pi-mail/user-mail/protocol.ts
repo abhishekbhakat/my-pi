@@ -1,12 +1,13 @@
 /**
  * Wire types and validators for user mail (issue #5).
  *
- * Shared by server and client. Imports nothing beyond node and Bun globals
+ * Shared by server and client. Imports nothing beyond Node globals
  * so it stays unit-testable outside pi.
  */
 
 export const SERVICE = "pi-user-mail";
-export const VERSION = 1;
+export const VERSION = 2;
+export const MAX_REQUEST_BYTES = 2 * 1024 * 1024;
 
 /** Fixed TCP port for the mail server (after 3.14). */
 export const DEFAULT_TCP_PORT = 15926;
@@ -36,8 +37,8 @@ export function isStale(sentAt: number, now = Date.now(), ttlMs = getTtlMs()): b
 	return now - sentAt > ttlMs;
 }
 
-/** Answer of `GET /hello` from a pi-user-mail server. */
-export interface HelloResponse {
+/** Reply from a compatible user-mail server. */
+export interface PingResponse {
 	service: typeof SERVICE;
 	version: number;
 	/** Mail id of the machine running the server, for tiebreaks. */
@@ -74,11 +75,11 @@ export function discoveryPort(): number {
 	return readPort("PI_USER_MAIL_DISCOVERY_PORT", DEFAULT_DISCOVERY_PORT);
 }
 
-/** Parse a /hello answer. Returns null when the responder is not ours. */
-export function parseHello(parsed: unknown): HelloResponse | null {
+/** Reject other services and incompatible protocol versions. */
+export function parsePing(parsed: unknown): PingResponse | null {
 	if (typeof parsed !== "object" || parsed === null) return null;
 	const raw = parsed as Record<string, unknown>;
-	if (raw.service !== SERVICE || typeof raw.version !== "number" || typeof raw.id !== "string") {
+	if (raw.service !== SERVICE || raw.version !== VERSION || typeof raw.id !== "string" || !raw.id) {
 		return null;
 	}
 	const maxChars = typeof raw.maxChars === "number" && Number.isSafeInteger(raw.maxChars)
@@ -87,12 +88,17 @@ export function parseHello(parsed: unknown): HelloResponse | null {
 	return { service: SERVICE, version: raw.version, id: raw.id, maxChars };
 }
 
-/** Parse a /mail envelope. Returns null on any shape or size violation. */
+/** Message IDs double as filenames in the mailbox store. */
+export function isMessageId(id: unknown): id is string {
+	return typeof id === "string" && /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(id);
+}
+
+/** Parse a mail envelope. Returns null on any shape or size violation. */
 export function parseEnvelope(parsed: unknown): MailEnvelope | null {
 	if (typeof parsed !== "object" || parsed === null) return null;
 	const raw = parsed as Record<string, unknown>;
 	const { id, from, to, text, sentAt } = raw;
-	if (typeof id !== "string" || !id) return null;
+	if (!isMessageId(id)) return null;
 	if (typeof from !== "string" || !from) return null;
 	if (typeof to !== "string" || !to) return null;
 	if (typeof text !== "string" || !text.trim()) return null;

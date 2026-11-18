@@ -5,21 +5,23 @@
  * imports @earendil-works packages.
  */
 
+import { randomUUID } from "node:crypto";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { CompactBlock, blockPreview, blockText, compactToolRenderers } from "#compact-blocks";
 import { Type } from "@sinclair/typebox";
 import { getAgentDirPath } from "../mail/mailbox.ts";
-import { registerUser } from "./client.ts";
+import { isTransportFailure, registerUser, type ServerEndpoint } from "./client.ts";
+import type { ElectionResult } from "./election.ts";
 import { getLocalIdentity, setAlias, getUserMailDir, userMailId } from "./identity.ts";
 import { MAX_LIST_LIMIT } from "./session/format.ts";
 import { performInbox, performRead } from "./mailbox/index.ts";
 import { performSend } from "./outbox/index.ts";
 import {
-	cachedElection,
-	dropElection,
 	ensureElected,
+	invalidateClient,
 	NEVER_SERVER,
 	setChip,
+	startElection,
 	stopOwnedServer,
 	USER_MAIL_CUSTOM_TYPE,
 } from "./session/index.ts";
@@ -32,13 +34,11 @@ type ToolResult = {
 /** Registers the user_mail tool, /pi-user-mail command, and renderer. */
 export function registerUserMail(pi: ExtensionAPI): void {
 	pi.on("session_start", (_event, ctx) => {
-		void ensureElected()
-			.then((result) => setChip(ctx, result !== null && result.role !== "none"))
-			.catch(() => setChip(ctx, false));
+		void startElection((role) => setChip(ctx, role)).catch(() => setChip(ctx, "none"));
 	});
 
-	pi.on("session_shutdown", () => {
-		void stopOwnedServer();
+	pi.on("session_shutdown", async () => {
+		await stopOwnedServer();
 	});
 
 	pi.registerMessageRenderer(USER_MAIL_CUSTOM_TYPE, (message, options, theme) => {
@@ -69,16 +69,17 @@ export function registerUserMail(pi: ExtensionAPI): void {
 						: `Username: ${identity.username}. No alias yet. Register one: /pi-user-mail <alias> ${state}`;
 				} else {
 					const identity = await setAlias(alias, agentDir);
-					content = `Registered. Your mail id: ${userMailId(identity)}. ${state}`;
+					const id = userMailId(identity);
+					if (result.endpoint) {
+						await registerUser(result.endpoint, id);
+						content = `Registered. Your mail id: ${id}. ${state}`;
+					} else {
+						content = `Saved ${id} locally. ${state}`;
+					}
 				}
 			} catch (error) {
-				// A stale cached election is the usual suspect; drop it so the
-				// next command or tool call re-elects.
-				dropElection();
 				content = error instanceof Error ? error.message : String(error);
 			}
-			const cached = cachedElection();
-			setChip(ctx, cached !== null && cached.role !== "none");
 			await pi.sendMessage(
 				{ customType: USER_MAIL_CUSTOM_TYPE, content, display: true },
 				{ deliverAs: "steer" },
@@ -88,6 +89,7 @@ export function registerUserMail(pi: ExtensionAPI): void {
 
 	pi.registerTool({
 		name: "user_mail",
+		label: "User mail",
 		...compactToolRenderers("user_mail"),
 		description:
 			"Passive mailbox between pi users on one local network (team mail), via the one network server. " +
@@ -123,6 +125,9 @@ export function registerUserMail(pi: ExtensionAPI): void {
 				details,
 			});
 
+			const send = { id: randomUUID(), sentAt: Date.now() };
+			let attempted: { endpoint: ServerEndpoint; result: ElectionResult } | undefined;
+
 			const attempt = async (): Promise<ToolResult> => {
 				const identity = await getLocalIdentity(agentDir);
 				const myId = userMailId(identity);
@@ -134,6 +139,7 @@ export function registerUserMail(pi: ExtensionAPI): void {
 					);
 				}
 				const endpoint = result.endpoint;
+				attempted = { endpoint, result };
 
 				if (params.action === "send") {
 					if (!params.to?.trim() || !params.message?.trim()) {
@@ -147,7 +153,7 @@ export function registerUserMail(pi: ExtensionAPI): void {
 					}
 					await registerUser(endpoint, myId);
 					const outcome = await performSend(
-						endpoint, myId, result.serverId, params.to.trim(), params.message,
+						endpoint, myId, result.serverId, params.to.trim(), params.message, send,
 					);
 					return ok(outcome.text, outcome.details);
 				}
@@ -175,26 +181,17 @@ export function registerUserMail(pi: ExtensionAPI): void {
 			const failText = (error: unknown) =>
 				`Error: ${error instanceof Error ? error.message : String(error)}`;
 
-			// One retry after a re-election: a stale cached endpoint (the
-			// server-owning session exited) heals itself instead of failing.
 			try {
 				return await attempt();
 			} catch (error) {
-				if (!cachedElection()) {
+				if (!attempted || attempted.result.role !== "client" || !isTransportFailure(error)) {
 					return ok(failText(error), { error: "failed" });
 				}
-				dropElection();
+				invalidateClient(attempted.endpoint);
 				try {
-					const result = await ensureElected();
-					if (!result || result.role === "none" || !result.endpoint) {
-						return ok(
-							`Error: ${failText(error)} (re-election found no server).`,
-							{ error: "failed", reelected: false },
-						);
-					}
 					return await attempt();
 				} catch (retryError) {
-					return ok(failText(retryError), { error: "failed", reelected: true });
+					return ok(failText(retryError), { error: "failed", retried: true });
 				}
 			}
 		},

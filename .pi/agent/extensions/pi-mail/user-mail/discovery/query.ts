@@ -1,36 +1,46 @@
-/**
- * Client side of user-mail discovery (issue #5): broadcast a query on the
- * discovery port, collect server hellos until the timeout, close. Uses
- * node:dgram with setBroadcast rather than Bun.udpSocket.
- */
-
 import dgram from "node:dgram";
 import { discoveryPort } from "../protocol.ts";
-import { peerFrom, wirePayload, type PeerHello } from "./peer.ts";
+import { broadcastAddresses } from "./addresses.ts";
+import { parseDiscovery, wirePayload, type PeerPing } from "./peer.ts";
 
-export function broadcastQuery(timeoutMs = 300, port = discoveryPort()): Promise<PeerHello[]> {
+export const DISCOVERY_TIMEOUT_MS = 1_500;
+
+export function broadcastQuery(timeoutMs = DISCOVERY_TIMEOUT_MS, port = discoveryPort()): Promise<PeerPing[]> {
 	return new Promise((resolve) => {
 		const socket = dgram.createSocket({ type: "udp4", reuseAddr: true });
-		const found = new Map<string, PeerHello>();
-		let timer: ReturnType<typeof setTimeout> | undefined;
+		const found = new Map<string, PeerPing>();
+		const timers: ReturnType<typeof setTimeout>[] = [];
+		let closed = false;
 		const finish = () => {
-			if (timer) clearTimeout(timer);
-			try {
-				socket.close();
-			} catch {
-				// Already closed by error path.
-			}
+			if (closed) return;
+			closed = true;
+			for (const timer of timers) clearTimeout(timer);
+			try { socket.close(); } catch { /* Already closed. */ }
 			resolve([...found.values()]);
 		};
 		socket.on("message", (data, rinfo) => {
-			const peer = peerFrom(data, rinfo.address);
-			if (peer) found.set(`${peer.host}:${peer.hello.id}`, peer);
+			const packet = parseDiscovery(data, rinfo.address);
+			if (packet?.kind !== "announce") return;
+			const { peer } = packet;
+			found.set(`${peer.host}:${peer.port}`, peer);
 		});
 		socket.on("error", finish);
-		timer = setTimeout(finish, timeoutMs);
+		timers.push(setTimeout(finish, timeoutMs));
 		socket.bind(() => {
-			socket.setBroadcast(true);
-			socket.send(wirePayload("query", "", port), port, "255.255.255.255");
+			if (closed) return;
+			try {
+				socket.setBroadcast(true);
+			} catch {
+				finish();
+				return;
+			}
+			const payload = wirePayload("query", "", port);
+			const destinations = broadcastAddresses();
+			const send = () => {
+				for (const address of destinations) socket.send(payload, port, address, () => {});
+			};
+			send();
+			timers.push(setTimeout(send, timeoutMs / 3), setTimeout(send, 2 * timeoutMs / 3));
 		});
 	});
 }

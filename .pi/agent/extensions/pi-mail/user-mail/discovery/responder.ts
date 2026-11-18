@@ -1,74 +1,59 @@
-/**
- * Server side of user-mail discovery (issue #5): answer client queries,
- * broadcast an announcement on an interval, and report rival servers
- * upward for the tiebreak. One socket does all three.
- */
-
 import dgram from "node:dgram";
-import type { HelloResponse } from "../protocol.ts";
-import { peerFrom, wirePayload, type PeerHello } from "./peer.ts";
+import type { PingResponse } from "../protocol.ts";
+import { broadcastAddresses } from "./addresses.ts";
+import { parseDiscovery, wirePayload, type PeerPing } from "./peer.ts";
 
 export interface DiscoveryHandle {
 	stop(): Promise<void>;
-	/** Broadcast an announcement right now. */
-	announce(): void;
 }
 
 export interface ResponderOptions {
-	/** UDP port to bind. */
 	port: number;
-	/** This machine's hello, sent in replies and announcements. */
-	hello: HelloResponse;
-	/** This machine's TCP server port, included in announcements. */
+	ping: PingResponse;
 	tcpPort: number;
-	/** Called when another server announces itself. */
-	onRival?: (rival: PeerHello) => void;
-	/** Announcement interval. Default 30 seconds. */
+	onRival?: (rival: PeerPing) => void;
 	announceEveryMs?: number;
 }
 
-export function startResponder(options: ResponderOptions): DiscoveryHandle {
+export async function startResponder(options: ResponderOptions): Promise<DiscoveryHandle> {
 	const socket = dgram.createSocket({ type: "udp4", reuseAddr: true });
+	const payload = wirePayload("announce", options.ping.id, options.tcpPort);
+	const send = (port: number, address: string) => socket.send(payload, port, address, () => {});
 	const announce = () => {
-		try {
-			socket.send(
-				wirePayload("announce", options.hello.id, options.tcpPort),
-				options.port,
-				"255.255.255.255",
-			);
-		} catch {
-			// Broadcast send failures are non-fatal; the next interval retries.
-		}
+		for (const address of broadcastAddresses()) send(options.port, address);
 	};
 	socket.on("message", (data, rinfo) => {
-		const peer = peerFrom(data, rinfo.address);
-		if (!peer) return;
-		let kind: unknown;
-		try {
-			kind = (JSON.parse(data.toString()) as Record<string, unknown>).kind;
-		} catch {
-			return;
-		}
-		if (kind === "query") {
-			socket.send(wirePayload("announce", options.hello.id, options.tcpPort), rinfo.port, rinfo.address);
-		} else if (kind === "announce" && peer.hello.id !== options.hello.id) {
-			options.onRival?.(peer);
+		const packet = parseDiscovery(data, rinfo.address);
+		if (packet?.kind === "query") send(rinfo.port, rinfo.address);
+		else if (packet?.kind === "announce" && packet.peer.ping.id !== options.ping.id) {
+			options.onRival?.(packet.peer);
 		}
 	});
-	socket.bind(options.port);
 
-	const timer = setInterval(announce, options.announceEveryMs ?? 30_000);
-	return {
-		announce,
-		stop(): Promise<void> {
-			clearInterval(timer);
-			return new Promise((resolve) => {
-				try {
-					socket.close(() => resolve());
-				} catch {
-					resolve();
-				}
+	let timer: ReturnType<typeof setInterval> | undefined;
+	let stopping: Promise<void> | undefined;
+	function stop() {
+		if (timer) clearInterval(timer);
+		return stopping ??= new Promise<void>((resolve) => {
+			try { socket.close(() => resolve()); } catch { resolve(); }
+		});
+	}
+
+	try {
+		await new Promise<void>((resolve, reject) => {
+			socket.once("error", reject);
+			socket.bind(options.port, () => {
+				socket.removeListener("error", reject);
+				socket.on("error", () => void stop());
+				resolve();
 			});
-		},
-	};
+		});
+		socket.setBroadcast(true);
+		announce();
+		timer = setInterval(announce, options.announceEveryMs ?? 30_000);
+	} catch (error) {
+		await stop();
+		throw error;
+	}
+	return { stop };
 }

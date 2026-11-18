@@ -72,8 +72,22 @@ own inject. A crash mid-batch redelivers the remainder instead of dropping it.
 Mail older than the TTL (7 days, `PI_MAIL_TTL_MS` overrides) shows a stale
 flag. Check `inbox` when you start work and when you stall.
 
-`mail` stays session-to-session on one machine. `user_mail` targets users
-across the LAN so a team can leave passive messages for each other.
+## User mail over the LAN
+
+Use `/pi-user-mail <alias>` to choose an address, then use `user_mail` to
+send, list, or read passive messages. Run `/pi-user-mail` without an alias to
+see the selected server. Only the Pi session hosting it shows `srv`.
+
+User mail uses gRPC on TCP 15926 and IPv4 UDP discovery on port 15925. Update
+and reload Pi on each laptop. The gRPC clients and servers do not talk to
+older HTTP versions. Both ports must be reachable for automatic discovery
+and delivery to work. A laptop can join without hosting if you launch Pi
+with `PI_USER_MAIL_SERVER=never`.
+
+Use only on a trusted network: connections are unencrypted and the server
+does not authenticate user IDs. If laptops cannot discover each other,
+each can start a server. A server that yields leaves its existing mail on
+its own disk; user mail does not move inboxes between hosts.
 
 ## Limits
 

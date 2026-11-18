@@ -9,13 +9,10 @@
 
 import { mkdir, readdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { parseEnvelope, type MailEnvelope } from "../protocol.ts";
-
-/** Message ids double as file names: keep them plain. */
-const SAFE_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/;
+import { isMessageId, parseEnvelope, type MailEnvelope } from "../protocol.ts";
 
 function safeId(id: string): string {
-	if (!SAFE_ID.test(id)) {
+	if (!isMessageId(id)) {
 		throw new Error(`Unsafe message id: ${JSON.stringify(id)}`);
 	}
 	return id;

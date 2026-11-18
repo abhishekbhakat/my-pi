@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package pi_user_mail;
+
+service UserMail {
+  rpc Ping(PingRequest) returns (PingResponse);
+  rpc RegisterUser(UserRequest) returns (RegisterResponse);
+  rpc ResolveAlias(AliasRequest) returns (UsersResponse);
+  rpc SendMail(MailEnvelope) returns (SendResponse);
+  rpc FetchInbox(UserRequest) returns (InboxResponse);
+  rpc ReadAck(AckRequest) returns (AckResponse);
+}
+
+message PingRequest {}
+message PingResponse {
+  string service = 1;
+  uint32 version = 2;
+  string id = 3;
+  uint32 max_chars = 4;
+}
+
+message UserRequest { string id = 1; }
+message RegisterResponse {
+  bool registered = 1;
+  string id = 2;
+}
+message AliasRequest { string alias = 1; }
+message UsersResponse { repeated string ids = 1; }
+message MailEnvelope {
+  string id = 1;
+  string from = 2;
+  string to = 3;
+  string text = 4;
+  int64 sent_at = 5;
+}
+message SendResponse {
+  bool queued = 1;
+  string id = 2;
+}
+message InboxResponse { repeated MailEnvelope messages = 1; }
+message AckRequest {
+  string id = 1;
+  repeated string message_ids = 2;
+}
+message AckResponse { repeated string archived = 1; }

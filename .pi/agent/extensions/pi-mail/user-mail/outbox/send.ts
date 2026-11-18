@@ -3,7 +3,6 @@
  * envelope, posts it to the network server.
  */
 
-import { randomUUID } from "node:crypto";
 import { resolveAlias, sendMail, type ServerEndpoint } from "../client.ts";
 
 /** Bare alias to full mail id, with ambiguity rejection. */
@@ -31,16 +30,11 @@ export async function performSend(
 	serverId: string | null,
 	to: string,
 	message: string,
+	send: { id: string; sentAt: number; target?: string },
 ): Promise<SendOutcome> {
 	const raw = to.trim();
-	const target = raw.includes("@") ? raw : await resolveTarget(endpoint, raw);
-	const envelope = {
-		id: randomUUID(),
-		from: myId,
-		to: target,
-		text: message,
-		sentAt: Date.now(),
-	};
+	const target = send.target ??= raw.includes("@") ? raw : await resolveTarget(endpoint, raw);
+	const envelope = { id: send.id, from: myId, to: target, text: message, sentAt: send.sentAt };
 	await sendMail(endpoint, envelope);
 	return {
 		text: `Queued for ${target} on ${serverId} (id ${envelope.id.slice(0, 8)}). Passive: they read it when active.`,

@@ -24,6 +24,8 @@
 		"@earendil-works/pi-ai": "1.0.3",
 		"@earendil-works/pi-durable": "1.0.3",
 		"@google/genai": "^1.0.0",
+		"@grpc/grpc-js": "^1.14.7",
+		"@grpc/proto-loader": "^0.8.1",
 		"@modelcontextprotocol/sdk": "1.32.1",
 		"marked": "^18.0.14",
 		"shlex": "^3.0.0",

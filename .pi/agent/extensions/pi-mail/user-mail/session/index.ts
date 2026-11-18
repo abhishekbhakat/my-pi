@@ -1,38 +1,45 @@
-/**
- * Election state for one session (issue #5).
- *
- * Caches the elected role, runs the election on demand, and owns the srv
- * chip. Client and server roles cache for the session; a failed claim is
- * never cached so the next call retries. No @earendil-works imports.
- */
-
 import { getAgentDirPath } from "../../mail/mailbox.ts";
-import { runElection, type ElectionResult } from "../election.ts";
+import { ping, type ServerEndpoint } from "../client.ts";
+import { runElection, type ElectionResult, type Role } from "../election.ts";
 import { getLocalIdentity, getUserMailDir } from "../identity.ts";
 
 export const USER_MAIL_CUSTOM_TYPE = "pi_user_mail_message";
-
-/** Footer status id; the "srv" chip sits beside fast and yolo. */
 export const STATUS_ID = "pi-user-mail";
-
-/** PI_USER_MAIL_SERVER=never: join, but never claim the server role. */
 export const NEVER_SERVER = process.env.PI_USER_MAIL_SERVER?.trim() === "never";
 
 let election: ElectionResult | null = null;
-let electing: Promise<ElectionResult | null> | null = null;
+let electing: Promise<ElectionResult> | undefined;
+let check: Promise<void> | undefined;
+let closing = false;
+let onRole: ((role: Role) => void) | undefined;
 
-export function cachedElection(): ElectionResult | null {
-	return election;
+export function startElection(observer: (role: Role) => void): Promise<ElectionResult> {
+	closing = false;
+	onRole = observer;
+	return ensureElected();
 }
 
-/** Drop the cached result; the next ensureElected re-elects. */
-export function dropElection(): void {
+/** Invalidate only the client endpoint that actually failed. */
+export function invalidateClient(endpoint: ServerEndpoint): boolean {
+	if (election?.role !== "client" || election.endpoint !== endpoint) return false;
 	election = null;
+	onRole?.("none");
+	return true;
 }
 
-/** Find or claim the network server. */
-export async function ensureElected(): Promise<ElectionResult | null> {
-	if (election && (election.role !== "none" || NEVER_SERVER)) return election;
+/** Recheck the cached client on demand; never start a background poller. */
+export async function ensureElected(): Promise<ElectionResult> {
+	if (election?.role === "client" && election.endpoint) {
+		const endpoint = election.endpoint;
+		check ??= (async () => {
+			const reply = await ping(endpoint);
+			if (reply && election?.endpoint === endpoint) election.serverId = reply.id;
+			else invalidateClient(endpoint);
+		})().finally(() => { check = undefined; });
+		await check;
+	}
+	if (election) return election;
+	if (closing) return { role: "none", endpoint: null, serverId: null };
 	if (!electing) {
 		electing = (async () => {
 			const agentDir = getAgentDirPath();
@@ -40,29 +47,34 @@ export async function ensureElected(): Promise<ElectionResult | null> {
 				identity: await getLocalIdentity(agentDir),
 				rootDir: getUserMailDir(agentDir),
 				never: NEVER_SERVER,
+				onRoleChange: (updated) => {
+					if (election === updated) onRole?.(updated.role);
+				},
 			});
-			if (result.role !== "none" || NEVER_SERVER) election = result;
+			// Do not cache failure, including join-only sessions that start before a server.
+			if (result.role !== "none") election = result;
+			onRole?.(result.role);
 			return result;
-		})();
+		})().finally(() => { electing = undefined; });
 	}
-	try {
-		return await electing;
-	} finally {
-		electing = null;
-	}
+	return electing;
 }
 
 export function setChip(
 	ctx: { hasUI: boolean; ui: { setStatus(id: string, text: string | undefined): void } },
-	on: boolean,
+	role: Role,
 ): void {
-	if (ctx.hasUI) ctx.ui.setStatus(STATUS_ID, on ? "srv" : undefined);
+	if (ctx.hasUI) ctx.ui.setStatus(STATUS_ID, role === "server" ? "srv" : undefined);
 }
 
-/** Stop a server and discovery this session owns. Called on session shutdown. */
 export async function stopOwnedServer(): Promise<void> {
+	closing = true;
+	onRole = undefined;
+	await electing?.catch(() => {});
 	const owned = election;
 	election = null;
-	await owned?.discovery?.stop();
-	await owned?.server?.stop();
+	if (!owned) return;
+	const { discovery, server } = owned;
+	owned.role = "none";
+	await Promise.all([discovery?.stop(), server?.stop()]);
 }

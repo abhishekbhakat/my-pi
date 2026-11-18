@@ -1,16 +1,13 @@
 /**
- * Server election for user mail (issue #5).
- *
- * Exactly one machine on the network runs the server. Election order:
- * remembered server.json host, UDP broadcast, localhost, then claim the
- * role. Testable: probe, query, and claim are injectable.
+ * Join a remembered or discovered server before claiming the local port.
+ * An owner yields to a reachable server with a lower mail ID.
  */
-
-import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { appendFile, mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { discoveryPort, tcpPort, type HelloResponse } from "./protocol.ts";
-import { hello as probe, type ServerEndpoint } from "./client.ts";
-import { broadcastQuery, type DiscoveryHandle, type PeerHello } from "./discovery/index.ts";
+import { discoveryPort, MAX_MAIL_CHARS, SERVICE, tcpPort, VERSION, type PingResponse } from "./protocol.ts";
+import { ping, type ServerEndpoint } from "./client.ts";
+import { broadcastQuery, DISCOVERY_TIMEOUT_MS, type DiscoveryHandle, type PeerPing } from "./discovery/index.ts";
 import type { RunningServer } from "./server/index.ts";
 import { userMailId, type UserIdentity } from "./identity.ts";
 
@@ -18,51 +15,33 @@ export type Role = "none" | "client" | "server";
 
 export interface ElectionResult {
 	role: Role;
-	/** Server endpoint for client calls. Null only for role "none". */
 	endpoint: ServerEndpoint | null;
-	/** Mail id of the machine running the server. */
 	serverId: string | null;
-	/** Set when this machine won the claim; stop it on session shutdown. */
 	server?: RunningServer;
-	/** Discovery responder for the owned server. */
 	discovery?: DiscoveryHandle;
-	/** Why a claim attempt failed, when role is "none" after one. */
 	claimError?: string;
 }
 
 export interface ElectionOptions {
 	identity: UserIdentity;
-	/** The machine's user-mail dir: server.json, inboxes/, registry. */
 	rootDir: string;
 	/** True when PI_USER_MAIL_SERVER=never: join but never claim. */
 	never?: boolean;
-	/** Injectable for tests. */
-	probe?: (endpoint: ServerEndpoint) => Promise<HelloResponse | null>;
-	query?: (timeoutMs: number) => Promise<PeerHello[]>;
+	onRoleChange?: (result: ElectionResult) => void;
+	probe?: (endpoint: ServerEndpoint) => Promise<PingResponse | null>;
+	query?: (timeoutMs: number) => Promise<PeerPing[]>;
 	claim?: (selfId: string) => Promise<RunningServer>;
 }
 
-interface Remembered {
-	host: string;
-	port: number;
-	id: string;
-	lastSeenAt: number;
-}
-
-/** Lower mail id keeps the server role on a split brain. */
 export function shouldYield(myId: string, rivalId: string): boolean {
 	return myId > rivalId;
 }
 
-async function readRemembered(rootDir: string): Promise<Remembered | null> {
+async function readRemembered(rootDir: string): Promise<ServerEndpoint | null> {
 	try {
-		const parsed = JSON.parse(await readFile(join(rootDir, "server.json"), "utf-8")) as Partial<Remembered>;
-		if (
-			typeof parsed.host === "string" &&
-			typeof parsed.port === "number" &&
-			typeof parsed.id === "string"
-		) {
-			return { host: parsed.host, port: parsed.port, id: parsed.id, lastSeenAt: parsed.lastSeenAt ?? 0 };
+		const { host, port } = JSON.parse(await readFile(join(rootDir, "server.json"), "utf-8")) as Partial<ServerEndpoint>;
+		if (typeof host === "string" && host && typeof port === "number" && Number.isInteger(port) && port > 0 && port <= 65535) {
+			return { host, port };
 		}
 	} catch {
 		// No remembered server yet.
@@ -70,107 +49,95 @@ async function readRemembered(rootDir: string): Promise<Remembered | null> {
 	return null;
 }
 
-async function writeRemembered(rootDir: string, remembered: Remembered): Promise<void> {
+async function writeRemembered(rootDir: string, endpoint: ServerEndpoint, id: string): Promise<void> {
 	await mkdir(rootDir, { recursive: true, mode: 0o700 });
-	await writeFile(join(rootDir, "server.json"), JSON.stringify(remembered, null, 2) + "\n", {
-		mode: 0o600,
-	});
+	const temp = join(rootDir, `.server-${randomUUID()}.tmp`);
+	try {
+		await writeFile(temp, JSON.stringify({ ...endpoint, id, lastSeenAt: Date.now() }, null, 2) + "\n", {
+			mode: 0o600,
+		});
+		await rename(temp, join(rootDir, "server.json"));
+	} finally {
+		await unlink(temp).catch(() => {});
+	}
 }
 
 export async function runElection(options: ElectionOptions): Promise<ElectionResult> {
-	const probeFn = options.probe ?? probe;
-	const queryFn = options.query ?? broadcastQuery;
+	const probe = options.probe ?? ping;
+	const query = options.query ?? broadcastQuery;
 	const port = tcpPort();
-	const remember = (host: string, id: string, remotePort = port) =>
-		writeRemembered(options.rootDir, { host, port: remotePort, id, lastSeenAt: Date.now() });
+	const local = { host: "127.0.0.1", port };
+	const remember = (endpoint: ServerEndpoint, id: string) =>
+		writeRemembered(options.rootDir, endpoint, id).catch(() => {});
 
-	// 1. Remembered server.
+	const joinIfReachable = async (endpoint: ServerEndpoint): Promise<ElectionResult | null> => {
+		const reply = await probe(endpoint);
+		return reply?.version === VERSION ? { role: "client", endpoint, serverId: reply.id } : null;
+	};
+
 	const remembered = await readRemembered(options.rootDir);
 	if (remembered) {
-		const answer = await probeFn({ host: remembered.host, port: remembered.port });
-		if (answer) {
-			return { role: "client", endpoint: { host: remembered.host, port: remembered.port }, serverId: answer.id };
+		const result = await joinIfReachable(remembered);
+		if (result) return result;
+	}
+
+	for (const { host, port: peerPort } of await query(DISCOVERY_TIMEOUT_MS)) {
+		const endpoint = { host, port: peerPort };
+		const result = await joinIfReachable(endpoint);
+		if (result) {
+			await remember(endpoint, result.serverId!);
+			return result;
 		}
 	}
 
-	// 2. UDP broadcast.
-	const peers = await queryFn(300);
-	for (const peer of peers) {
-		const answer = await probeFn({ host: peer.host, port: peer.port });
-		if (answer) {
-			await remember(peer.host, answer.id, peer.port);
-			return { role: "client", endpoint: { host: peer.host, port: peer.port }, serverId: answer.id };
-		}
-	}
+	const sameHost = await joinIfReachable(local);
+	if (sameHost) return sameHost;
+	if (options.never) return { role: "none", endpoint: null, serverId: null };
 
-	// 3. Localhost: another session on this machine may own the server.
-	const local = await probeFn({ host: "127.0.0.1", port });
-	if (local) {
-		return { role: "client", endpoint: { host: "127.0.0.1", port }, serverId: local.id };
-	}
-
-	// 4. Nothing anywhere: claim the role, unless forbidden.
-	if (options.never) {
-		return { role: "none", endpoint: null, serverId: null };
-	}
 	const selfId = userMailId(options.identity);
-	// Lazy import: client sessions never load server code.
-	const claim =
-		options.claim ??
-		(async () => {
-			const { startServer } = await import("./server/index.ts");
-			return startServer({
-				port,
-				rootDir: options.rootDir,
-				selfId,
-			});
-		});
+	let server: RunningServer | undefined;
 	try {
-		const server = await claim(selfId);
+		server = options.claim
+			? await options.claim(selfId)
+			: await (await import("./server/index.ts")).startServer({ port, rootDir: options.rootDir, selfId });
 		const result: ElectionResult = {
-			role: "server",
-			endpoint: { host: "127.0.0.1", port: server.port },
-			serverId: selfId,
-			server,
+			role: "server", endpoint: { host: local.host, port: server.port }, serverId: selfId, server,
 		};
-		// Lazy import: responder code is server-side only.
 		const { startResponder } = await import("./discovery/responder.ts");
-		result.discovery = startResponder({
+		let yielding = false;
+		result.discovery = await startResponder({
 			port: discoveryPort(),
-			hello: { service: "pi-user-mail", version: 1, id: selfId, maxChars: 100_000 },
+			ping: { service: SERVICE, version: VERSION, id: selfId, maxChars: MAX_MAIL_CHARS },
 			tcpPort: server.port,
 			onRival: (rival) => {
-				void handleRival(result, rival);
+				if (yielding || result.role !== "server" || !shouldYield(selfId, rival.ping.id)) return;
+				yielding = true;
+				void (async () => {
+					try {
+						const endpoint = { host: rival.host, port: rival.port };
+						const peer = await probe(endpoint);
+						if (peer?.version !== VERSION || peer.id !== rival.ping.id || result.role !== "server") return;
+						// Let other sessions on this machine find the winner without rediscovering it.
+						await remember(endpoint, peer.id);
+						if (result.role !== "server") return;
+						const discovery = result.discovery;
+						Object.assign(result, { role: "client", endpoint, serverId: peer.id, server: undefined, discovery: undefined });
+						await Promise.all([discovery?.stop(), server?.stop()]);
+						options.onRoleChange?.(result);
+					} finally {
+						yielding = false;
+					}
+				})().catch(() => {});
 			},
 		});
 		return result;
 	} catch (error) {
-		// Lost a bind race with a session on this machine: run as its client.
-		const late = await probeFn({ host: "127.0.0.1", port });
-		if (late) {
-			return { role: "client", endpoint: { host: "127.0.0.1", port }, serverId: late.id };
-		}
+		await server?.stop();
+		// Lost the local bind race: the winning process may have started by now.
+		const late = await joinIfReachable(local);
+		if (late) return late;
 		const claimError = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
-		try {
-			await appendFile(
-				join(options.rootDir, "debug.log"),
-				`${new Date().toISOString()} claim failed: ${claimError}\n`,
-			);
-		} catch {
-			// Debug log is best effort; never mask the election result.
-		}
+		await appendFile(join(options.rootDir, "debug.log"), `${new Date().toISOString()} claim failed: ${claimError}\n`).catch(() => {});
 		return { role: "none", endpoint: null, serverId: null, claimError };
 	}
-}
-
-/** Stop our server and hand the role to the rival when we lose the tiebreak. */
-async function handleRival(result: ElectionResult, rival: PeerHello): Promise<void> {
-	if (!result.serverId || !shouldYield(result.serverId, rival.hello.id)) return;
-	await result.discovery?.stop();
-	await result.server?.stop();
-	result.role = "client";
-	result.endpoint = { host: rival.host, port: rival.port };
-	result.serverId = rival.hello.id;
-	result.server = undefined;
-	result.discovery = undefined;
 }
