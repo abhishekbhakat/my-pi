@@ -141,6 +141,39 @@ Grep and find are `jobs spawn` of the shell command. Do not call plain `grep` or
 - `jobs stop <id>` is the only kill.
 - Server: spawn the server, then spawn `until curl -sf http://localhost:3000; do sleep 0.2; done`. Sleep inside that loop ends on a condition. A foreground loop is blocked.
 
+## Short commands
+
+Every character in tool input costs tokens. Long path, token, or flag typed again is waste. Shorten, keep same result.
+
+- Skill files: `$SKILLS` = `~/.pi/agent/skills`. `shellCommandPrefix` sets it for every `bash` call and `jobs spawn`. Skill location in prompt shows absolute path; write `$SKILLS/...` instead.
+- Shipped CLIs live on PATH via `~/.pi/agent/bin`: `slack`, `notion`, `jira`, `confluence`, `youtrack`, `zoho`, `tblt`, `tf`, `mcp-to-skill`. Call by name. Never `bun <skill dir>/slack.mjs`.
+- Value used 2+ times in one command: assign shell variable once at start, reuse.
+- Shell state dies with each tool call. Export in call 1 gone in call 2. Next call: reassign in one short line. Never assume earlier export.
+- Secret needed in many requests: load from its auth file into variable, never paste literal. Literal token cost 40+ tokens per use and lands in transcript. Never `echo`, `env`, `printenv`, or `set -x` while secret variable set.
+- Same long command every session: propose wrapper in repo `scripts/`, installed to `bin/` (pattern: `tf`, `slack`).
+- Write or delete target: literal path, `~`, `$HOME`, or `$SKILLS` only. Damage-control expands those; any other variable hides target from guard.
+
+Examples:
+
+```bash
+# Skill script. Long:
+uv run python /Users/me/.pi/agent/skills/anthropic-skills/skills/pdf/scripts/check_fillable_fields.py in.pdf
+# Short:
+uv run python $SKILLS/anthropic-skills/skills/pdf/scripts/check_fillable_fields.py in.pdf
+
+# Shipped CLI. Long:
+bun /Users/me/.pi/agent/skills/slack/slack.mjs read C123
+# Short:
+slack read C123
+
+# Same dir, many scripts in one command:
+P=$SKILLS/anthropic-skills/skills/pptx/scripts; uv run python $P/thumbnail.py deck.pptx && uv run python $P/slide_text.py deck.pptx
+
+# Token in every curl. Load once per command, never paste:
+H="Authorization: Bearer $(jq -r .api_key $SKILLS/tinyfish/tinyfish-auth.json)"
+curl -sH "$H" https://api.example.com/a && curl -sH "$H" https://api.example.com/b
+```
+
 ## Helper tools
 
 | Tool              | Use when                                  |

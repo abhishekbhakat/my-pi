@@ -22,6 +22,7 @@ const OUTPUT_MAX_LINES = 200;
 export interface ActionDeps {
 	updateStatus(jobs: readonly JobState[]): void;
 	scan(): void;
+	shellCommandPrefix?: string;
 }
 
 /** Serializes id reservation so two spawns cannot claim the same j-number. */
@@ -58,7 +59,7 @@ export async function spawnAction(
 		const paths = jobPaths(root, id);
 		let spawned;
 		try {
-			spawned = spawnJob(root, id, command, ctx.cwd);
+			spawned = spawnJob(root, id, command, ctx.cwd, deps.shellCommandPrefix);
 		} catch (error) {
 			throw new Error(`could not start ${id}: ${error instanceof Error ? error.message : String(error)}`);
 		}

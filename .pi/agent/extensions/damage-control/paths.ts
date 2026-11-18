@@ -34,7 +34,11 @@ export function resolveTarget(raw: string, cwd: string): string | null {
 	else if (target.startsWith("~/")) target = path.join(os.homedir(), target.slice(2));
 	else if (target.startsWith("$HOME/")) target = path.join(os.homedir(), target.slice(6));
 	else if (target.startsWith("${HOME}/")) target = path.join(os.homedir(), target.slice(8));
-	else if (target.includes("$") || /[`()]/.test(target)) return null;
+	else {
+		const skills = /^\$(?:SKILLS|\{SKILLS\})(?:\/|$)/.exec(target);
+		if (skills) target = path.join(os.homedir(), ".pi", "agent", "skills", target.slice(skills[0].length));
+		else if (target.includes("$") || /[`()]/.test(target)) return null;
+	}
 
 	const wild = target.search(/[*?[]/);
 	if (wild === 0) return null;

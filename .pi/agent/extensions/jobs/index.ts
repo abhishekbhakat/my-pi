@@ -11,6 +11,7 @@ import {
 } from "./actions.ts";
 import { buildSettledContent, buildSettledSummary, formatElapsed, jobLine, jobName, renderJobs } from "./format.ts";
 import { checkBashCommand, registerIdlePollingGuard } from "./guard.ts";
+import { loadShellCommandPrefix } from "./runner.ts";
 import {
 	ensureRoot,
 	jobPaths,
@@ -46,6 +47,7 @@ export default function jobsExtension(pi: ExtensionAPI) {
 	let activated = false;
 	let root: string | undefined;
 	let ctxRef: ExtensionContext | undefined;
+	let shellCommandPrefix: string | undefined;
 	let disposed = false;
 	let poller: ReturnType<typeof setInterval> | undefined;
 	let flushTimer: ReturnType<typeof setTimeout> | undefined;
@@ -252,6 +254,7 @@ export default function jobsExtension(pi: ExtensionAPI) {
 	pi.on("session_start", async (event, ctx) => {
 		activated = false;
 		ensureToolActive(ctx);
+		shellCommandPrefix = loadShellCommandPrefix(ctx.cwd, ctx.isProjectTrusted());
 		disposed = false;
 		root = jobsRoot(ctx.sessionManager.getSessionId());
 		ctxRef = ctx;
@@ -330,7 +333,7 @@ export default function jobsExtension(pi: ExtensionAPI) {
 
 		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
 			const rootPath = await ensureReady(ctx);
-			const deps = { updateStatus, scan: () => void scan(true) };
+			const deps = { updateStatus, scan: () => void scan(true), shellCommandPrefix };
 			if (params.action === "spawn") return await spawnAction(rootPath, ctx, params, signal, deps);
 			if (params.action === "list") return await listAction(rootPath, deps);
 			if (params.action === "output") return await outputAction(rootPath, params);

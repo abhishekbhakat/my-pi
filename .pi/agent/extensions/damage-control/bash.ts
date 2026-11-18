@@ -15,7 +15,7 @@ const MUTATING_COMMANDS = new Set([
 ]);
 const WRAPPER_COMMANDS = new Set(["sudo", "env", "nice", "nohup", "command", "time", "stdbuf", "timeout", "ionice"]);
 const SHELL_DASH_C = new Set(["bash", "sh", "zsh", "dash", "ksh"]);
-const REDIRECT_TARGET = /(?:^|[\s|&;])(?:\d*)>>?\s*([^\s|&;<>]+)/g;
+const REDIRECT_TARGET = /(?:^|[\s|&;])(?:\d*)>>?\s*(?:"([^"\r\n]*)"|([^\s|&;<>]+))/g;
 
 export function getBaseCommandName(cmd: string): string {
 	return path.basename(cmd);
@@ -159,7 +159,7 @@ export function redirectTargetReasons(command: string, cwd: string): string | nu
 	REDIRECT_TARGET.lastIndex = 0;
 	let match: RegExpExecArray | null;
 	while ((match = REDIRECT_TARGET.exec(command)) !== null) {
-		const reason = protectedPathReason(match[1], cwd);
+		const reason = protectedPathReason(match[1] ?? match[2], cwd);
 		if (reason) return `redirect to ${reason}`;
 	}
 	return null;

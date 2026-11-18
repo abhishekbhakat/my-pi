@@ -6,16 +6,42 @@ turn on anyone behalf.
 
 ## Tool
 
-One tool, `mail`, three actions.
-
 ```text
-mail send          Queue text into a target mailbox. Answers queued, never delivered.
-mail inbox         Peek unread headers with age. Takes optional limit.
-mail read          Inject unread bodies into your own current leaf and mark them read.
+mail send          Queue text for another session.
+mail inbox         Peek at unread headers and their ages.
+mail read          Show unread bodies in your current leaf and mark them read.
+mail sessions      List live names, short IDs, full IDs, and working directories.
 ```
 
-Address a mailbox by full session id or a unique prefix. Ambiguous prefixes
-and unknown ids fail with an error. You cannot mail your own session.
+Use a full session ID, a live name such as `dp1`, or a unique ID prefix such as
+`01a1ea16`. Pi checks in that order. A live name wins over a matching ID prefix,
+and name lookup ignores case. You can address an offline mailbox by ID, but
+not by name. You cannot mail your own session.
+
+## Session names
+
+Open Pi in `data-pipelines` to get `dp1`. Open a second session there while
+`dp1` is live to get `dp2`. Pi takes two initials from a multi-word directory
+name or two letters from a single word (`docs` gets `do`). A one-letter name
+gets an `x` suffix; a directory with no letters gets `sx`. If two working
+directories claim the same prefix, Pi adds a letter to the later project's
+prefix. Each absolute working directory keeps its prefix.
+
+The status bar shows your name as `mail dp1`. Use `mail sessions` to find other
+live names. Each line gives the name, first 8 characters of the session ID,
+full session ID, and quoted absolute working directory:
+
+```text
+dp1 01a1ea16 01a1ea16-7f47-73fb-9888-949a40b32ab0 "/work/data-pipelines"
+```
+
+Pi keeps the mapping in `<agent-dir>/pi-mail/names.json`. It checks each
+owner's PID and process start time, drops dead owners on lookup, and releases
+a name on session shutdown. Reloading or resuming a session that's still live
+keeps its name. The next session takes the lowest free number, so use a full
+ID if you need to contact the same session later. Capability child processes
+such as the coder do not take names. If Pi cannot read the registry, you can
+still use session IDs.
 
 ## Pickup rules
 
@@ -33,6 +59,7 @@ flag. Check `inbox` when you start work and when you stall.
 pi-mail/
   index.ts            Extension entry, registers mail + user_mail tools and renderer
   mailbox.ts          Agent mailbox: queue, list, resolve, ack, TTL
+  names.ts            Live session names and persistent project prefixes
   resolver.ts         Live-candidate pick for diagnostics (send path never calls it)
   user-mail/          User-facing mail over the local network (issue #5)
     index.ts          pi wiring: command, tool dispatch, renderer
@@ -57,7 +84,8 @@ across the LAN so a team can leave passive messages for each other.
 
 - One message body: at most 100_000 characters.
 - One mailbox unread total: at most 100_000 characters of body text.
-- `inbox` / `read` `limit`: capped at 50 (default 20).
+- `inbox` and `read`: 20 entries by default, at most 50.
+- `sessions`: at most 50 entries by default; use `limit` for a shorter list.
 - One `read` batch stops once injected body text hits 100_000 characters;
   remaining unread stay queued for the next `read`.
 

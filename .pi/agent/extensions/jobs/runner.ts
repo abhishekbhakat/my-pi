@@ -1,5 +1,6 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { closeSync, openSync } from "node:fs";
+import { SettingsManager } from "@earendil-works/pi-coding-agent";
 import { jobPaths, pidAlive, pidOwner } from "./state.ts";
 
 /**
@@ -29,11 +30,21 @@ export interface SpawnedJob {
 	pid: number | undefined;
 }
 
-export function spawnJob(root: string, id: string, command: string, cwd: string): SpawnedJob {
+export function loadShellCommandPrefix(cwd: string, projectTrusted: boolean): string | undefined {
+	try {
+		const prefix = SettingsManager.create(cwd, undefined, { projectTrusted }).getShellCommandPrefix();
+		return typeof prefix === "string" ? prefix : undefined;
+	} catch {
+		return undefined;
+	}
+}
+
+export function spawnJob(root: string, id: string, command: string, cwd: string, shellCommandPrefix?: string): SpawnedJob {
 	const paths = jobPaths(root, id);
+	const script = shellCommandPrefix ? `${shellCommandPrefix}\n${command}` : command;
 	const fd = openSync(paths.log, "a");
 	try {
-		const child = spawn("/bin/bash", ["-c", WRAPPER, "pijob", command, paths.exit], {
+		const child = spawn("/bin/bash", ["-c", WRAPPER, "pijob", script, paths.exit], {
 			cwd,
 			detached: process.platform !== "win32",
 			stdio: ["ignore", fd, fd],

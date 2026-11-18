@@ -2,11 +2,14 @@ import { randomUUID } from "node:crypto";
 import { homedir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 import { mkdir, readdir, readFile, rename, writeFile } from "node:fs/promises";
+import { isNameLockEntry } from "./name-lock.ts";
+import { readSessionNames, type SessionName } from "./names.ts";
 
 export interface MailMessage {
 	id: string;
 	fromSessionId: string;
 	fromName?: string;
+	fromAlias?: string;
 	text: string;
 	sentAt: number;
 }
@@ -64,6 +67,7 @@ export async function queueMail(
 	fromSessionId: string,
 	text: string,
 	fromName?: string,
+	fromAlias?: string,
 ): Promise<QueuedReceipt> {
 	const to = sanitizeSessionId(toSessionId);
 	const from = sanitizeSessionId(fromSessionId);
@@ -86,6 +90,7 @@ export async function queueMail(
 		id: randomUUID(),
 		fromSessionId: from,
 		...(fromName?.trim() ? { fromName: fromName.trim() } : {}),
+		...(fromAlias ? { fromAlias } : {}),
 		text,
 		sentAt: Date.now(),
 	};
@@ -151,19 +156,29 @@ export async function listSessionIds(agentDir: string): Promise<string[]> {
 	return [...ids];
 }
 
-/** Resolve `to` to a mailbox session id: exact match, else unique id prefix. */
-export async function resolveMailbox(agentDir: string, to: string): Promise<string> {
+/** Resolve `to` by full ID, then by live name, then by unique ID prefix. */
+export async function resolveMailbox(
+	agentDir: string,
+	to: string,
+	liveNames?: ReadonlyMap<string, SessionName>,
+): Promise<string> {
 	const trimmed = to.trim();
 	if (!trimmed) throw new Error("to is required");
-	let stores: string[];
+	const mailDir = getMailDir(agentDir);
+	let stores: string[] = [];
 	try {
-		stores = await readdir(getMailDir(agentDir));
+		stores = (await readdir(mailDir, { withFileTypes: true }))
+			.filter((entry) => entry.isDirectory() && !isNameLockEntry(entry.name)).map((entry) => entry.name);
 	} catch (error) {
 		if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-		stores = [];
 	}
-	const known = new Set([...stores, ...(await listSessionIds(agentDir))]);
+	const names = liveNames ?? await readSessionNames(mailDir);
+	const known = new Set([...stores, ...(await listSessionIds(agentDir)), ...names.keys()]);
 	if (known.has(trimmed)) return trimmed;
+	const alias = trimmed.toLowerCase();
+	for (const session of names.values()) {
+		if (session.name === alias) return session.id;
+	}
 	const prefixed = [...known].filter((s) => s.startsWith(trimmed));
 	if (prefixed.length === 1) return prefixed[0]!;
 	if (prefixed.length > 1) {
