@@ -2,8 +2,7 @@ import { randomUUID } from "node:crypto";
 import { homedir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 import { mkdir, readdir, readFile, rename, writeFile } from "node:fs/promises";
-import { isNameLockEntry } from "./name-lock.ts";
-import { readSessionNames, type SessionName } from "./names.ts";
+import { readSessionNames, type SessionName } from "../names/registry.ts";
 
 export interface MailMessage {
 	id: string;
@@ -168,7 +167,7 @@ export async function resolveMailbox(
 	let stores: string[] = [];
 	try {
 		stores = (await readdir(mailDir, { withFileTypes: true }))
-			.filter((entry) => entry.isDirectory() && !isNameLockEntry(entry.name)).map((entry) => entry.name);
+			.filter((entry) => entry.isDirectory() && !entry.name.startsWith(".")).map((entry) => entry.name);
 	} catch (error) {
 		if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
 	}

@@ -8,7 +8,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { CompactBlock, blockPreview, blockText, compactToolRenderers } from "#compact-blocks";
 import { Type } from "@sinclair/typebox";
-import { getAgentDirPath } from "../mailbox.ts";
+import { getAgentDirPath } from "../mail/mailbox.ts";
 import { registerUser } from "./client.ts";
 import { getLocalIdentity, setAlias, getUserMailDir, userMailId } from "./identity.ts";
 import { MAX_LIST_LIMIT } from "./session/format.ts";

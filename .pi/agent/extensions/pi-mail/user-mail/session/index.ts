@@ -6,7 +6,7 @@
  * never cached so the next call retries. No @earendil-works imports.
  */
 
-import { getAgentDirPath } from "../../mailbox.ts";
+import { getAgentDirPath } from "../../mail/mailbox.ts";
 import { runElection, type ElectionResult } from "../election.ts";
 import { getLocalIdentity, getUserMailDir } from "../identity.ts";
 

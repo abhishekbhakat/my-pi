@@ -19,6 +19,7 @@ import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 
 const LABEL = "TOK/s";
 const MIN_PAD = 2;
+const MAIL_STATUS_ID = "pi-mail";
 const MIN_MS = 50;
 
 // mistral-vibe-cli publishes provider-reported tok/s here per turn
@@ -164,15 +165,18 @@ export default function (pi: ExtensionAPI) {
 						theme.fg("dim", statsLine),
 					];
 
-					const statuses = footerData.getExtensionStatuses();
+					const statuses = new Map(footerData.getExtensionStatuses() as Map<string, string>);
+					// Pi mail session name goes right-aligned in place of the long session id.
+					const mailName = statuses.get(MAIL_STATUS_ID)?.trim() ?? "";
+					statuses.delete(MAIL_STATUS_ID);
 					const statusText = statuses.size > 0
 						? Array.from(statuses.entries())
 							.sort(([a], [b]) => a.localeCompare(b))
 							.map(([, v]) => v.replace(/[\r\n\t]/g, " ").trim())
 							.join(" ")
 						: "";
-					// Session id right-aligned on this line, statuses left (old session-id.ts line 3).
-					const sessionId = ctx.sessionManager.getSessionId?.() ?? "";
+					// Right side: mail name (mp1), else 8-char short id.
+					const sessionId = mailName || (ctx.sessionManager.getSessionId?.() ?? "").slice(0, 8);
 					let lastLine: string | null = null;
 					if (sessionId) {
 						const leftW = visibleWidth(statusText);

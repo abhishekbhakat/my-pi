@@ -1,10 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { readFile, rename, writeFile } from "node:fs/promises";
 import { basename, isAbsolute, join, resolve } from "node:path";
-import { errorCode, unlinkIfPresent, withNameLock } from "./name-lock.ts";
-import { isProcessId, readProcessStarts } from "./process-starts.ts";
+import { errorCode, unlinkIfPresent, withNameLock } from "./lock.ts";
+import { isProcessId, readProcessStarts } from "./process.ts";
 
-type Owner = { pid: number; processStart: string };
+export type PagerPresence = { key: string; lastActiveMs: number; cwd: string };
+type Owner = { pid: number; processStart: string; pager?: PagerPresence };
 
 export type SessionName = Owner & {
 	name: string;
@@ -24,8 +25,8 @@ function sameOwner(a: Owner, b: Owner): boolean {
 }
 
 function owners(session: SessionName): Owner[] {
-	const { pid, processStart, otherOwners = [] } = session;
-	return [{ pid, processStart }, ...otherOwners];
+	const { pid, processStart, pager, otherOwners = [] } = session;
+	return [{ pid, processStart, pager }, ...otherOwners];
 }
 
 function withOwners(session: SessionName, live: Owner[]): SessionName {
@@ -37,8 +38,19 @@ function record(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+export function isPagerKey(key: unknown): key is string {
+	return typeof key === "string" && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(key);
+}
+
+function validPresence(value: unknown): value is PagerPresence {
+	return record(value) && isPagerKey(value.key) && typeof value.lastActiveMs === "number" &&
+		Number.isSafeInteger(value.lastActiveMs) && value.lastActiveMs > 0 &&
+		typeof value.cwd === "string" && isAbsolute(value.cwd);
+}
+
 function validOwner(value: unknown): value is Owner & Record<string, unknown> {
-	return record(value) && isProcessId(value.pid) && typeof value.processStart === "string" && value.processStart.length > 0;
+	return record(value) && isProcessId(value.pid) && typeof value.processStart === "string" &&
+		value.processStart.length > 0 && (value.pager === undefined || validPresence(value.pager));
 }
 
 function validId(id: string): boolean {
@@ -113,7 +125,9 @@ async function pruneSessions(registry: Registry): Promise<{ live: Map<string, Se
 			current = withOwners(session, remaining);
 			registry.sessions.set(id, current);
 		}
-		if (remaining.some(({ pid, processStart }) => starts.get(pid) === processStart)) live.set(id, current);
+		const confirmed = remaining.filter(({ pid, processStart }) => starts.get(pid) === processStart)
+			.sort((a, b) => (b.pager?.lastActiveMs ?? 0) - (a.pager?.lastActiveMs ?? 0) || a.pid - b.pid);
+		if (confirmed.length > 0) live.set(id, withOwners(current, confirmed));
 	}
 	return { live, changed };
 }
@@ -162,21 +176,36 @@ async function currentProcess(): Promise<Owner | undefined> {
 	return processStart ? { pid, processStart } : undefined;
 }
 
-export async function assignSessionName(mailDir: string, id: string, cwd: string): Promise<string | undefined> {
+export async function assignSessionName(
+	mailDir: string, id: string, cwd: string, pager?: PagerPresence,
+): Promise<string | undefined> {
 	if (process.env.PI_CAPABILITY_CHILD === "1") return;
 	if (!validId(id)) throw new Error("Invalid pi-mail session id");
 	const owner = await currentProcess();
 	if (!owner) throw new Error("Could not determine process start time for pi-mail session names");
+	owner.pager = pager;
 
 	return withNameLock(mailDir, async () => {
 		const registry = await readRegistry(mailDir);
-		const { changed } = await pruneSessions(registry);
+		let { changed } = await pruneSessions(registry);
+		// A process can serve only its current session, even if the last shutdown missed its release.
+		for (const [otherId, session] of registry.sessions) {
+			if (otherId === id) continue;
+			const claims = owners(session);
+			const remaining = claims.filter((claim) => !sameOwner(claim, owner));
+			if (remaining.length === claims.length) continue;
+			if (remaining.length > 0) registry.sessions.set(otherId, withOwners(session, remaining));
+			else registry.sessions.delete(otherId);
+			changed = true;
+		}
 		const existing = registry.sessions.get(id);
 		if (existing) {
 			const claims = owners(existing);
-			const shared = !claims.some((claim) => sameOwner(claim, owner));
-			if (shared) registry.sessions.set(id, withOwners(existing, [...claims, owner]));
-			if (changed || shared) await writeRegistry(mailDir, registry);
+			const previous = claims.find((claim) => sameOwner(claim, owner));
+			if (changed || !previous || previous.pager || pager) {
+				registry.sessions.set(id, withOwners(existing, [...claims.filter((claim) => claim !== previous), owner]));
+				await writeRegistry(mailDir, registry);
+			}
 			return existing.name;
 		}
 
@@ -190,6 +219,20 @@ export async function assignSessionName(mailDir: string, id: string, cwd: string
 		registry.sessions.set(id, { name, id, shortId: id.slice(0, 8), cwd: projectPath, ...owner });
 		await writeRegistry(mailDir, registry);
 		return name;
+	});
+}
+
+export async function touchPagerPresence(mailDir: string, id: string, key: string, at: number): Promise<void> {
+	await withNameLock(mailDir, async () => {
+		const registry = await readRegistry(mailDir);
+		const session = registry.sessions.get(id);
+		if (!session) return;
+		const claims = owners(session);
+		const presence = claims.find((claim) => claim.pid === process.pid && claim.pager?.key === key)?.pager;
+		if (!presence || presence.lastActiveMs >= at) return;
+		presence.lastActiveMs = at;
+		registry.sessions.set(id, withOwners(session, claims));
+		await writeRegistry(mailDir, registry);
 	});
 }
 

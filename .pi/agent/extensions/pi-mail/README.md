@@ -1,10 +1,9 @@
 # pi-mail
 
-Passive mailbox for pi sessions on one machine. You queue a message into
-another session mailbox. That session reads it when active. Nothing runs a
-turn on anyone behalf.
+Use `mail` to leave a message for another Pi session on this machine. Use
+`pager` if that session needs to act before it checks its inbox.
 
-## Tool
+## Mail
 
 ```text
 mail send          Queue text for another session.
@@ -18,6 +17,25 @@ Use a full session ID, a live name such as `dp1`, or a unique ID prefix such as
 and name lookup ignores case. You can address an offline mailbox by ID, but
 not by name. You cannot mail your own session.
 
+## Pager
+
+Call `pager` with `action: "send"`, `to`, and `message`. Use a live name,
+full session ID, or unique ID prefix for `to`. If the recipient is offline,
+use `mail`.
+
+If the user has the same session open in two processes, Pager picks the one
+with the latest startup, user input, or branch navigation. The receiving Pi
+process submits the page as a user message on the branch it has open. An idle
+session starts a turn. A busy session steers after its current tool calls.
+Pager does not edit session files. Capability children and one-shot Pi runs
+can send pages but cannot receive them.
+
+Pager waits up to three seconds for the target to acknowledge the user
+message. A timeout does not cancel the page. Unclaimed pages expire after
+30 seconds or when the receiving session closes or switches sessions.
+Use mail for anything that can wait. Pages are limited to 4,000 characters,
+five per target process per minute, and three reply hops.
+
 ## Session names
 
 Open Pi in `data-pipelines` to get `dp1`. Open a second session there while
@@ -27,7 +45,8 @@ gets an `x` suffix; a directory with no letters gets `sx`. If two working
 directories claim the same prefix, Pi adds a letter to the later project's
 prefix. Each absolute working directory keeps its prefix.
 
-The status bar shows your name as `mail dp1`. Use `mail sessions` to find other
+The footer shows your name, such as `dp1`, at the right end of the status line,
+where the long session ID used to be. Use `mail sessions` to find other
 live names. Each line gives the name, first 8 characters of the session ID,
 full session ID, and quoted absolute working directory:
 
@@ -52,30 +71,6 @@ own inject. A crash mid-batch redelivers the remainder instead of dropping it.
 
 Mail older than the TTL (7 days, `PI_MAIL_TTL_MS` overrides) shows a stale
 flag. Check `inbox` when you start work and when you stall.
-
-## Layout
-
-```text
-pi-mail/
-  index.ts            Extension entry, registers mail + user_mail tools and renderer
-  mailbox.ts          Agent mailbox: queue, list, resolve, ack, TTL
-  names.ts            Live session names and persistent project prefixes
-  resolver.ts         Live-candidate pick for diagnostics (send path never calls it)
-  user-mail/          User-facing mail over the local network (issue #5)
-    index.ts          pi wiring: command, tool dispatch, renderer
-    session/          Election cache, srv chip, formatting
-    identity.ts       username + alias, mail ids
-    protocol.ts       Ports, wire types, validators
-    client.ts         HTTP client to the network server
-    discovery/        UDP query (clients) and responder (server)
-    election.ts       Find or claim the one server per network
-    mailbox/          Receiving: shared store, mirror sync, inbox, read
-    outbox/           Sending: target resolution, envelope post
-    server/           Only loaded by the election winner: routes, registry,
-                      rate limit, node:http plumbing
-
-See user-mail/DESIGN.md for the protocol and lifecycle.
-```
 
 `mail` stays session-to-session on one machine. `user_mail` targets users
 across the LAN so a team can leave passive messages for each other.

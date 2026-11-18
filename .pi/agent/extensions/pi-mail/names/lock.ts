@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, mkdtemp, readdir, readFile, rename, rmdir, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
-import { isProcessId, readProcessStarts } from "./process-starts.ts";
+import { isProcessId, readProcessStarts } from "./process.ts";
 
 const LOCK_DIR = ".names-lock";
 const PID_MARKER = /^(\d+)-[0-9a-f-]{36}$/;
@@ -49,10 +49,6 @@ async function recoverLock(lock: string): Promise<void> {
 		}
 	}
 	await removeEmptyDir(lock);
-}
-
-export function isNameLockEntry(fileName: string): boolean {
-	return fileName === LOCK_DIR || fileName.startsWith(`${LOCK_DIR}-`);
 }
 
 export async function withNameLock<T>(mailDir: string, update: () => Promise<T>): Promise<T> {
