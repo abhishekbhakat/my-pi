@@ -20,7 +20,6 @@
  */
 
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { StringEnum } from "@earendil-works/pi-ai";
 import { Type } from "@sinclair/typebox";
 import { compactToolRenderers } from "#compact-blocks";
 import { execFile } from "node:child_process";
@@ -297,7 +296,10 @@ export default function planExtension(pi: ExtensionAPI) {
 			"When every item is done, run the completion packet (reasoning_coach) before reporting done.",
 		],
 		parameters: Type.Object({
-			action: StringEnum(["create", "list", "status", "claim", "check", "complete", "amend", "abandon"] as const, {
+			action: Type.Union([
+				Type.Literal("create"), Type.Literal("list"), Type.Literal("status"), Type.Literal("claim"),
+				Type.Literal("check"), Type.Literal("complete"), Type.Literal("amend"), Type.Literal("abandon"),
+			], {
 				description: "create/list/status manage plans; claim/check/complete drive one item; amend is logged; abandon stops",
 			}),
 			goal: Type.Optional(Type.String({ description: "Goal verbatim (create only)" })),
@@ -311,20 +313,22 @@ export default function planExtension(pi: ExtensionAPI) {
 						dependsOn: Type.Optional(Type.Array(Type.Integer(), { description: "Item ids that must be done first" })),
 						assumptions: Type.Optional(Type.Array(Type.String(), { description: "Assumptions whose failure should escalate" })),
 					}),
+					{ description: "Checklist items (create only). Fewest that work, cap 5 per group." },
 				),
-				{ description: "Checklist items (create only). Fewest that work, cap 5 per group." },
 			),
 			riskiestItem: Type.Optional(Type.Integer({ description: "Item id after which a wrong approach gets expensive (create only)" })),
 			risks: Type.Optional(Type.Array(Type.String(), { description: "Top risks (create only)" })),
 			item: Type.Optional(Type.Integer({ description: "Item id (claim, check, complete, amend)" })),
 			text: Type.Optional(Type.String({ description: "New action text (amend reword/add)" })),
 			reason: Type.Optional(Type.String({ description: "Why (amend only, append-only log)" })),
-			op: Type.Optional(StringEnum(["reword", "add", "drop", "reorder", "check_change"] as const, { description: "Amend kind" })),
+			op: Type.Optional(Type.Union([
+				Type.Literal("reword"), Type.Literal("add"), Type.Literal("drop"), Type.Literal("reorder"), Type.Literal("check_change"),
+			], { description: "Amend kind" })),
 			order: Type.Optional(Type.Array(Type.Integer(), { description: "New id order (amend reorder)" })),
 			check: Type.Optional(Type.String({ description: "Replacement check (amend check_change/add)" })),
 			judgment: Type.Optional(Type.String({ description: "Replacement acceptance text (amend check_change/add)" })),
 			files: Type.Optional(Type.Array(Type.String(), { description: "Replacement files (amend check_change/add)" })),
-			judgmentVerdict: Type.Optional(StringEnum(["pass", "fail"] as const, { description: "Judge verdict (complete of a judgment item)" })),
+			judgmentVerdict: Type.Optional(Type.Union([Type.Literal("pass"), Type.Literal("fail")], { description: "Judge verdict (complete of a judgment item)" })),
 			judgmentSource: Type.Optional(Type.String({ description: "Who judged and what they returned, e.g. boolean_guy Noul q1=true" })),
 		}),
 		async execute(_toolCallId, params, signal, _onUpdate, ctx: ExtensionContext): Promise<ToolText> {
@@ -445,8 +449,9 @@ export default function planExtension(pi: ExtensionAPI) {
 					if (params.judgmentVerdict !== "pass") {
 						throw new Error(`Judgment item ${item.id} needs judgmentVerdict=pass and judgmentSource. Verdict missing or fail; fix and re-ask, or ESCALATE [uncheckable].`);
 					}
-					if (!(params.judgmentSource ?? "").trim()) throw new Error("judgmentSource required (who judged, what they returned).");
-					item.evidence = { kind: "judgment", verdict: "pass", source: params.judgmentSource.trim(), at: Date.now() };
+					const source = params.judgmentSource?.trim();
+					if (!source) throw new Error("judgmentSource required (who judged, what they returned).");
+					item.evidence = { kind: "judgment", verdict: "pass", source, at: Date.now() };
 				} else {
 					const ev = item.evidence;
 					if (!ev || ev.kind !== "cmd") throw new Error(`No check evidence for item ${item.id}. Run check first.`);
