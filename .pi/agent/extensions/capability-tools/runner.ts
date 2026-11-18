@@ -28,12 +28,11 @@ function splitModelRef(modelRef: string): { provider: string; modelId: string } 
 	};
 }
 
-const FAST_WRAP_KEY = Symbol.for("my-pi.fast-mode.wrap.v2");
+const FAST_TIER_KEY = Symbol.for("my-pi.fast-mode.service-tier");
 
-type FastWireState = { enabled?: boolean; remember?: (provider: string, id: string) => void };
-
-function fastWireState(): FastWireState | undefined {
-	return (globalThis as typeof globalThis & { [FAST_WRAP_KEY]?: FastWireState })[FAST_WRAP_KEY];
+function fastServiceTier(provider: string): "priority" | undefined {
+	const shared = globalThis as typeof globalThis & { [FAST_TIER_KEY]?: (provider: string) => "priority" | undefined };
+	return shared[FAST_TIER_KEY]?.(provider);
 }
 
 function extractText(response: {
@@ -245,9 +244,7 @@ export async function executeCapability(
 	}
 	const prompt = buildCapabilityPrompt(input.task, context);
 
-	const fast = fastWireState();
-	const serviceTier = (model.provider === "openai" || model.provider === "openai-codex") && fast?.enabled ? "priority" : undefined;
-	fast?.remember?.(model.provider, model.id);
+	const serviceTier = fastServiceTier(model.provider);
 
 	onUpdate?.({
 		content: [{
