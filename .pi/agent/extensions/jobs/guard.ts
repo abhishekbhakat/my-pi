@@ -2,9 +2,10 @@
  * Command guards. Every rule exists because a duration was guessed or an exit code
  * was thrown away. Foreground bash may not sleep at all; a spawned job may sleep
  * only inside a retry loop, which ends on a condition instead of a clock.
- * Repeated status polling stops the response without cancelling background work.
+ * Repeated status reads of active work return guidance without interrupting the response.
  */
 
+import type { CapabilityStatusQuery } from "#capability-background";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 const CMD_START = String.raw`(?:^|[;&|({]\s*|\b(?:env|sudo|xargs|command|exec)\s+)`;
@@ -16,93 +17,103 @@ const RETRY_LOOP = /\b(?:until|while)\b/;
 
 export const SPAWN_HINT = 'Use jobs spawn "<command>". Exit wakes you with the code and output.';
 
-/**
- * Stop identical `jobs output` polling on the second consecutive call, and
- * `capability_jobs list/output` polling on the third. `jobs list` is never blocked.
- * Other calls or changed parameters break the streak. Background work keeps
- * running; user input and completion wakes reset the allowance.
- */
-export function registerIdlePollingGuard(pi: ExtensionAPI): void {
-	let sessionId: string | undefined;
-	let streak = 0;
-	let lastKey: string | undefined;
-	let turnIndex = 0;
-	let lastCountedTurn = -1;
-	let stopped = false;
-	const wrappers = new Map<string, boolean>();
+type Polls = { count: number; lastDirectTurn?: number };
 
-	function breakStreak(): void {
-		streak = 0;
-		lastKey = undefined;
-		lastCountedTurn = -1;
+function countPoll(polls: Polls, turn: number, nested: boolean, limit: number): boolean {
+	if (nested || polls.lastDirectTurn !== turn) {
+		polls.count = Math.min(polls.count + 1, limit);
+		if (!nested) polls.lastDirectTurn = turn;
 	}
+	return polls.count >= limit;
+}
+
+function isActive(status: string): boolean {
+	return status === "running" || status === "cancelling";
+}
+
+export function registerIdlePollingGuard(
+	pi: ExtensionAPI,
+	isRunningJob: (sessionId: string, id: string) => Promise<boolean>,
+): void {
+	let sessionId: string | undefined;
+	let turn = 0;
+	const shellPolls = new Map<string, Polls>();
+	const capabilityPolls = new Map<string, Polls>();
+	let capabilityList: (Polls & { snapshot: string }) | undefined;
 
 	function reset(): void {
-		streak = 0;
-		lastKey = undefined;
-		turnIndex = 0;
-		lastCountedTurn = -1;
-		stopped = false;
-		wrappers.clear();
-	}
-
-	function jobStatusKey(name: string, input: unknown): string | undefined {
-		const args = input as { action?: unknown; id?: unknown } | null;
-		const action = args?.action;
-		const shellOutput = name === "jobs" && action === "output";
-		const capabilityStatus = name === "capability_jobs" && (action === "list" || action === "output");
-		if (!shellOutput && !capabilityStatus) return undefined;
-		// Include the tool name so shell and capability status checks never combine.
-		// Sorting keys makes property order irrelevant, while any changed value
-		// (id, action, lines, or another parameter) breaks the streak.
-		return `${name}:${JSON.stringify(Object.entries(input as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)))}`;
+		shellPolls.clear();
+		capabilityPolls.clear();
+		capabilityList = undefined;
 	}
 
 	pi.on("input", () => reset());
-	pi.on("agent_start", () => reset());
 	pi.on("session_start", (_event, ctx) => { sessionId = ctx.sessionManager.getSessionId(); reset(); });
 	pi.on("session_before_switch", () => reset());
 	pi.on("session_shutdown", () => reset());
 	pi.on("message_start", (event) => {
 		const message = event.message;
-		if (message.role === "user" || (message.role === "custom" &&
-			(message.customType === "pi_job_exit" || message.customType === "capability_result"))) reset();
+		if (message.role === "user") reset();
+		if (message.role !== "custom") return;
+		if (message.customType === "pi_job_exit") {
+			const details = message.details as { ids?: string[]; stall?: boolean } | undefined;
+			if (!details?.stall) for (const id of details?.ids ?? []) shellPolls.delete(id);
+		} else if (message.customType === "capability_result") {
+			const details = message.details as { id?: string } | undefined;
+			if (details?.id) capabilityPolls.delete(details.id);
+			capabilityList = undefined;
+		}
 	});
-	pi.on("turn_start", () => { turnIndex++; });
-	pi.on("tool_execution_end", (event) => {
-		if (!wrappers.has(event.toolCallId)) return;
-		if (!wrappers.get(event.toolCallId)) breakStreak();
-		wrappers.delete(event.toolCallId);
-	});
-	pi.on("tool_call", (event, ctx) => {
+	pi.on("turn_start", () => { turn++; });
+	pi.on("tool_call", async (event, ctx) => {
 		if (ctx.mode === "print" || ctx.mode === "json" || process.env.PI_CAPABILITY_CHILD === "1") return;
+		if (event.toolName !== "jobs" && event.toolName !== "capability_jobs") return;
+		const { action, id } = event.input as { action?: string; id?: string };
+		const shell = event.toolName === "jobs" && action === "output";
+		const capability = event.toolName === "capability_jobs" && (action === "output" || action === "list");
+		if (!shell && !capability) return;
 		const currentSession = ctx.sessionManager.getSessionId();
 		if (sessionId !== currentSession) { sessionId = currentSession; reset(); }
-		if (stopped) return { block: true, terminate: true, reason: "Response stopped after repeated identical background status polling." };
-		if (event.parentToolCallId && wrappers.has(event.parentToolCallId)) wrappers.set(event.parentToolCallId, true);
-		// Codemode is a transparent wrapper. Nested calls determine the streak;
-		// a script with no tool calls breaks it when the wrapper finishes.
-		if (event.toolName === "codemode") { wrappers.set(event.toolCallId, false); return; }
-		const key = jobStatusKey(event.toolName, event.input);
-		if (key === undefined) { breakStreak(); return; }
-		// Parallel siblings in one assistant message count once. Nested calls
-		// (e.g. a codemode loop polling) count each time, so they cannot hide.
-		if (!event.parentToolCallId && lastCountedTurn === turnIndex && lastKey === key) return;
-		if (key === lastKey) streak++;
-		else { streak = 1; lastKey = key; }
-		lastCountedTurn = turnIndex;
-		const capability = event.toolName === "capability_jobs";
-		if (streak < (capability ? 3 : 2)) return;
-		stopped = true;
-		const input = event.input as { action: string; id?: string };
-		const target = `${event.toolName} ${input.action}${input.id ? ` ${input.id}` : ""}`;
-		const wake = capability ? "capability_result wake" : "completion wake";
-		const reason = `Repeated identical status polling blocked (${target}). End the turn and wait for the ${wake}. Background work was not cancelled.`;
-		// abort() is synchronous at this API boundary. Do not await session idle
-		// from inside a tool hook; the blocked call must finalize first.
-		ctx.abort();
-		ctx.ui.notify(`Stopped idle ${capability ? "capability" : "job"} polling (${target}). Background work was not cancelled.`, "warning");
-		return { block: true, terminate: true, reason };
+		// Parallel siblings count once per target. Codemode's nested calls count individually.
+		const nested = Boolean(event.parentToolCallId);
+		const blocked = (status: string) => ({
+			block: true,
+			reason: `${status} Finish this turn and wait for the completion message. Check status again only if the user asks.`,
+		});
+
+		if (shell) {
+			const jobId = id?.trim();
+			if (!jobId || !/^j\d+$/.test(jobId)) return;
+			const polls = shellPolls.get(jobId) ?? { count: 0 };
+			shellPolls.set(jobId, polls);
+			if (!countPoll(polls, turn, nested, 2)) return;
+			const running = await isRunningJob(currentSession, jobId);
+			// Ignore an in-flight check if a wake or user input reset its allowance.
+			if (shellPolls.get(jobId) !== polls) return;
+			if (running) return blocked(`Job ${jobId} is still running.`);
+			shellPolls.delete(jobId);
+			return;
+		}
+
+		let snapshot: Parameters<CapabilityStatusQuery["reply"]>[0] | undefined;
+		const query: CapabilityStatusQuery = { sessionId: currentSession, reply: (runs) => { snapshot = runs; } };
+		pi.events.emit("capability:polling-status", query);
+		// If the capability extension is not loaded, leave status handling to the tool.
+		if (snapshot === undefined) return;
+		if (action === "list") {
+			if (!snapshot.some(([, status]) => isActive(status))) { capabilityList = undefined; return; }
+			const key = JSON.stringify(snapshot);
+			if (capabilityList?.snapshot !== key) capabilityList = { snapshot: key, count: 0 };
+			if (countPoll(capabilityList, turn, nested, 3)) return blocked("Capability list is unchanged and work is still active.");
+			return;
+		}
+
+		if (!id) return;
+		const status = snapshot.find(([runId]) => runId === id)?.[1];
+		if (status === undefined || !isActive(status)) { capabilityPolls.delete(id); return; }
+		const polls = capabilityPolls.get(id) ?? { count: 0 };
+		capabilityPolls.set(id, polls);
+		if (countPoll(polls, turn, nested, 3)) return blocked(`Capability ${id} is still ${status}.`);
 	});
 }
 

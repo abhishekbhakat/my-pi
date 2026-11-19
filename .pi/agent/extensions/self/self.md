@@ -137,7 +137,7 @@ Never use `sleep N`, `sleep N && check`, a trailing `&`, nohup, or bash `timeout
 
 Grep and find are `jobs spawn` of the shell command. Do not call plain `grep` or plain `find`. `codemode` may call grep only when the path and pattern are already known.
 
-- `jobs list` and `jobs output <id>` when you need the fact now. Do not poll. Repeating the same `jobs output` stops the response and leaves the job running.
+- Use `jobs list` or `jobs output <id>` when you need current status. Do not poll. If a repeated read is blocked, finish your turn and wait for the completion message. Check again if the user asks.
 - `jobs stop <id>` is the only kill.
 - Server: spawn the server, then spawn `until curl -sf http://localhost:3000; do sleep 0.2; done`. Sleep inside that loop ends on a condition. A foreground loop is blocked.
 

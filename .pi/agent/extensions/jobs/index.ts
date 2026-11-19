@@ -19,8 +19,11 @@ import {
 	listJobs,
 	logSize,
 	markNotified,
+	pidOwner,
 	pruneJobs,
 	pruneSessionRoots,
+	readExitCode,
+	readJob,
 	reconcile,
 	tailLog,
 	type JobState,
@@ -43,7 +46,12 @@ function toneForJobs(jobs: readonly JobState[]): JobTone {
 }
 
 export default function jobsExtension(pi: ExtensionAPI) {
-	registerIdlePollingGuard(pi);
+	registerIdlePollingGuard(pi, async (sessionId, id) => {
+		const root = jobsRoot(sessionId);
+		const job = await readJob(root, id);
+		return job?.status === "running" && await pidOwner(job.pid) === "ours" &&
+			await readExitCode(jobPaths(root, id).exit) === undefined;
+	});
 	let activated = false;
 	let root: string | undefined;
 	let ctxRef: ExtensionContext | undefined;
@@ -312,7 +320,7 @@ export default function jobsExtension(pi: ExtensionAPI) {
 			"For a server: spawn it, then spawn a readiness loop such as `until curl -sf http://localhost:3000; do sleep 0.2; done`. Sleep inside a spawned loop is fine because the loop ends on a condition.",
 			"Foreground bash is only a command you already know returns at once. A call that hits the tool timeout broke this rule. There is no `timeout` parameter; it is stripped.",
 			"Check with `jobs list` or `jobs output <id>` only when you need the answer now. Do not poll a running job with sleep.",
-			"Do not poll; end the turn and wait for the exit wake. Repeating the same jobs output call with the same parameters stops the current response without cancelling background work.",
+			"Do not poll. A second status read for the same running job can be blocked. Finish the turn and wait for its completion message, or check again if the user asks.",
 		],
 		...jobToolRenderers,
 		parameters: Type.Object({

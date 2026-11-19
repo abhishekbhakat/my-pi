@@ -166,13 +166,13 @@ export async function reconcile(root: string): Promise<Reconciled> {
 				exitCode: code,
 				endedAt: await fileMtime(paths.exit),
 			});
-			changed.push(updated);
+			changed.push(Object.assign(job, updated));
 			continue;
 		}
 		const owner = await pidOwner(job.pid);
 		if (owner !== "ours") {
 			const updated = await mergeWrite(root, job, { status: "lost", endedAt: Date.now() });
-			changed.push(updated);
+			changed.push(Object.assign(job, updated));
 		}
 	}
 	return { changed, all };

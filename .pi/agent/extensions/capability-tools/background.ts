@@ -24,6 +24,11 @@ export interface CapabilityRun {
 	send?: CoderSend;
 }
 
+export interface CapabilityStatusQuery {
+	sessionId: string;
+	reply(runs: ReadonlyArray<readonly [id: string, status: CapabilityRun["status"]]>): void;
+}
+
 export class CapabilityBackground {
 	readonly runs = new Map<string, CapabilityRun>();
 	private generation = 0;
@@ -208,6 +213,13 @@ export function renderPanes(panes: Pane[], width: number, dim: (text: string) =>
 export function registerBackground(pi: ExtensionAPI): CapabilityBackground {
 	registerCapabilityMessages(pi);
 	const background = new CapabilityBackground(pi);
+	// Reply synchronously so the polling guard sees current state before the tool reads output.
+	pi.events.on("capability:polling-status", (data) => {
+		const { sessionId, reply } = data as CapabilityStatusQuery;
+		reply([...background.runs.values()]
+			.filter((run) => run.sessionId === sessionId)
+			.map((run) => [run.id, run.status]));
+	});
 	pi.on("session_start", (_event, ctx) => background.bind(ctx));
 	pi.on("session_before_switch", () => background.cancelAll());
 	pi.on("session_before_fork", () => background.cancelAll());
@@ -215,7 +227,7 @@ export function registerBackground(pi: ExtensionAPI): CapabilityBackground {
 	pi.on("session_shutdown", () => background.cancelAll());
 	pi.registerTool({
 		name: "capability_jobs", label: "Capability jobs",
-		description: "List background runs, read output, stop, or steer coder with a message. Coder, scout, reasoning, and review output streams as PARTIAL, never a final verdict. Only coder accepts steering. Set interrupt on steer to abort its current turn and send instructions without ending the run. Separate from shell jobs. The live panel already shows helper progress. The third consecutive identical list or output call stops the response without cancelling background work. End the turn and wait for the completion wake instead of polling.",
+		description: "List background runs, read output, stop, or steer coder with a message. Coder, scout, reasoning, and review output streams as PARTIAL, never a final verdict. Only coder accepts steering. Set interrupt on steer to abort its current turn and send instructions without ending the run. Separate from shell jobs. The live panel already shows helper progress. A third status read for the same active run or unchanged list with active work can be blocked. Finish the turn and wait for the completion message, or check again if the user asks.",
 		renderShell: "self",
 		renderCall: renderCapabilityJobsCall,
 		renderResult: renderCapabilityResult("Capability jobs"),
