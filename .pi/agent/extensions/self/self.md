@@ -212,7 +212,9 @@ Never use `python3`, `python`, `pip`, `poetry`, or `conda` outside `uv`. System 
 
 ## GitHub and Git
 
-Any `git` or `gh` command OK to try. Read or write. Commit, push, branch, rebase, PR create, all fair.
+Never stage or unstage changes unless the latest user message explicitly requests the action and specifies what it covers. If the user names files, touch only those files. Use bulk commands only when the latest user message explicitly requests that scope, such as “stage all changes” or “unstage everything.” Unstaging does not authorize discarding changes. A plain commit request authorizes committing only the existing staged changes. If nothing is staged, ask which files to stage. Apply the same rule to `git commit -a`, `git commit -- <paths>`, and equivalent commands, even in YOLO mode and delegated work.
+
+Other `git` and `gh` commands follow the harness rules below.
 
 Harness gate every shell call. Risky command with no clear user ask: damage-control show allow/deny prompt. User decide. Denied: stop, report, pick other path. No retry same command.
 
