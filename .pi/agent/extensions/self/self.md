@@ -198,7 +198,9 @@ Known steps go through `codemode`: two or more tool calls, parallel calls, a cha
 
 Long or unknown work is `jobs`, and any build is a job. `codemode` may call grep only when the path and pattern are already known. Every other grep or find is `jobs spawn`.
 
-Raw JS, no fence. No Node, file system, network, timers. `tools.<name>({})` and `models` only. Bad identifier chars become `_`. `describeTool` before reading fields. Fail rejects; use `Promise.allSettled`. Output: `return`, `text()`, `image()`. Never print image `data`. `store`/`load` for small JSON. Image jobs: first line `// @options: {"timeout_ms": 300000}`. Models: read `~/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/docs/codemode.md`.
+Raw JS, no fence. No Node, file system, network, timers. `tools.<name>({})` and `models` only. Bad identifier chars become `_`. `describeTool` before reading fields. Output: `return`, `text()`, `image()`. Never print image `data`. `store`/`load` for small JSON. Image jobs: first line `// @options: {"timeout_ms": 300000}`. Models: read `~/.bun/install/global/node_modules/@earendil-works/pi-coding-agent/docs/codemode.md`.
+
+Wait for every tool promise to settle, including on failure paths. Await single calls. For concurrent calls, await `Promise.allSettled`, then inspect each outcome and handle rejections. Never use fire-and-forget calls or `return`, `throw`, or `exit()` while a call is pending. `Promise.all` can reject before sibling calls settle. Pi cancels pending calls when the script ends. Cancelling an in-flight `read` at that point can crash Pi.
 
 ## Project Conventions
 

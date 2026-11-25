@@ -1,37 +1,28 @@
 import { writeFileSync } from "node:fs";
 import * as path from "node:path";
-import { coderSession, snapshotContext } from "#capability-snapshot";
-import { coderRpc } from "#capability-coder-rpc";
-import type { CoderChannel } from "#capability-coder-progress";
+import { coderSession, snapshotContext, stripSkillCatalog, type CapabilitySkill } from "#capability-snapshot";
+import { coderRpc, type CoderRpcOptions } from "#capability-coder-rpc";
 import type { CapabilityBackground } from "#capability-background";
 import type { CapabilityDef, CapabilityToolInput } from "#capability-types";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 
 export const CAPABILITY_CHILD_ENV = "PI_CAPABILITY_CHILD";
 
-export function startCoder(background: CapabilityBackground, def: CapabilityDef, input: CapabilityToolInput, ctx: ExtensionContext) {
+export function startCoder(background: CapabilityBackground, def: CapabilityDef, input: CapabilityToolInput, ctx: ExtensionContext, skills: readonly CapabilitySkill[]) {
 	const snapshot = snapshotContext(ctx);
 	const session = coderSession(snapshot.sessionManager.getBranch(), snapshot.cwd);
-	const systemPrompt = `${snapshot.getSystemPrompt()}\n\n${def.systemPrompt}`;
+	const systemPrompt = `${stripSkillCatalog(snapshot.getSystemPrompt())}\n\n${def.systemPrompt}`;
 	const task = [input.task, input.paths?.length ? `Assigned paths:\n${input.paths.join("\n")}` : ""].filter(Boolean).join("\n\n");
 	const thinking = def.reasoningEffort ?? "high";
 	return background.start("coder", ctx, (signal, directory, channel) => runCoderChild({
 		cwd: snapshot.cwd, model: def.model, thinking,
-		session, systemPrompt, task, directory, signal, channel,
+		session, systemPrompt, task, directory, signal, channel, skillPaths: skills.map(skill => skill.filePath),
 	}), { model: def.model, effort: thinking });
 }
 
-export interface CoderChildOptions {
-	cwd: string;
-	model: string;
-	thinking: string;
+export interface CoderChildOptions extends CoderRpcOptions {
 	session: string;
 	systemPrompt: string;
-	task: string;
-	directory: string;
-	signal: AbortSignal;
-	channel?: CoderChannel;
-	executable?: string;
 }
 
 export async function runCoderChild(options: CoderChildOptions) {

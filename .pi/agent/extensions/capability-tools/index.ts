@@ -1,7 +1,7 @@
 import { compactToolRenderers } from "#compact-blocks";
 import { registerBackground, type CapabilityBackground } from "#capability-background";
 import { CAPABILITY_CHILD_ENV, registerCoderCommand, startCoder } from "#capability-coder";
-import { snapshotContext } from "#capability-snapshot";
+import { resolveCapabilitySkills, snapshotContext } from "#capability-snapshot";
 import { helperProgress } from "#capability-coder-progress";
 import { renderCapabilityCall, renderCapabilityResult } from "#capability-message";
 import type { ExtensionAPI, ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
@@ -17,7 +17,11 @@ const DEFAULT_PATHS_DESCRIPTION = "Relevant file or directory path";
 const SCOUT_PATHS_DESCRIPTION =
 	"File or directory path. Pass an absolute path when it is not under the session cwd. Relative paths resolve against cwd.";
 
-function capabilityInputSchema(pathsDescription: string) {
+function selectedSkills(description: string) {
+	return Type.Optional(Type.Array(Type.String({ minLength: 1 }), { description }));
+}
+
+function capabilityInputSchema(pathsDescription: string, acceptsSkills: boolean) {
 	return Type.Object({
 		task: Type.Optional(Type.String({ description: "Question, objective, or request for the helper capability. Omit for the tool's default task." })),
 		paths: Type.Optional(Type.Array(Type.String({ description: pathsDescription }))),
@@ -25,12 +29,14 @@ function capabilityInputSchema(pathsDescription: string) {
 		includeTree: Type.Optional(Type.Boolean({ description: "Override the capability default for workspace tree context" })),
 		includeDiff: Type.Optional(Type.Boolean({ description: "Override the capability default for git diff context" })),
 		includeTimeline: Type.Optional(Type.Boolean({ description: "Override the capability default for action timeline context" })),
+		...(acceptsSkills ? { skills: selectedSkills("Names of parent session skills to include. Omit for none.") } : {}),
 	});
 }
 
 function registerCapabilityTool(pi: ExtensionAPI, def: CapabilityDef, background: CapabilityBackground): void {
 	const pathsDescription = def.toolName === "code_scout" ? SCOUT_PATHS_DESCRIPTION : DEFAULT_PATHS_DESCRIPTION;
-	const runsInBackground = ["coder", "code_scout", "reasoning_coach", "patch_reviewer"].includes(def.toolName);
+	const acceptsSkills = ["coder", "reasoning_coach", "patch_reviewer"].includes(def.toolName);
+	const runsInBackground = acceptsSkills || def.toolName === "code_scout";
 	pi.registerTool({
 		name: def.toolName,
 		label: def.label,
@@ -43,13 +49,16 @@ function registerCapabilityTool(pi: ExtensionAPI, def: CapabilityDef, background
 		parameters: def.toolName === "coder" ? Type.Object({
 			task: Type.String({ minLength: 1, description: "Bounded code change, assigned files, and acceptance checks." }),
 			paths: Type.Optional(Type.Array(Type.String({ description: pathsDescription }))),
-		}) : capabilityInputSchema(pathsDescription),
+			skills: selectedSkills("Names of parent session skills to expose. Omit for none. Include coding when writing or refactoring code."),
+		}) : capabilityInputSchema(pathsDescription, acceptsSkills),
 		execute: async (_callId, args, signal, onUpdate, ctx) => {
-			const input = { ...args, task: args.task ?? DEFAULT_TASKS[def.toolName] } as CapabilityToolInput;
-			if (def.toolName === "coder") return startCoder(background, def, input, ctx);
+			const { skills: names, ...other } = args;
+			const skills = acceptsSkills ? resolveCapabilitySkills(pi, names) : [];
+			const input = { ...other, task: args.task ?? DEFAULT_TASKS[def.toolName] } as CapabilityToolInput;
+			if (def.toolName === "coder") return startCoder(background, def, input, ctx, skills);
 			if (runsInBackground) {
 				const snapshot = snapshotContext(ctx);
-				return background.start(def.toolName, ctx, (ownedSignal, _directory, channel) => executeCapability(pi, def, { ...input, previewLines: input.previewLines ?? 6 }, ownedSignal, helperProgress(channel), snapshot), { model: def.model, effort: def.reasoningEffort });
+				return background.start(def.toolName, ctx, (ownedSignal, _directory, channel) => executeCapability(pi, def, { ...input, previewLines: input.previewLines ?? 6 }, ownedSignal, helperProgress(channel), snapshot, skills), { model: def.model, effort: def.reasoningEffort });
 			}
 			return executeCapability(pi, def, input, signal, onUpdate, ctx);
 		},

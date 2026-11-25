@@ -1,5 +1,45 @@
 import { randomUUID } from "node:crypto";
-import { buildSessionProjection, CURRENT_SESSION_VERSION, type ExtensionContext, type SessionEntry } from "@earendil-works/pi-coding-agent";
+import { statSync } from "node:fs";
+import { readFile } from "node:fs/promises";
+import { isAbsolute } from "node:path";
+import { buildSessionProjection, CURRENT_SESSION_VERSION, type ExtensionAPI, type ExtensionContext, type SessionEntry } from "@earendil-works/pi-coding-agent";
+
+export interface CapabilitySkill { name: string; filePath: string }
+
+export function resolveCapabilitySkills(pi: Pick<ExtensionAPI, "getCommands">, names?: unknown): CapabilitySkill[] {
+	if (names === undefined) return [];
+	if (!Array.isArray(names) || names.some(name => typeof name !== "string" || !name)) {
+		throw new Error("Skills must be an array of skill names.");
+	}
+	if (!names.length) return [];
+	const skills = new Map(pi.getCommands().filter(command => command.source === "skill")
+		.map(command => [command.name, command.sourceInfo.path]));
+	return [...new Set(names)].map(name => {
+		const filePath = skills.get(`skill:${name}`);
+		if (!filePath) throw new Error(`Unknown skill ${JSON.stringify(name)}. Use a skill name discovered by the parent session.`);
+		if (!isAbsolute(filePath) || !statSync(filePath, { throwIfNoEntry: false })?.isFile()) {
+			throw new Error(`Skill ${JSON.stringify(name)} has no readable skill file.`);
+		}
+		return { name, filePath };
+	});
+}
+
+export async function withCapabilitySkills(systemPrompt: string, skills: readonly CapabilitySkill[]): Promise<string> {
+	if (!skills.length) return systemPrompt;
+	const instructions = await Promise.all(skills.map(async ({ name, filePath }) => {
+		const text = await readFile(filePath, "utf8");
+		return `### ${name}\n${text.trim()}`;
+	}));
+	return `${systemPrompt}\n\n## Selected skills\n${instructions.join("\n\n")}`;
+}
+
+// Match Pi's rendered catalog, including the associated guidance when present.
+const SKILL_CATALOG = /^(?:The following skills provide specialized instructions for specific tasks\.\r?\n[^\r\n]*\r?\nResolve relative paths against the skill's directory[^\r\n]*\r?\n\r?\n)?<available_skills>\r?\n[\s\S]*?^<\/available_skills>[ \t]*(?:\r?\n|$)/gm;
+
+export function stripSkillCatalog(prompt: string): string {
+	if (!prompt.includes("<available_skills>")) return prompt;
+	return prompt.replace(SKILL_CATALOG, "").replace(/^<skills>\r?\n\s*?<\/skills>[ \t]*(?:\r?\n|$)/gm, "");
+}
 
 /** Capture the active branch now, not after the background task starts. */
 export function snapshotContext(ctx: ExtensionContext): ExtensionContext {
@@ -75,10 +115,22 @@ export function repairCoderTranscript(branch: readonly SessionEntry[], strict = 
 	return { entries: fixed, repairs, repairCount: repairs.length };
 }
 
-/** Keep the original branch; only repair the model-visible tool pairs. */
+/** Keep the branch history, excluding inherited skill catalogs from prompt records. */
 export function coderSession(branch: readonly SessionEntry[], cwd: string): string {
 	const timestamp = new Date().toISOString();
 	const repaired = repairCoderTranscript(branch, true);
+	for (const entry of repaired.entries) {
+		const message = entry.type === "message" && entry.message.role === "system" ? entry.message
+			: entry.type === "compaction" ? entry.systemMessage : undefined;
+		if (!message) continue;
+		message.content = typeof message.content === "string" ? stripSkillCatalog(message.content)
+			: message.content.map(block => ({ ...block, text: stripSkillCatalog(block.text) }));
+		for (const [key, section] of Object.entries(message.sections ?? {})) {
+			if (!section) continue;
+			const filtered = stripSkillCatalog(section);
+			if (filtered !== section && message.sections) message.sections[key] = filtered.trim() ? filtered : null;
+		}
+	}
 	const audit: SessionEntry = {
 		type: "custom", id: randomUUID(), parentId: repaired.entries.at(-1)?.id ?? null,
 		timestamp, customType: "coder-transcript-repairs", data: { repairCount: repaired.repairCount, repairs: repaired.repairs },

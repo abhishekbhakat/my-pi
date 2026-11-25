@@ -14,16 +14,22 @@ export interface CoderRpcOptions {
 	signal: AbortSignal;
 	channel?: CoderChannel;
 	executable?: string;
+	skillPaths?: readonly string[];
 }
 export const CHILD_TOOLS = "read,bash,edit,write,grep,find,ls,tree,jobs,yolo,codemode";
 
 async function coderRpcAttempt(options: CoderRpcOptions, recovery: CoderRecovery): Promise<string> {
-	const { directory, signal, channel } = options;
+	const { directory, signal, channel, skillPaths = [] } = options;
 	const inventory = path.join(directory, "tool-preflight.json");
 	rmSync(inventory, { force: true });
 	const preflight = path.join(directory, "tool-preflight.mjs");
 	writeFileSync(preflight, `import { writeFileSync } from "node:fs";
+const skillPaths = new Set(${JSON.stringify(skillPaths)});
 export default function (pi) {
+  pi.on("before_agent_start", (event) => {
+    // A normal child extension can supply skills even with --no-skills.
+    event.systemPromptOptions.skills = event.systemPromptOptions.skills.filter(skill => skillPaths.has(skill.filePath));
+  });
   pi.on("session_start", () => writeFileSync(${JSON.stringify(inventory)}, JSON.stringify(pi.getActiveTools()), { mode: 0o600 }));
   pi.on("tool_call", (event) => {
     if (event.toolName === "bash" && (event.input.timeout === undefined || event.input.timeout < 180)) event.input.timeout = 180;
@@ -56,7 +62,7 @@ export default function (pi) {
 				"--mode", "rpc", "--session", path.join(directory, "session.jsonl"),
 				"--model", options.model, "--thinking", options.thinking,
 				"--system-prompt", path.join(directory, "system.md"), "--tools", CHILD_TOOLS, "--no-mcp",
-				"--extension", preflight,
+				"--no-skills", ...skillPaths.flatMap(file => ["--skill", file]), "--extension", preflight,
 			], {
 				cwd: options.cwd, env: { ...process.env, PI_CAPABILITY_CHILD: "1" },
 				stdio: ["pipe", "pipe", stderr], detached: process.platform !== "win32",

@@ -1,5 +1,6 @@
 import * as path from "node:path";
 import { capabilityBudget } from "#capability-model-budget";
+import { withCapabilitySkills, type CapabilitySkill } from "#capability-snapshot";
 import { getCurrentTools, normalizeContext, type Message, type Tool, type ToolCall } from "@earendil-works/pi-ai";
 import { stream as piAiStream } from "@earendil-works/pi-ai/compat";
 import type { AgentToolUpdateCallback } from "@earendil-works/pi-coding-agent";
@@ -179,6 +180,7 @@ export async function executeCapability(
 	signal: AbortSignal | undefined,
 	onUpdate: AgentToolUpdateCallback | undefined,
 	ctx: ExtensionContext,
+	skills: readonly CapabilitySkill[] = [],
 ) {
 	const modelRef = splitModelRef(def.model);
 	if (!modelRef) {
@@ -230,7 +232,8 @@ export async function executeCapability(
 		details: { status: "assembling", capability: def.toolName },
 	});
 
-	const budget = await capabilityBudget(ctx, model, def.systemPrompt + input.task);
+	const systemPrompt = await withCapabilitySkills(def.systemPrompt, skills);
+	const budget = await capabilityBudget(ctx, model, systemPrompt + input.task);
 	const context = await buildCapabilityContext(pi, ctx, { ...def, maxContextChars: budget.maxContextChars }, input, signal);
 	if (def.toolName === "commit_message" && context.stagedEmpty) {
 		return {
@@ -298,7 +301,7 @@ export async function executeCapability(
 				},
 			};
 			const requestContext = {
-				systemPrompt: def.systemPrompt,
+				systemPrompt,
 				tools,
 				messages,
 			};
