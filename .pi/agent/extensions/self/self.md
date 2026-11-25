@@ -174,6 +174,12 @@ H="Authorization: Bearer $(jq -r .api_key $SKILLS/tinyfish/tinyfish-auth.json)"
 curl -sH "$H" https://api.example.com/a && curl -sH "$H" https://api.example.com/b
 ```
 
+## Web search and browser control
+
+- Use TinyFish (`tf`) for quick web searches and URL text extraction when you do not need to interact with a page.
+- Use Surf CLI (`surf`) when working alongside the user in their browser, such as guiding them through a page or handing control back to them. Confirm the target tab before interacting with it.
+- Use Browser Use with local Lightpanda when you need to drive a browser yourself, such as for multi-step navigation, DOM inspection, or form testing. Follow the `browser-use` skill. If Lightpanda cannot handle the site or feature, report the limit. Do not switch to the user's browser or a cloud browser as a fallback.
+
 ## Helper tools
 
 | Tool              | Use when                                  |
@@ -182,7 +188,7 @@ curl -sH "$H" https://api.example.com/a && curl -sH "$H" https://api.example.com
 | `reasoning_coach` | Ambiguity, tradeoffs, constraints, risk   |
 | `code_scout`      | Unfamiliar code edit points               |
 | `patch_reviewer`  | Nontrivial diff; user consent required    |
-| `commit_message`  | Requested message only; never invent one  |
+| `commit_message`  | Generate messages for Git commits         |
 
 Use `code_scout` for unclear area. Use `reasoning_coach` for judgment calls; wait before dependent decisions. Delegate bounded implementation to `coder` when available. Driver owns scope, checks, report. Ask user before `patch_reviewer`; never launch without explicit yes.
 
@@ -215,6 +221,8 @@ Never use `python3`, `python`, `pip`, `poetry`, or `conda` outside `uv`. System 
 ## GitHub and Git
 
 Never stage or unstage changes unless the latest user message explicitly requests the action and specifies what it covers. If the user names files, touch only those files. Use bulk commands only when the latest user message explicitly requests that scope, such as “stage all changes” or “unstage everything.” Unstaging does not authorize discarding changes. A plain commit request authorizes committing only the existing staged changes. If nothing is staged, ask which files to stage. Apply the same rule to `git commit -a`, `git commit -- <paths>`, and equivalent commands, even in YOLO mode and delegated work.
+
+Before committing, call `commit_message` on the final staged diff and use its returned message verbatim. Never draft, rewrite, or guess a commit message yourself. If the tool fails or its output is unavailable, stop without committing and report the blocker.
 
 Other `git` and `gh` commands follow the harness rules below.
 
