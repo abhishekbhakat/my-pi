@@ -7,8 +7,8 @@ const CONFIG_NAME = "openai-fast.json";
 const TIER = "priority";
 const FAST_TIER_KEY = Symbol.for("my-pi.fast-mode.service-tier");
 
-type FastConfig = { enabled: boolean; showStatus: boolean };
-const DEFAULT: FastConfig = { enabled: false, showStatus: true };
+type FastConfig = { enabled: boolean; showStatus: boolean; updatedAt: number };
+const DEFAULT: FastConfig = { enabled: false, showStatus: true, updatedAt: 0 };
 
 function configPath(): string {
 	return join(getAgentDir(), "extensions", CONFIG_NAME);
@@ -22,6 +22,7 @@ function readConfig(): FastConfig {
 		return {
 			enabled: typeof parsed.enabled === "boolean" ? parsed.enabled : DEFAULT.enabled,
 			showStatus: typeof parsed.showStatus === "boolean" ? parsed.showStatus : DEFAULT.showStatus,
+			updatedAt: typeof parsed.updatedAt === "number" ? parsed.updatedAt : DEFAULT.updatedAt,
 		};
 	} catch (error) {
 		console.error(`Warning: Could not parse ${path}: ${error}`);
@@ -30,21 +31,23 @@ function readConfig(): FastConfig {
 }
 
 export default function fastModeExtension(pi: ExtensionAPI) {
-	const requestedTier = (provider?: string, config?: FastConfig) =>
-		provider === "openai" && (config ?? readConfig()).enabled ? TIER : undefined;
+	const requestedTier = (provider?: string) =>
+		provider === "openai" && readConfig().enabled ? TIER : undefined;
 	// Capability calls send requests directly, outside the session's payload hook.
 	const shared = globalThis as typeof globalThis & { [FAST_TIER_KEY]?: typeof requestedTier };
 	shared[FAST_TIER_KEY] = requestedTier;
 
 	function updateStatus(ctx: ExtensionContext, config: FastConfig): void {
 		if (!ctx.hasUI) return;
+		const live = readConfig();
+		if (live.updatedAt !== config.updatedAt) return;
 		ctx.ui.setStatus(EXTENSION_ID, config.showStatus && config.enabled ? "fast" : undefined);
 	}
 
 	function statusMessage(ctx: ExtensionContext, config: FastConfig): string {
 		if (!config.enabled) return "OpenAI Fast mode is off.";
-		if (requestedTier(ctx.model?.provider, config)) {
-			return "OpenAI Fast mode is on. This session requests service_tier=priority; the server determines the actual tier.";
+		if (ctx.model?.provider === "openai") {
+			return "OpenAI Fast mode is on. Requests use service_tier=priority; the server determines the actual tier.";
 		}
 		return "OpenAI Fast mode is on. This session is outside Fast scope. Only openai requests, including capability calls, use priority.";
 	}
@@ -59,7 +62,7 @@ export default function fastModeExtension(pi: ExtensionAPI) {
 	pi.on("before_provider_request", (event, ctx) => {
 		const config = readConfig();
 		updateStatus(ctx, config);
-		const tier = requestedTier(ctx.model?.provider, config);
+		const tier = requestedTier(ctx.model?.provider);
 		if (!tier || !event.payload || typeof event.payload !== "object" || Array.isArray(event.payload)) return;
 		return { ...event.payload, service_tier: tier };
 	});
@@ -79,7 +82,10 @@ export default function fastModeExtension(pi: ExtensionAPI) {
 				...current,
 				enabled: action === "on" || (action === "" && !current.enabled),
 			};
-			if (action !== "status") writeFileSync(configPath(), `${JSON.stringify(config, null, 2)}\n`);
+			if (action !== "status") {
+				config.updatedAt = Date.now();
+				writeFileSync(configPath(), `${JSON.stringify(config, null, 2)}\n`);
+			}
 			updateStatus(ctx, config);
 			ctx.ui.notify(statusMessage(ctx, config), "info");
 		},
