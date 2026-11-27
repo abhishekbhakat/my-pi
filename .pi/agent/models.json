@@ -276,6 +276,26 @@
             "xhigh": null,
             "max": null
           }
+        },
+        {
+          "id": "gemini-4-neon",
+          "name": "Gemini 4 Neon",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 262144,
+          "maxTokens": 65536,
+          "thinkingLevelMap": {
+            "off": "off",
+            "minimal": null,
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "xhigh": null,
+            "max": null
+          }
         }
       ]
     },
