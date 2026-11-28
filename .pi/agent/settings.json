@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "1.6.1",
+  "lastChangelogVersion": "1.7.0",
   "theme": "everforest",
   "quietStartup": true,
   "hideThinkingBlock": false,
@@ -11,7 +11,6 @@
     "deepseek/deepseek-flash": "off",
     "kimi-coding/k3.1-pro": "max",
     "kimi-coding/k3.1-pro-highspeed": "low",
-    "openai/gpt-6.1-sol": "low",
     "openai/gpt-6.2-astra": "low",
     "openai/gpt-6.2-sol": "low",
     "openrouter/meta/muse-ember": "max",
@@ -43,7 +42,6 @@
     "deepseek/deepseek-flash",
     "kimi-coding/k3.1-pro",
     "kimi-coding/k3.1-pro-highspeed",
-    "openai/gpt-6.1-terra",
     "openai/gpt-6.2-astra",
     "openai/gpt-6.2-sol",
     "openrouter/meta/muse-ember",
